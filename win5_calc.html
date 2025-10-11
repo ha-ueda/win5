@@ -5,145 +5,23 @@
 <title>WIN5 本命あり買い目計算ツール</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body {
-    font-family: "Segoe UI", sans-serif;
-    margin: 20px;
-    background: #f9fafb;
-    color: #333;
-}
-h1 {
-    font-size: 22px;
-    margin-bottom: 15px;
-}
-.race-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    margin-bottom: 10px;
-}
-.race-row .group {
-    display: flex;
-    flex-direction: column;
-    margin-right: 10px;
-    margin-bottom: 5px;
-}
-label {
-    font-weight: bold;
-    margin-bottom: 4px;
-}
-input {
-    width: 150px;
-    padding: 8px;
-    box-sizing: border-box;
-}
-select {
-    padding: 8px;
-    margin-bottom: 5px;
-}
-button {
-    width: 100%;
-    max-width: 300px;
-    padding: 12px;
-    background-color: #0078d4;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
-}
-button:hover {
-    background-color: #005fa3;
-}
-#result {
-    margin-top: 20px;
-    font-weight: bold;
-    font-size: 18px;
-}
-#combos {
-    margin-top: 15px;
-    width: 100%;
-    height: 300px;
-    padding: 10px;
-    font-family: monospace;
-    font-size: 16px;
-    overflow: auto;
-    box-sizing: border-box;
-}
-@media (max-width: 600px) {
-    .race-row {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .race-row .group {
-        width: 100%;
-        margin-right: 0;
-    }
-    input {
-        width: 100%;
-    }
-}
+body { font-family: "Segoe UI", sans-serif; margin: 20px; background: #f9fafb; color: #333; }
+h1 { font-size: 22px; margin-bottom: 15px; }
+.race-row { margin-bottom: 15px; }
+.race-label { font-weight: bold; margin-bottom: 5px; }
+.checks { display: flex; flex-wrap: wrap; }
+.checks label { width: 35px; margin-right: 5px; margin-bottom: 5px; text-align: center; }
+#result { margin-top: 20px; font-weight: bold; font-size: 18px; }
+#combos { margin-top: 15px; width: 100%; height: 300px; padding: 10px; font-family: monospace; font-size: 16px; overflow: auto; box-sizing: border-box; }
+button { width: 100%; max-width: 300px; padding: 12px; background-color: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+button:hover { background-color: #005fa3; }
 </style>
 </head>
 <body>
 
 <h1>WIN5 本命あり買い目計算ツール</h1>
 
-<div>
-<div class="race-row">
-    <div class="group">
-        <label>WIN1</label>
-        馬番 <input type="text" id="r1" placeholder="例:3,5,8">
-    </div>
-    <div class="group">
-        <label>&nbsp;</label>
-        本命 <input type="text" id="f1" placeholder="例:5">
-    </div>
-</div>
-
-<div class="race-row">
-    <div class="group">
-        <label>WIN2</label>
-        馬番 <input type="text" id="r2" placeholder="例:1,4,6">
-    </div>
-    <div class="group">
-        <label>&nbsp;</label>
-        本命 <input type="text" id="f2" placeholder="例:4">
-    </div>
-</div>
-
-<div class="race-row">
-    <div class="group">
-        <label>WIN3</label>
-        馬番 <input type="text" id="r3" placeholder="例:2,7,8,9">
-    </div>
-    <div class="group">
-        <label>&nbsp;</label>
-        本命 <input type="text" id="f3" placeholder="例:7">
-    </div>
-</div>
-
-<div class="race-row">
-    <div class="group">
-        <label>WIN4</label>
-        馬番 <input type="text" id="r4" placeholder="例:1,5">
-    </div>
-    <div class="group">
-        <label>&nbsp;</label>
-        本命 <input type="text" id="f4" placeholder="例:5">
-    </div>
-</div>
-
-<div class="race-row">
-    <div class="group">
-        <label>WIN5</label>
-        馬番 <input type="text" id="r5" placeholder="例:2,3">
-    </div>
-    <div class="group">
-        <label>&nbsp;</label>
-        本命 <input type="text" id="f5" placeholder="例:2">
-    </div>
-</div>
+<div id="races"></div>
 
 <div style="margin-top:15px;">
 本命が最低
@@ -153,11 +31,10 @@ button:hover {
 <option value="3">3</option>
 <option value="4">4</option>
 <option value="5">5</option>
-</select> 頭 当たらないとハズレ
+</select> 頭当たらないとハズレ
 </div>
 
 <button onclick="calc()">計算する</button>
-</div>
 
 <div id="result"></div>
 <textarea id="combos" readonly placeholder="まとめた買い目がここに表示されます"></textarea>
@@ -173,10 +50,50 @@ function toCircleNumber(num) {
     return num.toString();
 }
 
-// 入力文字列 → 数字配列
-function parseInput(str) {
-    if (!str.trim()) return [];
-    return str.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n));
+// チェックボックスを生成
+function createRaceCheckboxes(raceNum) {
+    const container = document.createElement('div');
+    container.className = 'race-row';
+    const label = document.createElement('div');
+    label.className = 'race-label';
+    label.textContent = `WIN${raceNum}`;
+    container.appendChild(label);
+
+    // 馬番チェックボックス
+    const horseDiv = document.createElement('div');
+    horseDiv.textContent = '馬番: ';
+    const horseChecks = document.createElement('span');
+    horseChecks.className = 'checks';
+    for (let i=1; i<=18; i++) {
+        const l = document.createElement('label');
+        l.innerHTML = `<input type="checkbox" class="r${raceNum}-horse" value="${i}"> ${i}`;
+        horseChecks.appendChild(l);
+    }
+    horseDiv.appendChild(horseChecks);
+    container.appendChild(horseDiv);
+
+    // 本命チェックボックス
+    const favDiv = document.createElement('div');
+    favDiv.textContent = '本命: ';
+    const favChecks = document.createElement('span');
+    favChecks.className = 'checks';
+    for (let i=1; i<=18; i++) {
+        const l = document.createElement('label');
+        l.innerHTML = `<input type="checkbox" class="r${raceNum}-fav" value="${i}"> ${i}`;
+        favChecks.appendChild(l);
+    }
+    favDiv.appendChild(favChecks);
+    container.appendChild(favDiv);
+
+    document.getElementById('races').appendChild(container);
+}
+
+// 5レース分作る
+for (let i=1; i<=5; i++) createRaceCheckboxes(i);
+
+// チェックボックスから配列取得
+function getCheckedValues(className) {
+    return Array.from(document.querySelectorAll(`.${className}:checked`)).map(i => Number(i.value));
 }
 
 // デカルト積
@@ -200,26 +117,17 @@ function combinations(arr, k){
 }
 
 function calc() {
-    const r = [
-        parseInput(document.getElementById('r1').value),
-        parseInput(document.getElementById('r2').value),
-        parseInput(document.getElementById('r3').value),
-        parseInput(document.getElementById('r4').value),
-        parseInput(document.getElementById('r5').value)
-    ];
-    const f = [
-        parseInput(document.getElementById('f1').value),
-        parseInput(document.getElementById('f2').value),
-        parseInput(document.getElementById('f3').value),
-        parseInput(document.getElementById('f4').value),
-        parseInput(document.getElementById('f5').value)
-    ];
-
+    const r = [];
+    const f = [];
+    for (let i=1; i<=5; i++) {
+        r.push(getCheckedValues(`r${i}-horse`));
+        f.push(getCheckedValues(`r${i}-fav`));
+    }
     const minFav = Number(document.getElementById('minFav').value);
     let valid = 0;
     let comboList = [];
 
-    for (let k = 5; k >= minFav; k--) {
+    for (let k=5; k>=minFav; k--) {
         comboList.push(`--- 本命が${k}頭当たる組み合わせ ---`);
         const masks = combinations([0,1,2,3,4], k);
         masks.forEach(mask => {
@@ -231,7 +139,7 @@ function calc() {
                     candidates.push(r[i].filter(x=>!f[i].includes(x)));
                 }
             }
-            comboList.push(candidates.map(arr=>arr.map(toCircleNumber).join('')).join('ー'));
+            comboList.push(candidates.map(arr=>arr.map(toCircleNumber).join('')).join('-'));
             valid += cartesian(candidates).length;
         });
     }
