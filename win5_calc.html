@@ -21,7 +21,7 @@ h1 { font-size: 22px; margin-bottom: 15px; }
 .checks-container {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 }
 
 .checks {
@@ -45,6 +45,16 @@ h1 { font-size: 22px; margin-bottom: 15px; }
     margin-bottom: 6px;
 }
 
+.check-buttons {
+    margin-top: 6px;
+}
+
+.check-buttons button {
+    margin-right: 6px;
+    padding: 4px 8px;
+    font-size: 14px;
+}
+
 select {
     font-size: 18px;
     padding: 8px 12px;
@@ -53,7 +63,7 @@ select {
 #result { margin-top: 20px; font-weight: bold; font-size: 18px; }
 #combos { margin-top: 15px; width: 100%; height: 300px; padding: 10px; font-family: monospace; font-size: 16px; box-sizing: border-box; white-space: pre-wrap; word-wrap: break-word; }
 
-button {
+button.calc-btn {
     width: 100%;
     max-width: 300px;
     padding: 14px;
@@ -65,7 +75,7 @@ button {
     font-size: 18px;
     margin-top: 10px;
 }
-button:hover { background-color: #005fa3; }
+button.calc-btn:hover { background-color: #005fa3; }
 </style>
 </head>
 <body>
@@ -85,7 +95,7 @@ button:hover { background-color: #005fa3; }
 </select> 頭当たらないとハズレ
 </div>
 
-<button onclick="calc()">計算する</button>
+<button class="calc-btn" onclick="calc()">計算する</button>
 
 <div id="result"></div>
 <textarea id="combos" readonly placeholder="まとめた買い目がここに表示されます"></textarea>
@@ -122,8 +132,14 @@ function createRaceCheckboxes(raceNum) {
         l.innerHTML = `<input type="checkbox" value="${i}">${i}`;
         favChecks.appendChild(l);
     }
+
+    // 本命用ボタン
+    const favButtons = document.createElement('div');
+    favButtons.className = 'check-buttons';
+    favButtons.innerHTML = `<button type="button" onclick="checkAll('r${raceNum}-fav')">全てチェック</button>
+                            <button type="button" onclick="uncheckAll('r${raceNum}-fav')">全て解除</button>`;
     favDiv.appendChild(favChecks);
-    checksContainer.appendChild(favDiv);
+    favDiv.appendChild(favButtons);
 
     // 馬番
     const horseDiv = document.createElement('div');
@@ -135,7 +151,16 @@ function createRaceCheckboxes(raceNum) {
         l.innerHTML = `<input type="checkbox" value="${i}">${i}`;
         horseChecks.appendChild(l);
     }
+
+    // 紐用ボタン
+    const horseButtons = document.createElement('div');
+    horseButtons.className = 'check-buttons';
+    horseButtons.innerHTML = `<button type="button" onclick="checkAll('r${raceNum}-horse')">全てチェック</button>
+                              <button type="button" onclick="uncheckAll('r${raceNum}-horse')">全て解除</button>`;
     horseDiv.appendChild(horseChecks);
+    horseDiv.appendChild(horseButtons);
+
+    checksContainer.appendChild(favDiv);
     checksContainer.appendChild(horseDiv);
 
     container.appendChild(checksContainer);
@@ -144,6 +169,16 @@ function createRaceCheckboxes(raceNum) {
 
 // 5レース作成
 for(let i=1;i<=5;i++) createRaceCheckboxes(i);
+
+// 全てチェック
+function checkAll(className){
+    document.querySelectorAll(`.${className} input`).forEach(input => input.checked = true);
+}
+
+// 全て解除
+function uncheckAll(className){
+    document.querySelectorAll(`.${className} input`).forEach(input => input.checked = false);
+}
 
 // チェックボックス値取得
 function getCheckedValues(className) {
@@ -172,8 +207,7 @@ function calc(){
     for(let i=1;i<=5;i++){
         let horses = getCheckedValues(`r${i}-horse`);
         let favs = getCheckedValues(`r${i}-fav`);
-        // 紐未選択なら本命を自動補完
-        if(horses.length===0 && favs.length>0) horses = [...favs];
+        if(horses.length===0 && favs.length>0) horses = [...favs]; // 紐未選択なら本命補完
         r.push(horses);
         f.push(favs);
     }
@@ -185,21 +219,17 @@ function calc(){
         const masks = combinations([0,1,2,3,4], k);
         let validForK = 0;
 
-        // 通り数を計算
         masks.forEach(mask=>{
             let candidates = [];
             for(let i=0;i<5;i++){
                 if(mask.includes(i)) candidates.push(f[i]);
                 else candidates.push(r[i].filter(x=>!f[i].includes(x)));
             }
-            if(candidates.every(arr=>arr.length>0)){
-                validForK += cartesian(candidates).length;
-            }
+            if(candidates.every(arr=>arr.length>0)) validForK += cartesian(candidates).length;
         });
 
         comboList.push(`--- 本命が${k}頭当たる組み合わせ ${validForK}通り ---`);
 
-        // 通り数0の場合は組み合わせ表示をスキップ
         if(validForK > 0){
             masks.forEach(mask=>{
                 let candidates = [];
