@@ -2,42 +2,53 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>WIN5 買い目計算ツール（本命あり）</title>
+<title>WIN5 本命あり買い目計算ツール</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body {
     font-family: "Segoe UI", sans-serif;
-    margin: 40px;
+    margin: 20px;
     background: #f9fafb;
     color: #333;
 }
 h1 {
     font-size: 22px;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 .race-row {
-    margin-bottom: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 10px;
 }
 label {
-    display: inline-block;
-    width: 60px;
+    width: 100%;
+    max-width: 60px;
+    margin-bottom: 4px;
 }
 input {
-    width: 200px;
-    padding: 5px;
+    width: calc(100% - 70px);
+    max-width: 200px;
+    padding: 8px;
     margin-right: 8px;
+    box-sizing: border-box;
+    margin-bottom: 5px;
 }
 select {
-    padding: 5px;
+    padding: 8px;
     margin-left: 5px;
+    margin-bottom: 5px;
 }
 button {
-    margin-top: 15px;
-    padding: 8px 16px;
+    width: 100%;
+    max-width: 300px;
+    padding: 12px;
     background-color: #0078d4;
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
+    font-size: 16px;
 }
 button:hover {
     background-color: #005fa3;
@@ -50,16 +61,27 @@ button:hover {
 #combos {
     margin-top: 15px;
     width: 100%;
-    height: 400px;
+    height: 300px;
     padding: 10px;
     font-family: monospace;
+    font-size: 16px;
     overflow: auto;
+    box-sizing: border-box;
+}
+@media (max-width: 600px) {
+    input {
+        width: 100%;
+        margin-right: 0;
+    }
+    button {
+        max-width: 100%;
+    }
 }
 </style>
 </head>
 <body>
 
-<h1>WIN5 買い目計算ツール（本命あり）</h1>
+<h1>WWIN5 本命あり買い目計算ツール</h1>
 
 <div>
 <div class="race-row">
@@ -96,7 +118,7 @@ button:hover {
 <option value="3">3</option>
 <option value="4">4</option>
 <option value="5">5</option>
-</select> 頭当たらないとハズレ
+</select> 頭 当たらないとハズレ
 </div>
 
 <button onclick="calc()">計算する</button>
@@ -106,7 +128,7 @@ button:hover {
 <textarea id="combos" readonly placeholder="まとめた買い目がここに表示されます"></textarea>
 
 <script>
-// 数字配列 → 丸数字文字列
+// 数字 → 丸数字変換
 function toCircleNumber(num) {
     if (num >= 1 && num <= 20) {
         const circleNums = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩',
@@ -162,7 +184,7 @@ function calc() {
     let valid = 0;
     let comboList = [];
 
-    // 本命頭数順にまとめて生成
+    // 本命頭数順に生成
     for (let k = 5; k >= minFav; k--) {
         comboList.push(`--- 本命が${k}頭当たる組み合わせ ---`);
         const masks = combinations([0,1,2,3,4], k);
@@ -175,7 +197,7 @@ function calc() {
                     candidates.push(r[i].filter(x=>!f[i].includes(x)));
                 }
             }
-            // 丸数字に変換＆スペース区切り
+            // 丸数字＆スペース区切り
             comboList.push(candidates.map(arr=>arr.map(toCircleNumber).join('')).join('-'));
             valid += cartesian(candidates).length;
         });
