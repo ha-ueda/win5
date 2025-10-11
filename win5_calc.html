@@ -37,7 +37,7 @@ h1 { font-size: 22px; margin-bottom: 15px; }
     justify-content: center;
     width: 55px;
     height: 70px;
-    font-size: 16px;
+    font-size: 20px;
 }
 
 .checks input {
@@ -187,7 +187,7 @@ function createRaceCheckboxes(raceNum) {
     favChecks.className = `checks r${raceNum}-fav`;
     for (let i=1;i<=18;i++){
         const l = document.createElement('label');
-        l.innerHTML = `<input type="checkbox" value="${i}">${i}`;
+        l.innerHTML = `<input type="checkbox" value="${i}">${toCircleNumber(i)}`;
         favChecks.appendChild(l);
     }
     const favButtons = document.createElement('div');
@@ -204,7 +204,7 @@ function createRaceCheckboxes(raceNum) {
     horseChecks.className = `checks r${raceNum}-horse`;
     for (let i=1;i<=18;i++){
         const l = document.createElement('label');
-        l.innerHTML = `<input type="checkbox" value="${i}">${i}`;
+        l.innerHTML = `<input type="checkbox" value="${i}">${toCircleNumber(i)}`;
         horseChecks.appendChild(l);
     }
     const horseButtons = document.createElement('div');
@@ -298,8 +298,6 @@ function calc(){
     
     const combosArea = document.getElementById('combos');
     combosArea.value = comboList.join('\n');
-
-    // 内容に応じて高さ自動調整
     combosArea.style.height = 'auto';
     combosArea.style.height = combosArea.scrollHeight + 'px';
 }
