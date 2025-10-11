@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>WIN5 本命あり買い目計算ツール</title>
+<title>WIN5 買い目計算ツール（スマホ対応）</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body {
@@ -21,22 +21,23 @@ h1 {
     align-items: center;
     margin-bottom: 10px;
 }
+.race-row .group {
+    display: flex;
+    flex-direction: column;
+    margin-right: 10px;
+    margin-bottom: 5px;
+}
 label {
-    width: 100%;
-    max-width: 60px;
+    font-weight: bold;
     margin-bottom: 4px;
 }
 input {
-    width: calc(100% - 70px);
-    max-width: 200px;
+    width: 150px;
     padding: 8px;
-    margin-right: 8px;
     box-sizing: border-box;
-    margin-bottom: 5px;
 }
 select {
     padding: 8px;
-    margin-left: 5px;
     margin-bottom: 5px;
 }
 button {
@@ -49,6 +50,7 @@ button {
     border-radius: 6px;
     cursor: pointer;
     font-size: 16px;
+    margin-top: 10px;
 }
 button:hover {
     background-color: #005fa3;
@@ -69,45 +71,78 @@ button:hover {
     box-sizing: border-box;
 }
 @media (max-width: 600px) {
-    input {
+    .race-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .race-row .group {
         width: 100%;
         margin-right: 0;
     }
-    button {
-        max-width: 100%;
+    input {
+        width: 100%;
     }
 }
 </style>
 </head>
 <body>
 
-<h1>WWIN5 本命あり買い目計算ツール</h1>
+<h1>WIN5 買い目計算ツール（スマホ対応）</h1>
 
 <div>
 <div class="race-row">
-<label>WIN1:</label>
-馬番 <input type="text" id="r1" value="" placeholder="例:3,5,8">
-本命 <input type="text" id="f1" value="" placeholder="例:5">
+    <div class="group">
+        <label>WIN1</label>
+        馬番 <input type="text" id="r1" placeholder="例:3,5,8">
+    </div>
+    <div class="group">
+        <label>&nbsp;</label>
+        本命 <input type="text" id="f1" placeholder="例:5">
+    </div>
 </div>
+
 <div class="race-row">
-<label>WIN2:</label>
-馬番 <input type="text" id="r2" value="" placeholder="例:1,4,6">
-本命 <input type="text" id="f2" value="" placeholder="例:4">
+    <div class="group">
+        <label>WIN2</label>
+        馬番 <input type="text" id="r2" placeholder="例:1,4,6">
+    </div>
+    <div class="group">
+        <label>&nbsp;</label>
+        本命 <input type="text" id="f2" placeholder="例:4">
+    </div>
 </div>
+
 <div class="race-row">
-<label>WIN3:</label>
-馬番 <input type="text" id="r3" value="" placeholder="例:2,7,8,9">
-本命 <input type="text" id="f3" value="" placeholder="例:7">
+    <div class="group">
+        <label>WIN3</label>
+        馬番 <input type="text" id="r3" placeholder="例:2,7,8,9">
+    </div>
+    <div class="group">
+        <label>&nbsp;</label>
+        本命 <input type="text" id="f3" placeholder="例:7">
+    </div>
 </div>
+
 <div class="race-row">
-<label>WIN4:</label>
-馬番 <input type="text" id="r4" value="" placeholder="例:1,5">
-本命 <input type="text" id="f4" value="" placeholder="例:5">
+    <div class="group">
+        <label>WIN4</label>
+        馬番 <input type="text" id="r4" placeholder="例:1,5">
+    </div>
+    <div class="group">
+        <label>&nbsp;</label>
+        本命 <input type="text" id="f4" placeholder="例:5">
+    </div>
 </div>
+
 <div class="race-row">
-<label>WIN5:</label>
-馬番 <input type="text" id="r5" value="" placeholder="例:2,3">
-本命 <input type="text" id="f5" value="" placeholder="例:2">
+    <div class="group">
+        <label>WIN5</label>
+        馬番 <input type="text" id="r5" placeholder="例:2,3">
+    </div>
+    <div class="group">
+        <label>&nbsp;</label>
+        本命 <input type="text" id="f5" placeholder="例:2">
+    </div>
 </div>
 
 <div style="margin-top:15px;">
@@ -128,11 +163,11 @@ button:hover {
 <textarea id="combos" readonly placeholder="まとめた買い目がここに表示されます"></textarea>
 
 <script>
-// 数字 → 丸数字変換
+// 数字 → 丸数字
 function toCircleNumber(num) {
-    if (num >= 1 && num <= 20) {
+    if (num >= 1 && num <= 18) {
         const circleNums = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩',
-                            '⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳'];
+                            '⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
         return circleNums[num-1];
     }
     return num.toString();
@@ -184,7 +219,6 @@ function calc() {
     let valid = 0;
     let comboList = [];
 
-    // 本命頭数順に生成
     for (let k = 5; k >= minFav; k--) {
         comboList.push(`--- 本命が${k}頭当たる組み合わせ ---`);
         const masks = combinations([0,1,2,3,4], k);
@@ -197,8 +231,7 @@ function calc() {
                     candidates.push(r[i].filter(x=>!f[i].includes(x)));
                 }
             }
-            // 丸数字＆スペース区切り
-            comboList.push(candidates.map(arr=>arr.map(toCircleNumber).join('')).join('-'));
+            comboList.push(candidates.map(arr=>arr.map(toCircleNumber).join('')).join('ー'));
             valid += cartesian(candidates).length;
         });
     }
