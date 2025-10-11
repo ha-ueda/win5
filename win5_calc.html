@@ -35,14 +35,14 @@ h1 { font-size: 22px; margin-bottom: 15px; }
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 55px;  /* 横幅調整 */
-    height: 70px; /* 高さ調整 */
+    width: 55px;
+    height: 70px;
     font-size: 16px;
 }
 
 .checks input {
     transform: scale(2.2);
-    margin-bottom: 6px; /* 数字との間隔を広げる */
+    margin-bottom: 6px;
 }
 
 select {
@@ -170,36 +170,49 @@ function combinations(arr,k){
 function calc(){
     const r=[], f=[];
     for(let i=1;i<=5;i++){
-        r.push(getCheckedValues(`r${i}-horse`));
-        f.push(getCheckedValues(`r${i}-fav`));
+        let horses = getCheckedValues(`r${i}-horse`);
+        let favs = getCheckedValues(`r${i}-fav`);
+        // 紐未選択なら本命を自動補完
+        if(horses.length===0 && favs.length>0) horses = [...favs];
+        r.push(horses);
+        f.push(favs);
     }
+
     const minFav = Number(document.getElementById('minFav').value);
     let totalValid = 0, comboList=[];
 
     for(let k=5;k>=minFav;k--){
         const masks = combinations([0,1,2,3,4], k);
         let validForK = 0;
+
+        // 通り数を計算
         masks.forEach(mask=>{
-            let candidates=[];
+            let candidates = [];
             for(let i=0;i<5;i++){
                 if(mask.includes(i)) candidates.push(f[i]);
                 else candidates.push(r[i].filter(x=>!f[i].includes(x)));
             }
-            validForK += cartesian(candidates).length;
+            if(candidates.every(arr=>arr.length>0)){
+                validForK += cartesian(candidates).length;
+            }
         });
 
         comboList.push(`--- 本命が${k}頭当たる組み合わせ ${validForK}通り ---`);
 
-        masks.forEach(mask=>{
-            let candidates=[];
-            for(let i=0;i<5;i++){
-                if(mask.includes(i)) candidates.push(f[i]);
-                else candidates.push(r[i].filter(x=>!f[i].includes(x)));
-            }
-            // 組み合わせ表示を以前の形式に戻す
-            const line = candidates.map(arr => arr.map(toCircleNumber).join('')).join('-');
-            comboList.push(line);
-        });
+        // 通り数0の場合は組み合わせ表示をスキップ
+        if(validForK > 0){
+            masks.forEach(mask=>{
+                let candidates = [];
+                for(let i=0;i<5;i++){
+                    if(mask.includes(i)) candidates.push(f[i]);
+                    else candidates.push(r[i].filter(x=>!f[i].includes(x)));
+                }
+                if(candidates.every(arr=>arr.length>0)){
+                    const line = candidates.map(arr=>arr.map(toCircleNumber).join('')).join('-');
+                    comboList.push(line);
+                }
+            });
+        }
 
         totalValid += validForK;
     }
