@@ -7,13 +7,64 @@
 <style>
 body { font-family: "Segoe UI", sans-serif; margin: 20px; background: #f9fafb; color: #333; }
 h1 { font-size: 22px; margin-bottom: 15px; }
-.race-row { margin-bottom: 15px; }
-.race-label { font-weight: bold; margin-bottom: 5px; }
-.checks { display: flex; flex-wrap: wrap; }
-.checks label { width: 35px; margin-right: 5px; margin-bottom: 5px; text-align: center; }
+
+.race-row {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 2px solid #cce0ff;
+    border-radius: 8px;
+    background-color: #f0f8ff;
+}
+
+.race-label { font-weight: bold; margin-bottom: 8px; font-size: 18px; }
+
+.checks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.checks label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 55px;  /* 横幅調整 */
+    height: 70px; /* 高さ調整 */
+    font-size: 16px;
+}
+
+.checks input {
+    transform: scale(2.2);
+    margin-bottom: 6px; /* 数字との間隔を広げる */
+}
+
+select {
+    font-size: 18px;
+    padding: 8px 12px;
+}
+
 #result { margin-top: 20px; font-weight: bold; font-size: 18px; }
-#combos { margin-top: 15px; width: 100%; height: 300px; padding: 10px; font-family: monospace; font-size: 16px; overflow: auto; box-sizing: border-box; }
-button { width: 100%; max-width: 300px; padding: 12px; background-color: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+#combos { margin-top: 15px; width: 100%; height: 300px; padding: 10px; font-family: monospace; font-size: 16px; box-sizing: border-box; white-space: pre-wrap; word-wrap: break-word; }
+
+button {
+    width: 100%;
+    max-width: 300px;
+    padding: 14px;
+    background-color: #0078d4;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    margin-top: 10px;
+}
 button:hover { background-color: #005fa3; }
 </style>
 </head>
@@ -40,60 +91,63 @@ button:hover { background-color: #005fa3; }
 <textarea id="combos" readonly placeholder="まとめた買い目がここに表示されます"></textarea>
 
 <script>
-// 数字 → 丸数字
+// 数字 → 丸数字 (1〜18)
 function toCircleNumber(num) {
-    if (num >= 1 && num <= 18) {
-        const circleNums = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩',
-                            '⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
-        return circleNums[num-1];
-    }
+    const circleNums = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩',
+                        '⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
+    if (num >=1 && num <=18) return circleNums[num-1];
     return num.toString();
 }
 
-// チェックボックスを生成
+// チェックボックス生成（本命先）
 function createRaceCheckboxes(raceNum) {
     const container = document.createElement('div');
     container.className = 'race-row';
+
     const label = document.createElement('div');
     label.className = 'race-label';
     label.textContent = `WIN${raceNum}`;
     container.appendChild(label);
 
-    // 馬番チェックボックス
-    const horseDiv = document.createElement('div');
-    horseDiv.textContent = '馬番: ';
-    const horseChecks = document.createElement('span');
-    horseChecks.className = 'checks';
-    for (let i=1; i<=18; i++) {
-        const l = document.createElement('label');
-        l.innerHTML = `<input type="checkbox" class="r${raceNum}-horse" value="${i}"> ${i}`;
-        horseChecks.appendChild(l);
-    }
-    horseDiv.appendChild(horseChecks);
-    container.appendChild(horseDiv);
+    const checksContainer = document.createElement('div');
+    checksContainer.className = 'checks-container';
 
-    // 本命チェックボックス
+    // 本命
     const favDiv = document.createElement('div');
-    favDiv.textContent = '本命: ';
-    const favChecks = document.createElement('span');
-    favChecks.className = 'checks';
-    for (let i=1; i<=18; i++) {
+    favDiv.textContent = '本命:';
+    const favChecks = document.createElement('div');
+    favChecks.className = `checks r${raceNum}-fav`;
+    for (let i=1;i<=18;i++){
         const l = document.createElement('label');
-        l.innerHTML = `<input type="checkbox" class="r${raceNum}-fav" value="${i}"> ${i}`;
+        l.innerHTML = `<input type="checkbox" value="${i}">${i}`;
         favChecks.appendChild(l);
     }
     favDiv.appendChild(favChecks);
-    container.appendChild(favDiv);
+    checksContainer.appendChild(favDiv);
 
+    // 馬番
+    const horseDiv = document.createElement('div');
+    horseDiv.textContent = '紐:';
+    const horseChecks = document.createElement('div');
+    horseChecks.className = `checks r${raceNum}-horse`;
+    for (let i=1;i<=18;i++){
+        const l = document.createElement('label');
+        l.innerHTML = `<input type="checkbox" value="${i}">${i}`;
+        horseChecks.appendChild(l);
+    }
+    horseDiv.appendChild(horseChecks);
+    checksContainer.appendChild(horseDiv);
+
+    container.appendChild(checksContainer);
     document.getElementById('races').appendChild(container);
 }
 
-// 5レース分作る
-for (let i=1; i<=5; i++) createRaceCheckboxes(i);
+// 5レース作成
+for(let i=1;i<=5;i++) createRaceCheckboxes(i);
 
-// チェックボックスから配列取得
+// チェックボックス値取得
 function getCheckedValues(className) {
-    return Array.from(document.querySelectorAll(`.${className}:checked`)).map(i => Number(i.value));
+    return Array.from(document.querySelectorAll(`.${className} input:checked`)).map(i=>Number(i.value));
 }
 
 // デカルト積
@@ -101,52 +155,56 @@ function cartesian(arrays) {
     return arrays.reduce((a,b)=>a.flatMap(d=>b.map(e=>[...d,e])),[[]]);
 }
 
-// n個からk個選ぶ組み合わせ
-function combinations(arr, k){
-    let results = [];
+// n個からk個選ぶ
+function combinations(arr,k){
+    let results=[];
     function helper(start, comb){
-        if (comb.length===k){ results.push([...comb]); return; }
-        for (let i=start;i<arr.length;i++){
-            comb.push(arr[i]);
-            helper(i+1, comb);
-            comb.pop();
-        }
+        if(comb.length===k){ results.push([...comb]); return; }
+        for(let i=start;i<arr.length;i++){ comb.push(arr[i]); helper(i+1,comb); comb.pop(); }
     }
     helper(0,[]);
     return results;
 }
 
-function calc() {
-    const r = [];
-    const f = [];
-    for (let i=1; i<=5; i++) {
+// 計算
+function calc(){
+    const r=[], f=[];
+    for(let i=1;i<=5;i++){
         r.push(getCheckedValues(`r${i}-horse`));
         f.push(getCheckedValues(`r${i}-fav`));
     }
     const minFav = Number(document.getElementById('minFav').value);
-    let valid = 0;
-    let comboList = [];
+    let totalValid = 0, comboList=[];
 
-    for (let k=5; k>=minFav; k--) {
-        comboList.push(`--- 本命が${k}頭当たる組み合わせ ---`);
+    for(let k=5;k>=minFav;k--){
         const masks = combinations([0,1,2,3,4], k);
-        masks.forEach(mask => {
-            let candidates = [];
-            for (let i=0;i<5;i++){
-                if (mask.includes(i)) {
-                    candidates.push(f[i]);
-                } else {
-                    candidates.push(r[i].filter(x=>!f[i].includes(x)));
-                }
+        let validForK = 0;
+        masks.forEach(mask=>{
+            let candidates=[];
+            for(let i=0;i<5;i++){
+                if(mask.includes(i)) candidates.push(f[i]);
+                else candidates.push(r[i].filter(x=>!f[i].includes(x)));
             }
-            comboList.push(candidates.map(arr=>arr.map(toCircleNumber).join('')).join('-'));
-            valid += cartesian(candidates).length;
+            validForK += cartesian(candidates).length;
         });
+
+        comboList.push(`--- 本命が${k}頭当たる組み合わせ ${validForK}通り ---`);
+
+        masks.forEach(mask=>{
+            let candidates=[];
+            for(let i=0;i<5;i++){
+                if(mask.includes(i)) candidates.push(f[i]);
+                else candidates.push(r[i].filter(x=>!f[i].includes(x)));
+            }
+            // 組み合わせ表示を以前の形式に戻す
+            const line = candidates.map(arr => arr.map(toCircleNumber).join('')).join('-');
+            comboList.push(line);
+        });
+
+        totalValid += validForK;
     }
 
-    document.getElementById('result').innerHTML =
-        `買い目：<span style="color:#0078d4;">${valid.toLocaleString()}</span> 通り`;
-
+    document.getElementById('result').innerHTML = `総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
     document.getElementById('combos').value = comboList.join('\n');
 }
 </script>
