@@ -60,8 +60,60 @@ select {
     padding: 8px 12px;
 }
 
-#result { margin-top: 20px; font-weight: bold; font-size: 18px; }
-#combos { margin-top: 15px; width: 100%; height: 300px; padding: 10px; font-family: monospace; font-size: 16px; box-sizing: border-box; white-space: pre-wrap; word-wrap: break-word; }
+#result { 
+    margin-top: 20px; 
+    font-weight: bold; 
+    font-size: 18px; 
+}
+
+#result-container {
+    margin-top: 15px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.copy-btn {
+    padding: 8px 14px;
+    font-size: 14px;
+    background-color: #0078d4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.copy-btn:hover { background-color: #005fa3; }
+
+#combos {
+    margin-top: 10px;
+    width: 100%;
+    min-height: 150px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 16px;
+    box-sizing: border-box;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    resize: none;
+}
+
+.toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 1000;
+}
+.toast.show { opacity: 1; }
 
 button.calc-btn {
     width: 100%;
@@ -97,8 +149,14 @@ button.calc-btn:hover { background-color: #005fa3; }
 
 <button class="calc-btn" onclick="calc()">計算する</button>
 
-<div id="result"></div>
+<div id="result-container">
+  <div id="result"></div>
+  <button class="copy-btn" onclick="copyCombos()">コピー</button>
+</div>
+
 <textarea id="combos" readonly placeholder="まとめた買い目がここに表示されます"></textarea>
+
+<div id="toast" class="toast">コピーしました！</div>
 
 <script>
 // 数字 → 丸数字 (1〜18)
@@ -109,7 +167,7 @@ function toCircleNumber(num) {
     return num.toString();
 }
 
-// チェックボックス生成（本命先）
+// チェックボックス生成
 function createRaceCheckboxes(raceNum) {
     const container = document.createElement('div');
     container.className = 'race-row';
@@ -132,8 +190,6 @@ function createRaceCheckboxes(raceNum) {
         l.innerHTML = `<input type="checkbox" value="${i}">${i}`;
         favChecks.appendChild(l);
     }
-
-    // 本命用ボタン
     const favButtons = document.createElement('div');
     favButtons.className = 'check-buttons';
     favButtons.innerHTML = `<button type="button" onclick="checkAll('r${raceNum}-fav')">全てチェック</button>
@@ -141,7 +197,7 @@ function createRaceCheckboxes(raceNum) {
     favDiv.appendChild(favChecks);
     favDiv.appendChild(favButtons);
 
-    // 馬番
+    // 紐
     const horseDiv = document.createElement('div');
     horseDiv.textContent = '紐';
     const horseChecks = document.createElement('div');
@@ -151,8 +207,6 @@ function createRaceCheckboxes(raceNum) {
         l.innerHTML = `<input type="checkbox" value="${i}">${i}`;
         horseChecks.appendChild(l);
     }
-
-    // 紐用ボタン
     const horseButtons = document.createElement('div');
     horseButtons.className = 'check-buttons';
     horseButtons.innerHTML = `<button type="button" onclick="checkAll('r${raceNum}-horse')">全てチェック</button>
@@ -162,7 +216,6 @@ function createRaceCheckboxes(raceNum) {
 
     checksContainer.appendChild(favDiv);
     checksContainer.appendChild(horseDiv);
-
     container.appendChild(checksContainer);
     document.getElementById('races').appendChild(container);
 }
@@ -170,15 +223,9 @@ function createRaceCheckboxes(raceNum) {
 // 5レース作成
 for(let i=1;i<=5;i++) createRaceCheckboxes(i);
 
-// 全てチェック
-function checkAll(className){
-    document.querySelectorAll(`.${className} input`).forEach(input => input.checked = true);
-}
-
-// 全て解除
-function uncheckAll(className){
-    document.querySelectorAll(`.${className} input`).forEach(input => input.checked = false);
-}
+// チェック操作
+function checkAll(className){ document.querySelectorAll(`.${className} input`).forEach(i=>i.checked=true); }
+function uncheckAll(className){ document.querySelectorAll(`.${className} input`).forEach(i=>i.checked=false); }
 
 // チェックボックス値取得
 function getCheckedValues(className) {
@@ -207,7 +254,7 @@ function calc(){
     for(let i=1;i<=5;i++){
         let horses = getCheckedValues(`r${i}-horse`);
         let favs = getCheckedValues(`r${i}-fav`);
-        if(horses.length===0 && favs.length>0) horses = [...favs]; // 紐未選択なら本命補完
+        if(horses.length===0 && favs.length>0) horses = [...favs];
         r.push(horses);
         f.push(favs);
     }
@@ -248,7 +295,24 @@ function calc(){
     }
 
     document.getElementById('result').innerHTML = `総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
-    document.getElementById('combos').value = comboList.join('\n');
+    
+    const combosArea = document.getElementById('combos');
+    combosArea.value = comboList.join('\n');
+
+    // 内容に応じて高さ自動調整
+    combosArea.style.height = 'auto';
+    combosArea.style.height = combosArea.scrollHeight + 'px';
+}
+
+// コピー機能（トースト表示）
+function copyCombos() {
+    const textarea = document.getElementById('combos');
+    textarea.select();
+    document.execCommand('copy');
+
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'), 3000);
 }
 </script>
 
