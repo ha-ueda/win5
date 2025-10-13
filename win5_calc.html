@@ -302,15 +302,29 @@ function calc(){
     combosArea.style.height = combosArea.scrollHeight + 'px';
 }
 
-// コピー機能（トースト表示）
+// コピー機能（トースト表示：選択状態にならない）
 function copyCombos() {
     const textarea = document.getElementById('combos');
-    textarea.select();
-    document.execCommand('copy');
+    const text = textarea.value;
 
-    const toast = document.getElementById('toast');
-    toast.classList.add('show');
-    setTimeout(()=>toast.classList.remove('show'), 3000);
+    // 選択せずにクリップボードへコピー
+    navigator.clipboard.writeText(text).then(() => {
+        const toast = document.getElementById('toast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }).catch(() => {
+        // navigator.clipboard が使えない場合のフォールバック
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+
+        const toast = document.getElementById('toast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    });
 }
 </script>
 
