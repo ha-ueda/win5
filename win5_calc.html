@@ -161,11 +161,12 @@ button.calc-btn:hover { background-color: #005fa3; }
 <script>
 // 数字 → 丸数字 (1〜18)
 function toCircleNumber(num) {
-    const circleNums = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩',
-                        '⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
-    if (num >=1 && num <=18) return circleNums[num-1];
-    return num.toString();
+    const circleNums = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
+    return (num >= 1 && num <= 18) ? circleNums[num - 1] : String(num);
 }
+
+const TOTAL_RACES = 5;
+const HORSE_MAX = 18;
 
 // チェックボックス生成
 function createRaceCheckboxes(raceNum) {
@@ -180,152 +181,176 @@ function createRaceCheckboxes(raceNum) {
     const checksContainer = document.createElement('div');
     checksContainer.className = 'checks-container';
 
-    // 本命
-    const favDiv = document.createElement('div');
-    favDiv.textContent = '本命';
-    const favChecks = document.createElement('div');
-    favChecks.className = `checks r${raceNum}-fav`;
-    for (let i=1;i<=18;i++){
-        const l = document.createElement('label');
-        l.innerHTML = `<input type="checkbox" value="${i}">${toCircleNumber(i)}`;
-        favChecks.appendChild(l);
-    }
-    const favButtons = document.createElement('div');
-    favButtons.className = 'check-buttons';
-    favButtons.innerHTML = `<button type="button" onclick="checkAll('r${raceNum}-fav')">全てチェック</button>
-                            <button type="button" onclick="uncheckAll('r${raceNum}-fav')">全て解除</button>`;
-    favDiv.appendChild(favChecks);
-    favDiv.appendChild(favButtons);
+    for (const type of ['fav', 'horse']) {
+        const div = document.createElement('div');
+        div.textContent = type === 'fav' ? '本命' : '紐';
+        const checks = document.createElement('div');
+        checks.className = `checks r${raceNum}-${type}`;
 
-    // 紐
-    const horseDiv = document.createElement('div');
-    horseDiv.textContent = '紐';
-    const horseChecks = document.createElement('div');
-    horseChecks.className = `checks r${raceNum}-horse`;
-    for (let i=1;i<=18;i++){
-        const l = document.createElement('label');
-        l.innerHTML = `<input type="checkbox" value="${i}">${toCircleNumber(i)}`;
-        horseChecks.appendChild(l);
-    }
-    const horseButtons = document.createElement('div');
-    horseButtons.className = 'check-buttons';
-    horseButtons.innerHTML = `<button type="button" onclick="checkAll('r${raceNum}-horse')">全てチェック</button>
-                              <button type="button" onclick="uncheckAll('r${raceNum}-horse')">全て解除</button>`;
-    horseDiv.appendChild(horseChecks);
-    horseDiv.appendChild(horseButtons);
+        for (let i = 1; i <= HORSE_MAX; i++) {
+            const l = document.createElement('label');
+            l.innerHTML = `<input type="checkbox" value="${i}">${toCircleNumber(i)}`;
+            checks.appendChild(l);
+        }
 
-    checksContainer.appendChild(favDiv);
-    checksContainer.appendChild(horseDiv);
+        const btns = document.createElement('div');
+        btns.className = 'check-buttons';
+        btns.innerHTML = `
+          <button type="button" onclick="checkAll('r${raceNum}-${type}')">全てチェック</button>
+          <button type="button" onclick="uncheckAll('r${raceNum}-${type}')">全て解除</button>`;
+        div.appendChild(checks);
+        div.appendChild(btns);
+        checksContainer.appendChild(div);
+    }
+
     container.appendChild(checksContainer);
     document.getElementById('races').appendChild(container);
 }
 
-// 5レース作成
-for(let i=1;i<=5;i++) createRaceCheckboxes(i);
+// 全レース生成
+for (let i = 1; i <= TOTAL_RACES; i++) createRaceCheckboxes(i);
 
 // チェック操作
-function checkAll(className){ document.querySelectorAll(`.${className} input`).forEach(i=>i.checked=true); }
-function uncheckAll(className){ document.querySelectorAll(`.${className} input`).forEach(i=>i.checked=false); }
+function checkAll(className) {
+    document.querySelectorAll(`.${className} input`).forEach(i => i.checked = true);
+    saveState();
+}
+function uncheckAll(className) {
+    document.querySelectorAll(`.${className} input`).forEach(i => i.checked = false);
+    saveState();
+}
 
 // チェックボックス値取得
 function getCheckedValues(className) {
-    return Array.from(document.querySelectorAll(`.${className} input:checked`)).map(i=>Number(i.value));
+    return Array.from(document.querySelectorAll(`.${className} input:checked`)).map(i => Number(i.value));
 }
 
 // デカルト積
 function cartesian(arrays) {
-    return arrays.reduce((a,b)=>a.flatMap(d=>b.map(e=>[...d,e])),[[]]);
+    return arrays.reduce((a, b) => a.flatMap(d => b.map(e => [...d, e])), [[]]);
 }
 
 // n個からk個選ぶ
-function combinations(arr,k){
-    let results=[];
-    function helper(start, comb){
-        if(comb.length===k){ results.push([...comb]); return; }
-        for(let i=start;i<arr.length;i++){ comb.push(arr[i]); helper(i+1,comb); comb.pop(); }
+function combinations(arr, k) {
+    const res = [];
+    function helper(start, comb) {
+        if (comb.length === k) { res.push([...comb]); return; }
+        for (let i = start; i < arr.length; i++) {
+            comb.push(arr[i]);
+            helper(i + 1, comb);
+            comb.pop();
+        }
     }
-    helper(0,[]);
-    return results;
+    helper(0, []);
+    return res;
 }
 
+// 状態保存
+function saveState() {
+    const state = { races: {}, minFav: document.getElementById('minFav').value };
+    for (let i = 1; i <= TOTAL_RACES; i++) {
+        state.races[`r${i}`] = {
+            fav: getCheckedValues(`r${i}-fav`),
+            horse: getCheckedValues(`r${i}-horse`)
+        };
+    }
+    localStorage.setItem('win5_state', JSON.stringify(state));
+}
+
+// 状態復元
+function restoreState() {
+    const data = localStorage.getItem('win5_state');
+    if (!data) return;
+    try {
+        const state = JSON.parse(data);
+        if (state.minFav) document.getElementById('minFav').value = state.minFav;
+        for (let i = 1; i <= TOTAL_RACES; i++) {
+            const race = state.races[`r${i}`];
+            if (!race) continue;
+            for (const type of ['fav', 'horse']) {
+                const values = race[type] || [];
+                document.querySelectorAll(`.r${i}-${type} input`).forEach(i => {
+                    i.checked = values.includes(Number(i.value));
+                });
+            }
+        }
+    } catch(e) { console.error('restore error', e); }
+}
+
+// 入力変化で保存
+document.addEventListener('change', e => {
+    if (e.target.matches('input[type="checkbox"], #minFav')) saveState();
+});
+
 // 計算
-function calc(){
-    const r=[], f=[];
-    for(let i=1;i<=5;i++){
+function calc() {
+    const r = [], f = [];
+    for (let i = 1; i <= TOTAL_RACES; i++) {
         let horses = getCheckedValues(`r${i}-horse`);
         let favs = getCheckedValues(`r${i}-fav`);
-        if(horses.length===0 && favs.length>0) horses = [...favs];
+        if (horses.length === 0 && favs.length > 0) horses = [...favs];
         r.push(horses);
         f.push(favs);
     }
 
     const minFav = Number(document.getElementById('minFav').value);
-    let totalValid = 0, comboList=[];
+    let totalValid = 0, comboList = [];
 
-    for(let k=5;k>=minFav;k--){
-        const masks = combinations([0,1,2,3,4], k);
+    for (let k = TOTAL_RACES; k >= minFav; k--) {
+        const masks = combinations([...Array(TOTAL_RACES).keys()], k);
         let validForK = 0;
 
-        masks.forEach(mask=>{
-            let candidates = [];
-            for(let i=0;i<5;i++){
-                if(mask.includes(i)) candidates.push(f[i]);
-                else candidates.push(r[i].filter(x=>!f[i].includes(x)));
+        masks.forEach(mask => {
+            const candidates = [];
+            for (let i = 0; i < TOTAL_RACES; i++) {
+                if (mask.includes(i)) candidates.push(f[i]);
+                else candidates.push(r[i].filter(x => !f[i].includes(x)));
             }
-            if(candidates.every(arr=>arr.length>0)) validForK += cartesian(candidates).length;
+            if (candidates.every(arr => arr.length > 0)) validForK += cartesian(candidates).length;
         });
 
         comboList.push(`--- 本命が${k}頭当たる組み合わせ ${validForK}通り ---`);
 
-        if(validForK > 0){
-            masks.forEach(mask=>{
-                let candidates = [];
-                for(let i=0;i<5;i++){
-                    if(mask.includes(i)) candidates.push(f[i]);
-                    else candidates.push(r[i].filter(x=>!f[i].includes(x)));
-                }
-                if(candidates.every(arr=>arr.length>0)){
-                    const line = candidates.map(arr=>arr.map(toCircleNumber).join('')).join('-');
-                    comboList.push(line);
-                }
-            });
-        }
+        masks.forEach(mask => {
+            const candidates = [];
+            for (let i = 0; i < TOTAL_RACES; i++) {
+                if (mask.includes(i)) candidates.push(f[i]);
+                else candidates.push(r[i].filter(x => !f[i].includes(x)));
+            }
+            if (candidates.every(arr => arr.length > 0)) {
+                const line = candidates.map(arr => arr.map(toCircleNumber).join('')).join('-');
+                comboList.push(line);
+            }
+        });
 
         totalValid += validForK;
     }
 
-    document.getElementById('result').innerHTML = `総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
-    
+    document.getElementById('result').innerHTML =
+        `総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
+
     const combosArea = document.getElementById('combos');
     combosArea.value = comboList.join('\n');
     combosArea.style.height = 'auto';
     combosArea.style.height = combosArea.scrollHeight + 'px';
+
+    saveState(); // 計算後も保存
 }
 
-// コピー機能（トースト表示：選択状態にならない）
+// コピー機能（トースト表示）
 function copyCombos() {
     const textarea = document.getElementById('combos');
     const text = textarea.value;
-
-    // 選択せずにクリップボードへコピー
     navigator.clipboard.writeText(text).then(() => {
         const toast = document.getElementById('toast');
+        toast.textContent = 'コピーしました';
         toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3000);
-    }).catch(() => {
-        // navigator.clipboard が使えない場合のフォールバック
-        const temp = document.createElement('textarea');
-        temp.value = text;
-        document.body.appendChild(temp);
-        temp.select();
-        document.execCommand('copy');
-        document.body.removeChild(temp);
-
-        const toast = document.getElementById('toast');
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3000);
+        setTimeout(() => toast.classList.remove('show'), 2000);
     });
 }
+
+// ページ読み込み時に復元
+restoreState();
 </script>
 
 </body>
