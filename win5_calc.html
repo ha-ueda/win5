@@ -7,34 +7,75 @@
 <style>
 body { font-family: "Segoe UI", sans-serif; margin: 20px; background: #f9fafb; color: #333; }
 h1 { font-size: 22px; margin-bottom: 15px; }
-.race-row { margin-bottom: 15px; padding: 10px; border: 2px solid #cce0ff; border-radius: 8px; background-color: #f0f8ff; }
-.race-label { font-weight: bold; margin-bottom: 8px; font-size: 18px; }
-.checks-container { display: flex; flex-direction: column; gap: 8px; }
-.checks { display: flex; flex-wrap: wrap; gap: 6px; }
-.checks label { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 55px; height: 70px; font-size: 20px; transition: background 0.2s; }
-.checks input { transform: scale(2.2); margin-bottom: 6px; }
-.check-buttons { margin-top: 6px; }
-.check-buttons button { margin-right: 6px; padding: 4px 8px; font-size: 14px; }
-select { font-size: 18px; padding: 8px 12px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #cce0ff; padding: 4px; text-align: center; font-size: 18px; }
+th { background-color: #e0f0ff; font-weight: bold; }
+td:first-child { font-weight: bold; }
+
+/* カスタムプルダウン */
+.custom-select { position: relative; width: 40px; cursor: pointer; margin: 0 auto; display: inline-block;}
+.selected { background-color: white; border: 1px solid #aaa; border-radius: 4px; padding: 4px 2px; text-align: center; }
+.options { display: none; position: absolute; top: 100%; left: 0; background: white; border: 1px solid #aaa; border-radius: 4px; z-index: 100; width: 100%; }
+.option { padding: 4px 0; text-align: center; }
+.option:hover { background-color: #cce0ff; }
+
+/* 結果表示 */
 #result { margin-top: 20px; font-weight: bold; font-size: 18px; }
-#result-container { margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
-.copy-btn { padding: 8px 14px; font-size: 14px; background-color: #0078d4; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
-.copy-btn:hover { background-color: #005fa3; }
-#combos { margin-top: 10px; width: 100%; min-height: 150px; padding: 10px; font-family: monospace; font-size: 16px; box-sizing: border-box; white-space: pre-wrap; resize: none; }
-.toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 6px; font-size: 16px; opacity: 0; transition: opacity 0.3s; z-index: 1000; }
-.toast.show { opacity: 1; }
-button.calc-btn { width: 100%; max-width: 300px; padding: 14px; background-color: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 18px; margin-top: 10px; }
+button.calc-btn { padding: 10px 16px; margin-top: 10px; font-size: 16px; background-color: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; }
 button.calc-btn:hover { background-color: #005fa3; }
+#combos { margin-top: 10px; width: 100%; min-height: 150px; padding: 6px; font-family: monospace; font-size: 14px; box-sizing: border-box; white-space: pre-wrap; word-wrap: break-word; resize: none; }
+
+/* クリアボタン */
+.clear-btn {
+    padding: 4px 6px;
+    font-size: 18px;
+    background-color: #edebe5;
+    color: #444;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* フッターセル折り返し防止 */
+tfoot td {
+    white-space: nowrap;
+    padding: 2px;
+}
 </style>
 </head>
 <body>
 
 <h1>WIN5 本命あり買い目計算ツール</h1>
-<div id="races"></div>
 
-<div style="margin-top:15px;">
+<table id="raceTable">
+<thead>
+<tr>
+<th>馬番</th>
+<th>WIN1</th>
+<th>WIN2</th>
+<th>WIN3</th>
+<th>WIN4</th>
+<th>WIN5</th>
+</tr>
+</thead>
+<tbody id="raceBody"></tbody>
+<tfoot>
+<tr>
+<td></td>
+<td><button class="clear-btn" onclick="clearColumn(1)">クリア</button></td>
+<td><button class="clear-btn" onclick="clearColumn(2)">クリア</button></td>
+<td><button class="clear-btn" onclick="clearColumn(3)">クリア</button></td>
+<td><button class="clear-btn" onclick="clearColumn(4)">クリア</button></td>
+<td><button class="clear-btn" onclick="clearColumn(5)">クリア</button></td>
+</tr>
+</tfoot>
+</table>
+
+<div style="margin-top:16px;">
 本命が最低
-<select id="minFav">
+<select id="minFav" style="font-size: 16px;">
 <option value="1" selected>1</option>
 <option value="2">2</option>
 <option value="3">3</option>
@@ -44,254 +85,207 @@ button.calc-btn:hover { background-color: #005fa3; }
 </div>
 
 <button class="calc-btn" onclick="calc()">計算する</button>
-
-<div id="result-container">
-  <div id="result"></div>
-  <button class="copy-btn" onclick="copyCombos()">コピー</button>
-</div>
-
+<div id="result"></div>
 <textarea id="combos" readonly placeholder="まとめた買い目がここに表示されます"></textarea>
-<div id="toast" class="toast">コピーしました！</div>
 
 <script>
+const TOTAL_RACES = 5;
+const HORSE_MAX = 18;
+const MARKS = ["--", "◎", "◯", "▲", "△", "★", "☆", "✓"];
+
 function toCircleNumber(num) {
-    const n=['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
-    return n[num-1]||num.toString();
-}
-function createRaceCheckboxes(raceNum){
-    const c=document.createElement('div'); c.className='race-row';
-    const l=document.createElement('div'); l.className='race-label'; l.textContent=`WIN${raceNum}`; c.appendChild(l);
-    const cc=document.createElement('div'); cc.className='checks-container';
-    const favDiv=document.createElement('div'); favDiv.textContent='本命';
-    const favChecks=document.createElement('div'); favChecks.className=`checks r${raceNum}-fav`;
-    for(let i=1;i<=18;i++){const lab=document.createElement('label'); lab.innerHTML=`<input type="checkbox" value="${i}">${toCircleNumber(i)}`; favChecks.appendChild(lab);}
-    const favBtns=document.createElement('div'); favBtns.className='check-buttons';
-    favBtns.innerHTML=`<button type="button" onclick="checkAll('r${raceNum}-fav')">全てチェック</button><button type="button" onclick="uncheckAll('r${raceNum}-fav')">全て解除</button>`;
-    favDiv.append(favChecks,favBtns);
-    const horseDiv=document.createElement('div'); horseDiv.textContent='紐';
-    const horseChecks=document.createElement('div'); horseChecks.className=`checks r${raceNum}-horse`;
-    for(let i=1;i<=18;i++){const lab=document.createElement('label'); lab.innerHTML=`<input type="checkbox" value="${i}">${toCircleNumber(i)}`; horseChecks.appendChild(lab);}
-    const horseBtns=document.createElement('div'); horseBtns.className='check-buttons';
-    horseBtns.innerHTML=`<button type="button" onclick="checkAll('r${raceNum}-horse')">全てチェック</button><button type="button" onclick="uncheckAll('r${raceNum}-horse')">全て解除</button>`;
-    horseDiv.append(horseChecks,horseBtns);
-    cc.append(favDiv,horseDiv); c.appendChild(cc); document.getElementById('races').appendChild(c);
-}
-for(let i=1;i<=5;i++)createRaceCheckboxes(i);
-
-function checkAll(cls){document.querySelectorAll(`.${cls} input`).forEach(i=>i.checked=true);saveStateDebounced();}
-function uncheckAll(cls){document.querySelectorAll(`.${cls} input`).forEach(i=>i.checked=false);saveStateDebounced();}
-function getCheckedValues(cls){return Array.from(document.querySelectorAll(`.${cls} input:checked`)).map(i=>Number(i.value));}
-function combinations(arr,k){let res=[];function h(s,c){if(c.length===k){res.push([...c]);return;}for(let i=s;i<arr.length;i++){c.push(arr[i]);h(i+1,c);c.pop();}}h(0,[]);return res;}
-
-// === 色を正規化して取得するヘルパー ===
-function getLabelColorNormalized(label){
-    if(!label) return '';
-    const c = window.getComputedStyle(label).backgroundColor || '';
-    // 'rgba(0, 0, 0, 0)' や 'transparent' を空扱いにする
-    if(!c || c === 'transparent' || c === 'rgba(0, 0, 0, 0)') return '';
-    return c; // 例: "rgb(255, 182, 182)"
+    const circleNums = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
+    return (num>=1&&num<=18)?circleNums[num-1]:String(num);
 }
 
-// === 色重複フィルタ（組合せの通り数を返す） ===
-function filterByColor(candidates, colors){
-    let count = 0;
-    function dfs(depth, usedColors){
-        if(depth === candidates.length){ count++; return; }
-        for(const h of candidates[depth]){
-            const color = colors[depth][h] || ''; // h は馬番（数値）
-            if(color && usedColors.has(color)) continue; // 同色が既に使われているならスキップ
-            const nextSet = color ? new Set(usedColors).add(color) : new Set(usedColors);
-            // new Set(...).add() returns the set itself, so we clone properly:
-            const cloned = new Set(usedColors);
-            if(color) cloned.add(color);
-            dfs(depth + 1, cloned);
+// カスタムプルダウン作成
+function createCustomSelect(raceNum, horseNum) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "custom-select";
+    wrapper.dataset.race = raceNum;
+    wrapper.dataset.horse = horseNum;
+
+    const selected = document.createElement("div");
+    selected.className = "selected";
+    selected.textContent = "--";
+    selected.style.color = "#333";           
+    selected.style.backgroundColor = "#fff"; 
+
+    const options = document.createElement("div");
+    options.className = "options";
+
+    MARKS.forEach(mark => {
+        const opt = document.createElement("div");
+        opt.className = "option";
+        opt.textContent = mark;
+        opt.addEventListener("click", e => {
+            selected.textContent = mark;
+            if(mark === "--") {
+                selected.style.color = "#333";
+                selected.style.backgroundColor = "#fff";
+            } else {
+                selected.style.color = "#fff";
+                selected.style.backgroundColor = "#ef5350";
+            }
+            options.style.display = "none";
+            saveState();
+        });
+        options.appendChild(opt);
+    });
+
+    selected.addEventListener("click", e => {
+        e.stopPropagation();
+        document.querySelectorAll(".options").forEach(o => o.style.display = "none");
+        options.style.display = "block";
+    });
+
+    wrapper.appendChild(selected);
+    wrapper.appendChild(options);
+    return wrapper;
+}
+
+// テーブル作成
+function createTable() {
+    const tbody = document.getElementById('raceBody');
+    for (let i=1;i<=HORSE_MAX;i++){
+        const tr = document.createElement('tr');
+        const tdNum = document.createElement('td');
+        tdNum.textContent = toCircleNumber(i);
+        tr.appendChild(tdNum);
+
+        for (let r=1;r<=TOTAL_RACES;r++){
+            const td = document.createElement('td');
+            td.appendChild(createCustomSelect(r,i));
+            tr.appendChild(td);
         }
+        tbody.appendChild(tr);
     }
-    dfs(0, new Set());
-    return count;
 }
+
+// 状態保存
+function saveState(){
+    const state={races:{},minFav:document.getElementById('minFav').value};
+    for(let r=1;r<=TOTAL_RACES;r++){
+        state.races[`r${r}`]={};
+        document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
+            const selectedDiv = sel.querySelector('.selected');
+            state.races[`r${r}`][sel.dataset.horse] = {
+                mark: selectedDiv.textContent,
+                color: selectedDiv.style.color,
+                bg: selectedDiv.style.backgroundColor
+            };
+        });
+    }
+    localStorage.setItem('win5_state_v4',JSON.stringify(state));
+}
+
+// 状態復元
+function restoreState(){
+    const data=localStorage.getItem('win5_state_v4');
+    if(!data) return;
+    try{
+        const state=JSON.parse(data);
+        if(state.minFav) document.getElementById('minFav').value=state.minFav;
+        for(let r=1;r<=TOTAL_RACES;r++){
+            const race=state.races[`r${r}`];
+            if(!race) continue;
+            document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
+                const val=race[sel.dataset.horse];
+                if(val){
+                    const selectedDiv = sel.querySelector('.selected');
+                    selectedDiv.textContent = val.mark;
+                    selectedDiv.style.color = val.color;
+                    selectedDiv.style.backgroundColor = val.bg;
+                }
+            });
+        }
+    }catch(e){console.error(e);}
+}
+
+// 列クリア機能
+function clearColumn(colNum){
+    document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel=>{
+        const selectedDiv = sel.querySelector('.selected');
+        selectedDiv.textContent = "--";
+        selectedDiv.style.color = "#333";
+        selectedDiv.style.backgroundColor = "#fff";
+    });
+    saveState();
+}
+
+// 組み合わせ取得
+function getRaceData(r){
+    const favs=[], himo=[];
+    document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
+        const val=sel.querySelector('.selected').textContent;
+        if(val==="◎") favs.push(Number(sel.dataset.horse));
+        if(val==="✓") himo.push(Number(sel.dataset.horse));
+    });
+    const all=[...new Set([...favs,...himo])];
+    return {fav:favs, horse:all};
+}
+
+function cartesian(arrays){ return arrays.reduce((a,b)=>a.flatMap(d=>b.map(e=>[...d,e])),[[]]); }
+function combinations(arr,k){ const res=[]; function helper(s,comb){ if(comb.length===k){ res.push([...comb]); return; } for(let i=s;i<arr.length;i++){ comb.push(arr[i]); helper(i+1,comb); comb.pop(); } } helper(0,[]); return res; }
 
 function calc(){
-    const r = [], f = [], colors = [];
-
-    // 各レースのデータ・色を収集
-    for(let i=1;i<=5;i++){
-        let horses = getCheckedValues(`r${i}-horse`);
-        let favs = getCheckedValues(`r${i}-fav`);
-        if(horses.length===0 && favs.length>0) horses = [...favs];
-        r.push(horses);
-        f.push(favs);
-
-        const raceColors = {};
-        const favLabels = Array.from(document.querySelectorAll(`.r${i}-fav label`));
-        const horseLabels = Array.from(document.querySelectorAll(`.r${i}-horse label`));
-        for(let num=1; num<=18; num++){
-            const favLabel = favLabels[num-1];
-            const horseLabel = horseLabels[num-1];
-            const favColor = getLabelColorNormalized(favLabel);
-            const horseColor = getLabelColorNormalized(horseLabel);
-            raceColors[num] = favColor || horseColor || '';
-        }
-        colors.push(raceColors);
+    const r=[],f=[];
+    for(let i=1;i<=TOTAL_RACES;i++){
+        const data=getRaceData(i);
+        r.push(data.horse);
+        f.push(data.fav);
     }
-
-    const minFav = Number(document.getElementById('minFav').value);
-    const raceIdxs = [0,1,2,3,4];
-    let totalValid = 0;
-    const comboList = [];
-
-    // デカルト積（色重複を除外）
-    function dfsGenerate(candidates, colors){
-        const result = [];
-        const n = candidates.length;
-
-        function dfs(depth, usedColors, path){
-            if(depth === n){
-                result.push([...path]);
-                return;
+    const minFav=Number(document.getElementById('minFav').value);
+    let totalValid=0, comboList=[];
+    for(let k=TOTAL_RACES;k>=minFav;k--){
+        const masks=combinations([...Array(TOTAL_RACES).keys()],k);
+        let validForK=0;
+        masks.forEach(mask=>{
+            const candidates=[];
+            for(let i=0;i<TOTAL_RACES;i++){
+                if(mask.includes(i)) candidates.push(f[i]);
+                else candidates.push(r[i].filter(x=>!f[i].includes(x)));
             }
-            const list = candidates[depth];
-            if(!Array.isArray(list)) return;
-            for(const h of list){
-                const color = colors[depth][h] || '';
-                if(color && usedColors.has(color)) continue; // 同色除外
-                const next = new Set(usedColors);
-                if(color) next.add(color);
-                path.push(h);
-                dfs(depth+1, next, path);
-                path.pop();
-            }
-        }
-        dfs(0, new Set(), []);
-        return result;
-    }
-
-    // メイン計算
-    for(let k=5;k>=minFav;k--){
-        const masks = combinations(raceIdxs, k);
-        let validForK = 0;
-        const compactPatterns = new Set();
-
-        for(const mask of masks){
-            const candidates = [];
-            for(let i=0;i<5;i++){
-                const pool = mask.includes(i)
-                    ? f[i]
-                    : r[i].filter(x => !f[i].includes(x));
-                if(pool.length === 0){
-                    candidates.length = 0;
-                    break;
-                }
-                candidates.push(pool);
-            }
-            if(candidates.length < 5) continue;
-
-            const validCombos = dfsGenerate(candidates, colors);
-            if(validCombos.length === 0) continue;
-            validForK += validCombos.length;
-
-            // 有効な組合せに基づいて、各レースの候補馬番を集約
-            const raceSets = Array.from({length:5},()=>new Set());
-            validCombos.forEach(cmb=>{
-                cmb.forEach((num,idx)=>raceSets[idx].add(num));
-            });
-
-            const line = raceSets
-                .map(set => Array.from(set).sort((a,b)=>a-b).map(toCircleNumber).join(''))
-                .join('-');
-            compactPatterns.add(line);
-        }
-
-        comboList.push(`--- 本命が${k}頭当たる組み合わせ ${validForK.toLocaleString()}通り ---`);
-        if(compactPatterns.size>0) comboList.push(...compactPatterns);
-        totalValid += validForK;
-    }
-
-    document.getElementById('result').innerHTML =
-        `総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
-
-    const combosArea = document.getElementById('combos');
-    combosArea.value = comboList.join('\n');
-    combosArea.style.height = 'auto';
-    combosArea.style.height = combosArea.scrollHeight + 'px';
-}
-
-// 背景色正規化
-function getLabelColorNormalized(label){
-    if(!label) return '';
-    const color = (label.style.background || '').trim().toLowerCase();
-    if(!color || color === 'white' || color === '#ffffff') return '';
-    return color;
-}
-
-// === コピー ===
-function copyCombos(){navigator.clipboard.writeText(document.getElementById('combos').value).then(()=>showToast());}
-function showToast(){const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
-
-// === 状態保存 ===
-function saveState(){
-    const s={races:[]};
-    for(let i=1;i<=5;i++){
-        const race={fav:[],horse:[]};
-        document.querySelectorAll(`.r${i}-fav label`).forEach(l=>{
-            const input=l.querySelector('input');
-            race.fav.push({checked:input.checked,color:l.style.background||''});
+            if(candidates.every(a=>a.length>0)) validForK+=cartesian(candidates).length;
         });
-        document.querySelectorAll(`.r${i}-horse label`).forEach(l=>{
-            const input=l.querySelector('input');
-            race.horse.push({checked:input.checked,color:l.style.background||''});
+        comboList.push(`--- 本命が${k}頭当たる組み合わせ ${validForK}通り ---`);
+        masks.forEach(mask=>{
+            const candidates=[];
+            for(let i=0;i<TOTAL_RACES;i++){
+                if(mask.includes(i)) candidates.push(f[i]);
+                else candidates.push(r[i].filter(x=>!f[i].includes(x)));
+            }
+            if(candidates.every(a=>a.length>0)){
+                const line=candidates.map(a=>a.map(n=>toCircleNumber(n)).join('')).join('-');
+                comboList.push(line);
+            }
         });
-        s.races.push(race);
+        totalValid+=validForK;
     }
-    s.minFav=document.getElementById('minFav').value;
-    localStorage.setItem('win5state',JSON.stringify(s));
+    document.getElementById('result').innerHTML=`総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
+    const combosArea=document.getElementById('combos');
+    combosArea.value=comboList.join('\n');
+    combosArea.style.height='auto';
+    combosArea.style.height=combosArea.scrollHeight+'px';
+    saveState();
 }
-function loadState(){
-    const d=localStorage.getItem('win5state');if(!d)return;
-    const s=JSON.parse(d);
-    if(s.races){for(let i=1;i<=5;i++){const race=s.races[i-1];if(!race)continue;
-        document.querySelectorAll(`.r${i}-fav label`).forEach((l,idx)=>{const input=l.querySelector('input');if(race.fav[idx]){input.checked=!!race.fav[idx].checked;l.style.background=race.fav[idx].color||'';}});
-        document.querySelectorAll(`.r${i}-horse label`).forEach((l,idx)=>{const input=l.querySelector('input');if(race.horse[idx]){input.checked=!!race.horse[idx].checked;l.style.background=race.horse[idx].color||'';}});
-    }}
-    if(s.minFav)document.getElementById('minFav').value=s.minFav;
-}
-let saveTimer;function saveStateDebounced(){clearTimeout(saveTimer);saveTimer=setTimeout(saveState,300);}
-window.addEventListener('DOMContentLoaded',()=>{
-    loadState();
-    document.querySelectorAll('input[type="checkbox"]').forEach(chk=>chk.addEventListener('change',saveStateDebounced));
-    document.getElementById('minFav').addEventListener('input',saveStateDebounced);
+
+// 初期化
+createTable();
+restoreState();
+
+// 初期値未設定の selected に "--" をセット
+document.querySelectorAll('.custom-select .selected').forEach(sel=>{
+    if(!sel.textContent) {
+        sel.textContent = "--";
+        sel.style.color = "#333";
+        sel.style.backgroundColor = "#fff";
+    }
 });
 
-// === カラーパレット ===
-function showColorPalette(target){
-    closeColorPalette();
-    const p=document.createElement('div');
-    p.id='color-palette';
-    Object.assign(p.style,{position:'absolute',display:'grid',gridTemplateColumns:'repeat(5,28px)',gap:'4px',padding:'6px',background:'#fff',border:'1px solid #ccc',borderRadius:'8px',boxShadow:'0 2px 6px rgba(0,0,0,0.2)',zIndex:'9999'});
-    const colors=['#ffffff','#ffb6b6','#a8d8ff','#a8e6a8','#fff2a8'];
-    colors.forEach(c=>{
-        const s=document.createElement('div');
-        Object.assign(s.style,{width:'28px',height:'28px',background:c,border:'1px solid #888',cursor:'pointer'});
-        s.onclick=e=>{
-            e.stopPropagation();
-            target.style.background=(c==='#ffffff')?'':c;
-            closeColorPalette();saveStateDebounced();
-        };
-        p.appendChild(s);
-    });
-    const r=target.getBoundingClientRect();
-    p.style.left=`${r.left+window.scrollX}px`;
-    p.style.top=`${r.bottom+window.scrollY+5}px`;
-    document.body.appendChild(p);
-    const close=e=>{if(!p.contains(e.target))closeColorPalette();};
-    setTimeout(()=>{document.addEventListener('mousedown',close,{once:true});document.addEventListener('touchstart',close,{once:true});},0);
-}
-function closeColorPalette(){const o=document.getElementById('color-palette');if(o)o.remove();}
-document.addEventListener('contextmenu',e=>{const l=e.target.closest('label');if(l){e.preventDefault();showColorPalette(l);}});
-let touchTimer;
-document.addEventListener('touchstart',e=>{const l=e.target.closest('label');if(!l)return;touchTimer=setTimeout(()=>showColorPalette(l),600);});
-document.addEventListener('touchend',()=>clearTimeout(touchTimer));
-document.addEventListener('touchmove',()=>clearTimeout(touchTimer));
+// 画面クリックで全てのオプションを閉じる
+document.addEventListener("click",()=>document.querySelectorAll(".options").forEach(o=>o.style.display="none"));
+
 </script>
 </body>
 </html>
