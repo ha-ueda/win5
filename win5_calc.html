@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>WIN5 本命あり買い目計算ツール</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 body { font-family: "Segoe UI", sans-serif; margin: 20px; background: #f9fafb; color: #333; }
 h1 { font-size: 22px; margin-bottom: 15px; }
@@ -26,6 +26,7 @@ button.calc-btn:hover { background-color: #005fa3; }
     box-sizing: border-box;
 }
 .custom-select {
+    touch-action: manipulation;
     display: flex;
     align-items: center;
     gap: 4px;
@@ -34,6 +35,7 @@ button.calc-btn:hover { background-color: #005fa3; }
     margin: 0 auto;
 }
 .selected {
+    touch-action: manipulation;
     background-color: white;
     border: 1px solid #aaa;
     border-radius: 4px;
@@ -157,6 +159,15 @@ table thead th {
 <textarea id="combos" readonly placeholder="まとめた買い目がここに表示されます"></textarea>
 
 <script>
+let lastTouch = 0;
+document.addEventListener("touchend", function(e) {
+  const now = Date.now();
+  if (now - lastTouch < 200) {
+    e.preventDefault();
+  }
+  lastTouch = now;
+}, { passive: false });
+
 const TOTAL_RACES = 5;
 const HORSE_MAX = 18;
 const MARKS = ["--", "◎", "✓"];
