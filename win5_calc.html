@@ -97,6 +97,17 @@ table thead th {
 #raceBody tr:nth-child(even) td {
     background: #fbfbfb !important;
 }
+* {
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+}
+.custom-select,
+.custom-select * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+.selected:focus {
+  outline: none;
+}
 </style>
 </head>
 <body>
