@@ -11,38 +11,10 @@ table { border-collapse: collapse; width: 100%; }
 th, td { border: 1px solid #cce0ff; padding: 4px; text-align: center; font-size: 18px; }
 th { background-color: #e0f0ff; font-weight: bold; }
 td:first-child { font-weight: bold; }
-
-/* カスタムプルダウン */
-.custom-select { position: relative; width: 40px; cursor: pointer; margin: 0 auto; display: inline-block;}
-.selected { background-color: white; border: 1px solid #aaa; border-radius: 4px; padding: 4px 2px; text-align: center; }
-.options {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background: white;
-    border: 1px solid #aaa;
-    border-radius: 4px;
-    z-index: 102; /* オーバーレイより前面 */
-    width: 100%;
-}
-#overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: 101; /* options の下 */
-}
-.option { padding: 4px 0; text-align: center; }
-.option:hover { background-color: #cce0ff; }
-
-/* 結果表示 */
-#result { margin-top: 20px; font-weight: bold; font-size: 18px; }
 button.calc-btn { padding: 10px 16px; margin-top: 10px; font-size: 16px; background-color: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; }
 button.calc-btn:hover { background-color: #005fa3; }
+#result { margin-top: 20px; font-weight: bold; font-size: 18px; }
 #combos { margin-top: 10px; width: 100%; min-height: 150px; padding: 6px; font-family: monospace; font-size: 14px; box-sizing: border-box; white-space: pre-wrap; word-wrap: break-word; resize: none; }
-
-/* クリアボタン */
 .clear-btn {
     padding: 4px 6px;
     font-size: 18px;
@@ -54,17 +26,66 @@ button.calc-btn:hover { background-color: #005fa3; }
     width: 100%;
     box-sizing: border-box;
 }
+.custom-select {
+    width: 40px;
+    cursor: pointer;
+    margin: 0 auto;
+    display: inline-block;
+}
+.selected {
+    background-color: white;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    padding: 4px 2px;
+    text-align: center;
+    user-select: none;
+}
 
-/* フッターセル折り返し防止 */
-tfoot td {
-    white-space: nowrap;
-    padding: 2px;
+/* ▼ 追加: iOS風トグル */
+.toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+.switch {
+  position: relative;
+  width: 46px;
+  height: 24px;
+  background: #ccc;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  transition: left 0.2s;
+}
+.switch.on {
+  background: #2196F3;
+}
+.switch.on::after {
+  left: 24px;
 }
 </style>
 </head>
 <body>
 
 <h1>WIN5 本命あり買い目計算ツール</h1>
+
+<!-- ▼ トグルボタン追加 -->
+<div class="toggle-container">
+  背景選択
+  <div id="modeToggle" class="switch"></div>
+</div>
 
 <table id="raceTable">
 <thead>
@@ -105,20 +126,49 @@ tfoot td {
 <div id="result"></div>
 <textarea id="combos" readonly placeholder="まとめた買い目がここに表示されます"></textarea>
 
-<!-- オーバーレイ -->
-<div id="overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:100;"></div>
-
 <script>
 const TOTAL_RACES = 5;
 const HORSE_MAX = 18;
-const MARKS = ["--", "◎", "◯", "▲", "△", "★", "☆", "✓"];
+const MARKS = ["--", "◎", "✓"];
+
+const COLORS = ["none", "red", "blue", "yellow"];
+const COLOR_MAP = {
+    none: "",
+    red: "#ffb3b3",
+    blue: "#b3d1ff",
+    yellow: "#fff3b3"
+};
+
+let backgroundMode = false;
+
+const modeBtn = document.getElementById("modeToggle");
+
+function updateSwitch(){
+    if (backgroundMode) {
+        modeBtn.classList.add("on");
+    } else {
+        modeBtn.classList.remove("on");
+    }
+}
+
+modeBtn.addEventListener("click", () => {
+    backgroundMode = !backgroundMode;
+    updateSwitch();
+    if (backgroundMode) {
+        document.querySelectorAll(".selected").forEach(d => {
+            if (!d.dataset.bg) d.dataset.bg = "none";
+            d.style.backgroundColor = COLOR_MAP[d.dataset.bg];
+        });
+    }
+});
+
+updateSwitch();
 
 function toCircleNumber(num) {
     const circleNums = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
     return (num>=1&&num<=18)?circleNums[num-1]:String(num);
 }
 
-// カスタムプルダウン作成
 function createCustomSelect(raceNum, horseNum) {
     const wrapper = document.createElement("div");
     wrapper.className = "custom-select";
@@ -128,54 +178,34 @@ function createCustomSelect(raceNum, horseNum) {
     const selected = document.createElement("div");
     selected.className = "selected";
     selected.textContent = "--";
-    selected.style.color = "#333";           
-    selected.style.backgroundColor = "#fff"; 
+    selected.dataset.bg = "none";
 
-    const options = document.createElement("div");
-    options.className = "options";
-
-    MARKS.forEach(mark => {
-        const opt = document.createElement("div");
-        opt.className = "option";
-        opt.textContent = mark;
-        opt.addEventListener("click", e => {
-            selected.textContent = mark;
-            if(mark === "--") {
-                selected.style.color = "#333";
-                selected.style.backgroundColor = "#fff";
-            } else {
-                selected.style.color = "#fff";
-                selected.style.backgroundColor = "#ef5350";
-            }
-            options.style.display = "none";
-            document.getElementById('overlay').style.display = 'none';
-            saveState();
-        });
-        options.appendChild(opt);
-    });
-
-    selected.addEventListener("click", e => {
-        e.stopPropagation();
-        document.querySelectorAll(".options").forEach(o => o.style.display = "none");
-        options.style.display = "block";
-        document.getElementById('overlay').style.display = 'block';
+    selected.addEventListener("click", () => {
+        if (backgroundMode) {
+            const next = (COLORS.indexOf(selected.dataset.bg) + 1) % COLORS.length;
+            selected.dataset.bg = COLORS[next];
+            selected.style.backgroundColor = COLOR_MAP[selected.dataset.bg];
+        } else {
+            const cur = MARKS.indexOf(selected.textContent);
+            const next = (cur + 1) % MARKS.length;
+            selected.textContent = MARKS[next];
+        }
+        saveState();
     });
 
     wrapper.appendChild(selected);
-    wrapper.appendChild(options);
     return wrapper;
 }
 
-// テーブル作成
 function createTable() {
     const tbody = document.getElementById('raceBody');
-    for (let i=1;i<=HORSE_MAX;i++){
+    for (let i = 1; i <= HORSE_MAX; i++) {
         const tr = document.createElement('tr');
         const tdNum = document.createElement('td');
         tdNum.textContent = toCircleNumber(i);
         tr.appendChild(tdNum);
 
-        for (let r=1;r<=TOTAL_RACES;r++){
+        for (let r = 1; r <= TOTAL_RACES; r++) {
             const td = document.createElement('td');
             td.appendChild(createCustomSelect(r,i));
             tr.appendChild(td);
@@ -184,64 +214,59 @@ function createTable() {
     }
 }
 
-// 状態保存
 function saveState(){
     const state={races:{},minFav:document.getElementById('minFav').value};
     for(let r=1;r<=TOTAL_RACES;r++){
         state.races[`r${r}`]={};
         document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
-            const selectedDiv = sel.querySelector('.selected');
+            const d = sel.querySelector('.selected');
             state.races[`r${r}`][sel.dataset.horse] = {
-                mark: selectedDiv.textContent,
-                color: selectedDiv.style.color,
-                bg: selectedDiv.style.backgroundColor
+                mark: d.textContent,
+                bg: d.dataset.bg
             };
         });
     }
-    localStorage.setItem('win5_state_v4',JSON.stringify(state));
+    localStorage.setItem('win5_state_v5',JSON.stringify(state));
 }
 
-// 状態復元
 function restoreState(){
-    const data=localStorage.getItem('win5_state_v4');
+    const data=localStorage.getItem('win5_state_v5');
     if(!data) return;
     try{
         const state=JSON.parse(data);
-        if(state.minFav) document.getElementById('minFav').value=state.minFav;
+        document.getElementById('minFav').value=state.minFav;
         for(let r=1;r<=TOTAL_RACES;r++){
             const race=state.races[`r${r}`];
             if(!race) continue;
             document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
                 const val=race[sel.dataset.horse];
                 if(val){
-                    const selectedDiv = sel.querySelector('.selected');
-                    selectedDiv.textContent = val.mark;
-                    selectedDiv.style.color = val.color;
-                    selectedDiv.style.backgroundColor = val.bg;
+                    const d = sel.querySelector('.selected');
+                    d.textContent = val.mark;
+                    d.dataset.bg = val.bg;
+                    d.style.backgroundColor = COLOR_MAP[val.bg];
                 }
             });
         }
-    }catch(e){console.error(e);}
+    }catch(e){}
 }
 
-// 列クリア機能
 function clearColumn(colNum){
     document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel=>{
-        const selectedDiv = sel.querySelector('.selected');
-        selectedDiv.textContent = "--";
-        selectedDiv.style.color = "#333";
-        selectedDiv.style.backgroundColor = "#fff";
+        const d=sel.querySelector(".selected");
+        d.textContent = "--";
+        d.dataset.bg = "none";
+        d.style.backgroundColor = "";
     });
     saveState();
 }
 
-// 組み合わせ取得
 function getRaceData(r){
     const favs=[], himo=[];
     document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
-        const val=sel.querySelector('.selected').textContent;
-        if(val==="◎") favs.push(Number(sel.dataset.horse));
-        if(val==="✓") himo.push(Number(sel.dataset.horse));
+        const v=sel.querySelector('.selected').textContent;
+        if(v==="◎") favs.push(Number(sel.dataset.horse));
+        if(v==="✓") himo.push(Number(sel.dataset.horse));
     });
     const all=[...new Set([...favs,...himo])];
     return {fav:favs, horse:all};
@@ -270,7 +295,7 @@ function calc(){
             }
             if(candidates.every(a=>a.length>0)) validForK+=cartesian(candidates).length;
         });
-        comboList.push(`--- 本命が${k}頭当たる組み合わせ ${validForK}通り ---`);
+        comboList.push(`--- 本命が${k}頭当たる組み合わせ${validForK}通り ---`);
         masks.forEach(mask=>{
             const candidates=[];
             for(let i=0;i<TOTAL_RACES;i++){
@@ -292,28 +317,8 @@ function calc(){
     saveState();
 }
 
-// 初期化
 createTable();
 restoreState();
-
-// 初期値未設定の selected に "--" をセット
-document.querySelectorAll('.custom-select .selected').forEach(sel=>{
-    if(!sel.textContent) {
-        sel.textContent = "--";
-        sel.style.color = "#333";
-        sel.style.backgroundColor = "#fff";
-    }
-});
-
-// オーバーレイクリックで全てのオプションを閉じる
-document.getElementById('overlay').addEventListener("click",()=>{
-    document.querySelectorAll(".options").forEach(o => o.style.display="none");
-    document.getElementById('overlay').style.display='none';
-});
-
-// 画面クリックで全てのオプションを閉じる
-document.addEventListener("click",()=>document.querySelectorAll(".options").forEach(o=>o.style.display="none"));
-
 </script>
 </body>
 </html>
