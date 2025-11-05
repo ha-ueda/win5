@@ -8,7 +8,7 @@
 body { font-family: "Segoe UI", sans-serif; margin: 20px; background: #f9fafb; color: #333; }
 h1 { font-size: 22px; margin-bottom: 15px; }
 table { border-collapse: collapse; width: 100%; }
-th, td { border: 1px solid #cce0ff; padding: 4px; text-align: center; font-size: 18px; }
+th, td { border: 1px solid #d9d8ce; padding: 4px; text-align: center; font-size: 18px; }
 th { background-color: #e0f0ff; font-weight: bold; }
 td:first-child { font-weight: bold; }
 button.calc-btn { padding: 10px 16px; margin-top: 10px; font-size: 16px; background-color: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; }
@@ -27,10 +27,12 @@ button.calc-btn:hover { background-color: #005fa3; }
     box-sizing: border-box;
 }
 .custom-select {
-    width: 40px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
     cursor: pointer;
+    width: fit-content;
     margin: 0 auto;
-    display: inline-block;
 }
 .selected {
     background-color: white;
@@ -39,9 +41,24 @@ button.calc-btn:hover { background-color: #005fa3; }
     padding: 4px 2px;
     text-align: center;
     user-select: none;
-}
 
-/* ▼ 追加: iOS風トグル */
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+    font-size: 18px;
+}
+.custom-select .horse-label {
+    display: flex;
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 18px !important;
+    font-weight: bold;
+    color: #555;
+    user-select: none;
+}
 .toggle-container {
   display: flex;
   align-items: center;
@@ -75,13 +92,18 @@ button.calc-btn:hover { background-color: #005fa3; }
 .switch.on::after {
   left: 24px;
 }
+table thead th {
+    background: #f4f2ec !important;
+}
+#raceBody tr:nth-child(even) td {
+    background: #fbfbfb !important;
+}
 </style>
 </head>
 <body>
 
 <h1>WIN5 本命あり買い目計算ツール</h1>
 
-<!-- ▼ トグルボタン追加 -->
 <div class="toggle-container">
   背景選択
   <div id="modeToggle" class="switch"></div>
@@ -90,7 +112,6 @@ button.calc-btn:hover { background-color: #005fa3; }
 <table id="raceTable">
 <thead>
 <tr>
-<th>馬番</th>
 <th>WIN1</th>
 <th>WIN2</th>
 <th>WIN3</th>
@@ -101,7 +122,6 @@ button.calc-btn:hover { background-color: #005fa3; }
 <tbody id="raceBody"></tbody>
 <tfoot>
 <tr>
-<td></td>
 <td><button class="clear-btn" onclick="clearColumn(1)">クリア</button></td>
 <td><button class="clear-btn" onclick="clearColumn(2)">クリア</button></td>
 <td><button class="clear-btn" onclick="clearColumn(3)">クリア</button></td>
@@ -193,7 +213,16 @@ function createCustomSelect(raceNum, horseNum) {
         saveState();
     });
 
+    const label = document.createElement("span");
+    label.className = "horse-label";
+    label.textContent = toCircleNumber(horseNum);
+    label.style.fontSize = "14px";
+    label.style.color = "#555";
+    label.style.userSelect = "none";
+
+    wrapper.appendChild(label);
     wrapper.appendChild(selected);
+
     return wrapper;
 }
 
@@ -201,9 +230,6 @@ function createTable() {
     const tbody = document.getElementById('raceBody');
     for (let i = 1; i <= HORSE_MAX; i++) {
         const tr = document.createElement('tr');
-        const tdNum = document.createElement('td');
-        tdNum.textContent = toCircleNumber(i);
-        tr.appendChild(tdNum);
 
         for (let r = 1; r <= TOTAL_RACES; r++) {
             const td = document.createElement('td');
