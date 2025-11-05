@@ -10,7 +10,6 @@ h1 { font-size: 22px; margin-bottom: 15px; }
 table { border-collapse: collapse; width: 100%; }
 th, td { border: 1px solid #d9d8ce; padding: 4px; text-align: center; font-size: 18px; }
 th { background-color: #e0f0ff; font-weight: bold; }
-td:first-child { font-weight: bold; }
 button.calc-btn { padding: 10px 16px; margin-top: 10px; font-size: 16px; background-color: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; }
 button.calc-btn:hover { background-color: #005fa3; }
 #result { margin-top: 20px; font-weight: bold; font-size: 18px; }
@@ -216,7 +215,6 @@ function createCustomSelect(raceNum, horseNum) {
     const label = document.createElement("span");
     label.className = "horse-label";
     label.textContent = toCircleNumber(horseNum);
-    label.style.fontSize = "14px";
     label.style.color = "#555";
     label.style.userSelect = "none";
 
