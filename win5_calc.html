@@ -223,23 +223,6 @@ function createCustomSelect(raceNum, horseNum) {
             const next = (cur + 1) % MARKS.length;
             selected.textContent = MARKS[next];
         }
-
-        if (selected.textContent === "◎" || selected.textContent === "✓") {
-            selected.style.fontWeight = "bold";
-            if (selected.dataset.bg === "red") {
-                selected.style.color = "#900";
-            } else if (selected.dataset.bg === "blue") {
-                selected.style.color = "#004080";
-            } else if (selected.dataset.bg === "yellow") {
-                selected.style.color = "#333";
-            } else {
-                selected.style.color = "#0078d4";
-            }
-        } else {
-            selected.style.color = "#333";
-            selected.style.fontWeight = "normal";
-        }
-
         saveState();
     });
 
