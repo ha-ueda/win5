@@ -47,6 +47,7 @@ button.calc-btn:hover { background-color: #005fa3; }
     height: 32px;
     line-height: 32px;
     font-size: 18px;
+    font-weight: bold;
 }
 .custom-select .horse-label {
     display: flex;
@@ -222,6 +223,23 @@ function createCustomSelect(raceNum, horseNum) {
             const next = (cur + 1) % MARKS.length;
             selected.textContent = MARKS[next];
         }
+
+        if (selected.textContent === "◎" || selected.textContent === "✓") {
+            selected.style.fontWeight = "bold";
+            if (selected.dataset.bg === "red") {
+                selected.style.color = "#900";
+            } else if (selected.dataset.bg === "blue") {
+                selected.style.color = "#004080";
+            } else if (selected.dataset.bg === "yellow") {
+                selected.style.color = "#333";
+            } else {
+                selected.style.color = "#0078d4";
+            }
+        } else {
+            selected.style.color = "#333";
+            selected.style.fontWeight = "normal";
+        }
+
         saveState();
     });
 
