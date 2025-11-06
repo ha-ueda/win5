@@ -162,7 +162,7 @@ table thead th {
 <script>
 const TOTAL_RACES = 5;
 const HORSE_MAX = 18;
-const MARKS = ["", "✓", "◎"];
+const MARKS = ["", "✔", "◎"];
 
 const COLORS = ["none", "red", "blue", "yellow"];
 const COLOR_MAP = {
@@ -304,7 +304,7 @@ function getRaceData(r){
     document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
         const v=sel.querySelector('.selected').textContent;
         if(v==="◎") favs.push(Number(sel.dataset.horse));
-        if(v==="✓") himo.push(Number(sel.dataset.horse));
+        if(v==="✔") himo.push(Number(sel.dataset.horse));
     });
     const all=[...new Set([...favs,...himo])];
     return {fav:favs, horse:all};
