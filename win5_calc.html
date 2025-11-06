@@ -333,7 +333,7 @@ function calc(){
             }
             if(candidates.every(a=>a.length>0)) validForK+=cartesian(candidates).length;
         });
-        comboList.push(`--- 本命が${k}頭当たる組み合わせ${validForK}通り ---`);
+        comboList.push(`--- 本命${k}勝：${validForK}通り ---`);
         masks.forEach(mask=>{
             const candidates=[];
             for(let i=0;i<TOTAL_RACES;i++){
