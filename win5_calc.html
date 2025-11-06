@@ -159,19 +159,9 @@ table thead th {
 <textarea id="combos" readonly placeholder="まとめた買い目がここに表示されます"></textarea>
 
 <script>
-/*
-let lastTouch = 0;
-document.addEventListener("touchend", function(e) {
-  const now = Date.now();
-  if (now - lastTouch < 200) {
-    e.preventDefault();
-  }
-  lastTouch = now;
-}, { passive: false });
-*/
 const TOTAL_RACES = 5;
 const HORSE_MAX = 18;
-const MARKS = ["--", "◎", "✓"];
+const MARKS = ["", "✓", "◎"];
 
 const COLORS = ["none", "red", "blue", "yellow"];
 const COLOR_MAP = {
@@ -219,7 +209,7 @@ function createCustomSelect(raceNum, horseNum) {
 
     const selected = document.createElement("div");
     selected.className = "selected";
-    selected.textContent = "--";
+    selected.textContent = "";
     selected.dataset.bg = "none";
 
     selected.addEventListener("click", () => {
@@ -301,7 +291,7 @@ function restoreState(){
 function clearColumn(colNum){
     document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel=>{
         const d=sel.querySelector(".selected");
-        d.textContent = "--";
+        d.textContent = "";
         d.dataset.bg = "none";
         d.style.backgroundColor = "";
     });
