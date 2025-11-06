@@ -310,48 +310,152 @@ function getRaceData(r){
     return {fav:favs, horse:all};
 }
 
+function getRaceBgData(r){
+    const bgs = {};
+    document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
+        const d = sel.querySelector('.selected');
+        bgs[sel.dataset.horse] = d.dataset.bg || "none";
+    });
+    return bgs;
+}
+
 function cartesian(arrays){ return arrays.reduce((a,b)=>a.flatMap(d=>b.map(e=>[...d,e])),[[]]); }
 function combinations(arr,k){ const res=[]; function helper(s,comb){ if(comb.length===k){ res.push([...comb]); return; } for(let i=s;i<arr.length;i++){ comb.push(arr[i]); helper(i+1,comb); comb.pop(); } } helper(0,[]); return res; }
 
 function calc(){
-    const r=[],f=[];
+    const r=[], f=[], bg=[];
     for(let i=1;i<=TOTAL_RACES;i++){
         const data=getRaceData(i);
         r.push(data.horse);
         f.push(data.fav);
+        bg.push(getRaceBgData(i));
     }
-    const minFav=Number(document.getElementById('minFav').value);
-    let totalValid=0, comboList=[];
-    for(let k=TOTAL_RACES;k>=minFav;k--){
-        const masks=combinations([...Array(TOTAL_RACES).keys()],k);
-        let validForK=0;
+
+    const minFav = Number(document.getElementById('minFav').value);
+    let totalValid = 0;
+    const allCombosByK = {};
+
+    for(let k=TOTAL_RACES; k>=minFav; k--){
+        const masks = combinations([...Array(TOTAL_RACES).keys()], k);
+        let validForK = 0;
+        const comboLines = [];
+
         masks.forEach(mask=>{
-            const candidates=[];
+            const candidates = [];
             for(let i=0;i<TOTAL_RACES;i++){
                 if(mask.includes(i)) candidates.push(f[i]);
                 else candidates.push(r[i].filter(x=>!f[i].includes(x)));
             }
-            if(candidates.every(a=>a.length>0)) validForK+=cartesian(candidates).length;
-        });
-        comboList.push(`--- 本命${k}勝：${validForK}通り ---`);
-        masks.forEach(mask=>{
-            const candidates=[];
-            for(let i=0;i<TOTAL_RACES;i++){
-                if(mask.includes(i)) candidates.push(f[i]);
-                else candidates.push(r[i].filter(x=>!f[i].includes(x)));
-            }
+
             if(candidates.every(a=>a.length>0)){
-                const line=candidates.map(a=>a.map(n=>toCircleNumber(n)).join('')).join('-');
-                comboList.push(line);
+                const combos = cartesian(candidates);
+                const filtered = combos.filter(combo=>{
+                    const colors = combo.map((horse, i) => bg[i][horse]);
+                    const filteredColors = colors.filter(c => c !== "none");
+                    return new Set(filteredColors).size === filteredColors.length;
+                });
+
+                validForK += filtered.length;
+                filtered.forEach(combo=>{
+                    const line = combo.map(n=>toCircleNumber(n)).join('-');
+                    comboLines.push(line);
+                });
             }
         });
-        totalValid+=validForK;
+
+        totalValid += validForK;
+        allCombosByK[k] = { count: validForK, lines: comboLines };
     }
-    document.getElementById('result').innerHTML=`総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
-    const combosArea=document.getElementById('combos');
-    combosArea.value=comboList.join('\n');
-    combosArea.style.height='auto';
-    combosArea.style.height=combosArea.scrollHeight+'px';
+
+    const comboList = [];
+    Object.keys(allCombosByK).sort((a,b)=>b-a).forEach(k=>{
+        const {count, lines} = allCombosByK[k];
+        comboList.push(`--- 本命${k}勝：${count}通り ---`);
+
+        const universe = new Set(lines);
+        let uniqLines = [...universe].sort();
+
+        function expandLineStr(s){
+            const parts = s.split('-').map(p => p.split(''));
+            const cart = parts.reduce((acc, arr)=>{
+                const next=[];
+                for(const a of acc){
+                    for(const b of arr){ next.push([...a, b]); }
+                }
+                return next;
+            }, [[]]);
+            return cart.map(t => t.join('-'));
+        }
+
+        function canMerge(candidate){
+            const exps = expandLineStr(candidate);
+            return exps.every(x => universe.has(x));
+        }
+
+        let changed = true;
+        while(changed){
+            changed = false;
+            const next = [];
+            const used = new Set();
+
+            for(let i=0;i<uniqLines.length;i++){
+                if(used.has(i)) continue;
+                const base = uniqLines[i].split('-');
+                let mergedParts = [...base];
+
+                for(let j=i+1;j<uniqLines.length;j++){
+                    if(used.has(j)) continue;
+                    const cmp = uniqLines[j].split('-');
+
+                    const diffIdxs = [];
+                    for(let d=0; d<base.length; d++){
+                        const aSet = new Set(base[d].split(''));
+                        const bSet = new Set(cmp[d].split(''));
+                        const all = new Set([...aSet, ...bSet]);
+                        if(aSet.size !== all.size || bSet.size !== all.size){
+                            diffIdxs.push(d);
+                        }
+                    }
+
+                    if(diffIdxs.length === 1){
+                        const pos = diffIdxs[0];
+                        const mergedSet = new Set([...base[pos].split(''), ...cmp[pos].split('')]);
+                        const candidate = mergedParts.map((v,idx)=>
+                            idx===pos ? [...mergedSet].sort((a,b)=>a.localeCompare(b,'ja')).join('') : v
+                        ).join('-');
+
+                        if(canMerge(candidate)){
+                            mergedParts = candidate.split('-');
+                            used.add(j);
+                            changed = true;
+                        }
+                    }
+                }
+                next.push(mergedParts.join('-'));
+                used.add(i);
+            }
+            uniqLines = [...new Set(next)].sort();
+        }
+
+        const filteredFinal = uniqLines.filter((line,i,arr)=>{
+            const curParts = line.split('-').map(x=>new Set(x.split('')));
+            return !arr.some((other, j)=>{
+                if(i===j) return false;
+                const parts = other.split('-').map(x=>new Set(x.split('')));
+                return curParts.every((s,idx)=>[...s].every(v=>parts[idx].has(v)));
+            });
+        });
+
+        filteredFinal.forEach(line=>comboList.push(line));
+    });
+
+    document.getElementById('result').innerHTML =
+        `総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
+
+    const combosArea = document.getElementById('combos');
+    combosArea.value = comboList.join('\n');
+    combosArea.style.height = 'auto';
+    combosArea.style.height = combosArea.scrollHeight + 'px';
     saveState();
 }
 
