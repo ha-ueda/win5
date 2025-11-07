@@ -17,125 +17,94 @@ button.calc-btn:hover { background-color: #005fa3; }
 	margin-top: 10px;
 	font-family: monospace;
 	font-size: 18px;
-	white-space: nowrap;
+	white-space: pre-wrap;
 	word-break: keep-all;
 	overflow-x: auto;
 	display: block;
 }
 .clear-btn {
-    padding: 4px 6px;
-    font-size: 18px;
-    background-color: #edebe5;
-    color: #444;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    width: 100%;
-    box-sizing: border-box;
+	padding: 4px 6px;
+	font-size: 18px;
+	background-color: #edebe5;
+	color: #444;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	width: 100%;
+	box-sizing: border-box;
 }
 .custom-select {
-    touch-action: manipulation;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    cursor: pointer;
-    width: fit-content;
-    margin: 0 auto;
+	touch-action: manipulation;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	cursor: pointer;
+	width: fit-content;
+	margin: 0 auto;
 }
 .selected {
-    touch-action: manipulation;
-    background-color: white;
-    border: 1px solid #aaa;
-    border-radius: 4px;
-    padding: 4px 2px;
-    text-align: center;
-    user-select: none;
-
-    width: 32px;
-    height: 32px;
-    line-height: 32px;
-    font-size: 18px;
-    font-weight: bold;
+	touch-action: manipulation;
+	background-color: white;
+	border: 1px solid #aaa;
+	border-radius: 4px;
+	padding: 4px 2px;
+	text-align: center;
+	user-select: none;
+	width: 32px;
+	height: 32px;
+	line-height: 32px;
+	font-size: 18px;
+	font-weight: bold;
 }
 .custom-select .horse-label {
-    display: flex;
-    width: 32px;
-    height: 32px;
-    align-items: center;
-    justify-content: center;
-
-    font-size: 18px !important;
-    font-weight: bold;
-    color: #555;
-    user-select: none;
+	display: flex;
+	width: 32px;
+	height: 32px;
+	align-items: center;
+	justify-content: center;
+	font-size: 18px !important;
+	font-weight: bold;
+	color: #555;
+	user-select: none;
 }
 .toggle-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-  font-size: 16px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 10px;
+	font-size: 16px;
 }
 .switch {
-  position: relative;
-  width: 46px;
-  height: 24px;
-  background: #ccc;
-  border-radius: 24px;
-  cursor: pointer;
-  transition: background 0.2s;
+	position: relative;
+	width: 46px;
+	height: 24px;
+	background: #ccc;
+	border-radius: 24px;
+	cursor: pointer;
+	transition: background 0.2s;
 }
 .switch::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  background: #fff;
-  border-radius: 50%;
-  transition: left 0.2s;
+	content: "";
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 20px;
+	height: 20px;
+	background: #fff;
+	border-radius: 50%;
+	transition: left 0.2s;
 }
 .switch.on {
-  background: #2196F3;
+	background: #2196F3;
 }
 .switch.on::after {
-  left: 24px;
+	left: 24px;
 }
-table thead th {
-    background: #f4f2ec !important;
-}
-#raceBody tr:nth-child(even) td {
-    background: #fbfbfb !important;
-}
-* {
-  -webkit-tap-highlight-color: rgba(0,0,0,0);
-}
-.custom-select,
-.custom-select * {
-  -webkit-user-select: none;
-  user-select: none;
-}
-.selected:focus {
-  outline: none;
-}
-#copyNotice {
-	position: fixed;
-	right: 20px;
-	bottom: 20px;
-	background: #0078d4;
-	color: white;
-	padding: 10px 16px;
-	border-radius: 6px;
-	font-size: 14px;
-	opacity: 0;
-	transition: opacity 0.3s;
-	pointer-events: none;
-	z-index: 9999;
-}
-#copyNotice.show {
-	opacity: 1;
-}
+table thead th { background: #f4f2ec !important; }
+#raceBody tr:nth-child(even) td { background: #fbfbfb !important; }
+* { -webkit-tap-highlight-color: rgba(0,0,0,0); }
+.custom-select, .custom-select * { -webkit-user-select: none; user-select: none; }
+.selected:focus { outline: none; }
 </style>
 </head>
 <body>
@@ -150,11 +119,7 @@ table thead th {
 <table id="raceTable">
 <thead>
 <tr>
-<th>WIN1</th>
-<th>WIN2</th>
-<th>WIN3</th>
-<th>WIN4</th>
-<th>WIN5</th>
+<th>WIN1</th><th>WIN2</th><th>WIN3</th><th>WIN4</th><th>WIN5</th>
 </tr>
 </thead>
 <tbody id="raceBody"></tbody>
@@ -184,302 +149,231 @@ table thead th {
 <button class="calc-btn" id="copyBtn" onclick="copyCombos()" style="float:right; margin-top:6px;">コピーする</button>
 <div id="result"></div>
 <div id="loading" style="display:none; margin-top:10px; font-size:18px;">計算中...</div>
-<div id="combos" style="margin-top:10px; white-space:pre-wrap; font-family:monospace; font-size:18px;"></div>
+<div id="combos"></div>
 
 <script>
 const TOTAL_RACES = 5;
 const HORSE_MAX = 18;
 const MARKS = ["", "✔", "◎"];
-
 const COLORS = ["none", "red", "blue", "yellow"];
-const COLOR_MAP = {
-    none: "",
-    red: "#ffb3b3",
-    blue: "#b3d1ff",
-    yellow: "#fff3b3"
-};
+const COLOR_MAP = { none: "", red: "#ffb3b3", blue: "#b3d1ff", yellow: "#fff3b3" };
 
 let backgroundMode = false;
-
 const modeBtn = document.getElementById("modeToggle");
 
-function updateSwitch(){
-    if (backgroundMode) {
-        modeBtn.classList.add("on");
-    } else {
-        modeBtn.classList.remove("on");
-    }
-}
+function updateSwitch(){ backgroundMode ? modeBtn.classList.add("on") : modeBtn.classList.remove("on"); }
 
 modeBtn.addEventListener("click", () => {
-    backgroundMode = !backgroundMode;
-    updateSwitch();
-    if (backgroundMode) {
-        document.querySelectorAll(".selected").forEach(d => {
-            if (!d.dataset.bg) d.dataset.bg = "none";
-            d.style.backgroundColor = COLOR_MAP[d.dataset.bg];
-        });
-    }
+	backgroundMode = !backgroundMode;
+	updateSwitch();
+	if (backgroundMode) {
+		document.querySelectorAll(".selected").forEach(d => {
+			if (!d.dataset.bg) d.dataset.bg = "none";
+			d.style.backgroundColor = COLOR_MAP[d.dataset.bg];
+		});
+	}
 });
-
 updateSwitch();
 
-function toCircleNumber(num) {
-    const circleNums = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
-    return (num>=1&&num<=18)?circleNums[num-1]:String(num);
+function toCircleNumber(num){ const n=['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱']; return n[num-1]||String(num); }
+
+function createCustomSelect(raceNum, horseNum){
+	const wrapper=document.createElement("div");
+	wrapper.className="custom-select";
+	wrapper.dataset.race=raceNum;
+	wrapper.dataset.horse=horseNum;
+
+	const selected=document.createElement("div");
+	selected.className="selected";
+	selected.textContent="";
+	selected.dataset.bg="none";
+	selected.addEventListener("click",()=>{
+		if(backgroundMode){
+			const next=(COLORS.indexOf(selected.dataset.bg)+1)%COLORS.length;
+			selected.dataset.bg=COLORS[next];
+			selected.style.backgroundColor=COLOR_MAP[selected.dataset.bg];
+		}else{
+			const cur=MARKS.indexOf(selected.textContent);
+			selected.textContent=MARKS[(cur+1)%MARKS.length];
+		}
+		saveState();
+	});
+	const label=document.createElement("span");
+	label.className="horse-label";
+	label.textContent=toCircleNumber(horseNum);
+	wrapper.appendChild(label);
+	wrapper.appendChild(selected);
+	return wrapper;
 }
 
-function createCustomSelect(raceNum, horseNum) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "custom-select";
-    wrapper.dataset.race = raceNum;
-    wrapper.dataset.horse = horseNum;
-
-    const selected = document.createElement("div");
-    selected.className = "selected";
-    selected.textContent = "";
-    selected.dataset.bg = "none";
-
-    selected.addEventListener("click", () => {
-        if (backgroundMode) {
-            const next = (COLORS.indexOf(selected.dataset.bg) + 1) % COLORS.length;
-            selected.dataset.bg = COLORS[next];
-            selected.style.backgroundColor = COLOR_MAP[selected.dataset.bg];
-        } else {
-            const cur = MARKS.indexOf(selected.textContent);
-            const next = (cur + 1) % MARKS.length;
-            selected.textContent = MARKS[next];
-        }
-        saveState();
-    });
-
-    const label = document.createElement("span");
-    label.className = "horse-label";
-    label.textContent = toCircleNumber(horseNum);
-    label.style.color = "#555";
-    label.style.userSelect = "none";
-
-    wrapper.appendChild(label);
-    wrapper.appendChild(selected);
-
-    return wrapper;
-}
-
-function createTable() {
-    const tbody = document.getElementById('raceBody');
-    for (let i = 1; i <= HORSE_MAX; i++) {
-        const tr = document.createElement('tr');
-
-        for (let r = 1; r <= TOTAL_RACES; r++) {
-            const td = document.createElement('td');
-            td.appendChild(createCustomSelect(r,i));
-            tr.appendChild(td);
-        }
-        tbody.appendChild(tr);
-    }
+function createTable(){
+	const tbody=document.getElementById('raceBody');
+	for(let i=1;i<=HORSE_MAX;i++){
+		const tr=document.createElement('tr');
+		for(let r=1;r<=TOTAL_RACES;r++){
+			const td=document.createElement('td');
+			td.appendChild(createCustomSelect(r,i));
+			tr.appendChild(td);
+		}
+		tbody.appendChild(tr);
+	}
 }
 
 function saveState(){
-    const state={races:{},minFav:document.getElementById('minFav').value};
-    for(let r=1;r<=TOTAL_RACES;r++){
-        state.races[`r${r}`]={};
-        document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
-            const d = sel.querySelector('.selected');
-            state.races[`r${r}`][sel.dataset.horse] = {
-                mark: d.textContent,
-                bg: d.dataset.bg
-            };
-        });
-    }
-    localStorage.setItem('win5_state_v5',JSON.stringify(state));
+	const state={races:{},minFav:document.getElementById('minFav').value};
+	for(let r=1;r<=TOTAL_RACES;r++){
+		state.races[`r${r}`]={};
+		document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
+			const d=sel.querySelector('.selected');
+			state.races[`r${r}`][sel.dataset.horse]={mark:d.textContent,bg:d.dataset.bg};
+		});
+	}
+	localStorage.setItem('win5_state_v5',JSON.stringify(state));
 }
 
 function restoreState(){
-    const data=localStorage.getItem('win5_state_v5');
-    if(!data) return;
-    try{
-        const state=JSON.parse(data);
-        document.getElementById('minFav').value=state.minFav;
-        for(let r=1;r<=TOTAL_RACES;r++){
-            const race=state.races[`r${r}`];
-            if(!race) continue;
-            document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
-                const val=race[sel.dataset.horse];
-                if(val){
-                    const d = sel.querySelector('.selected');
-                    d.textContent = val.mark;
-                    d.dataset.bg = val.bg;
-                    d.style.backgroundColor = COLOR_MAP[val.bg];
-                }
-            });
-        }
-    }catch(e){}
+	const data=localStorage.getItem('win5_state_v5');
+	if(!data) return;
+	try{
+		const state=JSON.parse(data);
+		document.getElementById('minFav').value=state.minFav;
+		for(let r=1;r<=TOTAL_RACES;r++){
+			const race=state.races[`r${r}`];
+			if(!race) continue;
+			document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
+				const val=race[sel.dataset.horse];
+				if(val){
+					const d=sel.querySelector('.selected');
+					d.textContent=val.mark;
+					d.dataset.bg=val.bg;
+					d.style.backgroundColor=COLOR_MAP[val.bg];
+				}
+			});
+		}
+	}catch(e){}
 }
 
 function clearColumn(colNum){
-    document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel=>{
-        const d=sel.querySelector(".selected");
-        d.textContent = "";
-        d.dataset.bg = "none";
-        d.style.backgroundColor = "";
-    });
-    saveState();
+	document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel=>{
+		const d=sel.querySelector(".selected");
+		d.textContent="";
+		d.dataset.bg="none";
+		d.style.backgroundColor="";
+	});
+	saveState();
 }
 
 function getRaceData(r){
-    const favs=[], himo=[];
-    const colorMap={};
-    document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
-        const v=sel.querySelector('.selected').textContent;
-        const bg=sel.querySelector('.selected').dataset.bg;
-        const num=Number(sel.dataset.horse);
-        colorMap[num]=bg;
-        if(v==="◎") favs.push(num);
-        if(v==="✔") himo.push(num);
-    });
-    const all=[...new Set([...favs,...himo])];
-    return {fav:favs, horse:all, colorMap};
+	const favs=[],himo=[],colorMap={};
+	document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
+		const v=sel.querySelector('.selected').textContent;
+		const bg=sel.querySelector('.selected').dataset.bg;
+		const num=Number(sel.dataset.horse);
+		colorMap[num]=bg;
+		if(v==="◎") favs.push(num);
+		if(v==="✔") himo.push(num);
+	});
+	const all=[...new Set([...favs,...himo])];
+	return {fav:favs,horse:all,colorMap};
 }
 
-function cartesian(arrays){ return arrays.reduce((a,b)=>a.flatMap(d=>b.map(e=>[...d,e])),[[]]); }
-function combinations(arr,k){ const res=[]; function helper(s,comb){ if(comb.length===k){ res.push([...comb]); return; } for(let i=s;i<arr.length;i++){ comb.push(arr[i]); helper(i+1,comb); comb.pop(); } } helper(0,[]); return res; }
-
-function setEq(a, b) {
-	const arrA = [...a], arrB = [...b];
-	if (arrA.length !== arrB.length) return false;
-	for (const x of arrA) if (!b.has(x)) return false;
-	return true;
-}
-function setUnion(a, b) {
-	const s = new Set(a);
-	for (const x of b) s.add(x);
-	return s;
-}
-function setInterEmpty(a, b) {
-	for (const x of a) if (b.has(x)) return false;
-	return true;
-}
-
-function combosToBlocks(combos) {
-	return combos.map(c => c.map(x => new Set([x])));
-}
-
-function mergeBlocksOnce(blocks) {
-	for (let i = 0; i < blocks.length; i++) {
-		for (let j = i + 1; j < blocks.length; j++) {
-			const A = blocks[i], B = blocks[j];
-			let diffIdx = -1, diffCount = 0, ok = true;
-			for (let r = 0; r < TOTAL_RACES; r++) {
-				if (setEq(A[r], B[r])) continue;
-				diffCount++;
-				if (diffCount > 1) { ok = false; break; }
-				diffIdx = r;
-			}
-			if (ok && diffCount === 1 && setInterEmpty(A[diffIdx], B[diffIdx])) {
-				const merged = A.map((s, idx) =>
-					idx === diffIdx ? setUnion(A[idx], B[idx]) : s
-				);
-				blocks.splice(j, 1);
-				blocks[i] = merged;
-				return true;
-			}
+// ✅ 高速化版 cartesian
+function cartesian(arrays,isValid){
+	const result=[];
+	function helper(prefix,depth){
+		if(depth===arrays.length){ result.push(prefix); return; }
+		for(const val of arrays[depth]){
+			const combo=[...prefix,val];
+			if(isValid && !isValid(combo,depth)) continue;
+			helper(combo,depth+1);
 		}
 	}
-	return false;
+	helper([],0);
+	return result;
 }
 
-function fullyMergeBlocks(blocks) {
-	while (mergeBlocksOnce(blocks)) { }
-	return blocks;
-}
+function combinations(arr,k){ const res=[]; (function h(s,c){ if(c.length===k){res.push([...c]);return;} for(let i=s;i<arr.length;i++){ c.push(arr[i]); h(i+1,c); c.pop(); } })(0,[]); return res; }
 
-function blockToLine(block, colorMaps) {
-	return block.map((set, raceIdx) => {
-		const arr = [...set].sort((a, b) => a - b).map(n => {
-			const bg = colorMaps[raceIdx][n];
-			const color = (bg && bg !== "none") ? COLOR_MAP[bg] : "";
-			const num = toCircleNumber(n);
-			if (color) {
-				return `<span style="background-color:${color}; padding:1px 3px; border-radius:4px;">${num}</span>`;
-			}
-			return num;
+function setEq(a,b){ if(a.size!==b.size) return false; for(const x of a) if(!b.has(x)) return false; return true; }
+function setUnion(a,b){ const s=new Set(a); for(const x of b) s.add(x); return s; }
+function setInterEmpty(a,b){ for(const x of a) if(b.has(x)) return false; return true; }
+function combosToBlocks(c){ return c.map(x=>x.map(v=>new Set([v]))); }
+function mergeBlocksOnce(b){ for(let i=0;i<b.length;i++){ for(let j=i+1;j<b.length;j++){ const A=b[i],B=b[j]; let d=-1,c=0,ok=true; for(let r=0;r<TOTAL_RACES;r++){ if(setEq(A[r],B[r]))continue; c++; if(c>1){ok=false;break;} d=r; } if(ok&&c===1&&setInterEmpty(A[d],B[d])){ b[i]=A.map((s,idx)=>idx===d?setUnion(A[idx],B[idx]):s); b.splice(j,1); return true; } } } return false; }
+function fullyMergeBlocks(b){ while(mergeBlocksOnce(b)){} return b; }
+
+function blockToLine(block,colorMaps){
+	return block.map((set,raceIdx)=>{
+		const arr=[...set].sort((a,b)=>a-b).map(n=>{
+			const bg=colorMaps[raceIdx][n];
+			const color=(bg&&bg!=="none")?COLOR_MAP[bg]:"";
+			const num=toCircleNumber(n);
+			return color?`<span style="background-color:${color}; padding:1px 3px; border-radius:4px;">${num}</span>`:num;
 		}).join('');
 		return arr;
 	}).join('&#8209;');
 }
 
-async function calc() {
-	const loading = document.getElementById('loading');
-	loading.style.display = 'block';
-	await new Promise(r => setTimeout(r));
+async function calc(){
+	const loading=document.getElementById('loading');
+	loading.style.display='block';
+	await new Promise(r=>setTimeout(r,50));
 
-	const r = [], f = [], colorMaps = [];
-	for (let i = 1; i <= TOTAL_RACES; i++) {
-		const data = getRaceData(i);
+	const r=[],f=[],colorMaps=[];
+	for(let i=1;i<=TOTAL_RACES;i++){
+		const data=getRaceData(i);
 		r.push(data.horse);
 		f.push(data.fav);
 		colorMaps.push(data.colorMap);
 	}
 
-	const minFav = Number(document.getElementById('minFav').value);
-	let totalValid = 0;
-	const comboList = [];
+	const minFav=Number(document.getElementById('minFav').value);
+	let totalValid=0;
+	const comboList=[];
 
-    function isColorDuplicate(combo) {
-        let used = 0;
-        for (let i = 0; i < TOTAL_RACES; i++) {
-            const bg = colorMaps[i][combo[i]];
-            if (!bg || bg === "none") continue;
-            const bit = bg === "red" ? 1 : bg === "blue" ? 2 : 4;
-            if (used & bit) return true;
-            used |= bit;
-        }
-        return false;
-    }
-
-	for (let k = TOTAL_RACES; k >= minFav; k--) {
-		const masks = combinations([...Array(TOTAL_RACES).keys()], k);
-		let validForK = 0;
-		let blocksAll = [];
-
-		masks.forEach(mask => {
-			const candidates = [];
-			for (let i = 0; i < TOTAL_RACES; i++) {
-				if (mask.includes(i)) candidates.push(f[i]);
-				else candidates.push(r[i].filter(x => !f[i].includes(x)));
-			}
-			if (!candidates.every(a => a.length > 0)) return;
-
-			const combos = cartesian(candidates).filter(c => !isColorDuplicate(c));
-			validForK += combos.length;
-			blocksAll.push(...combosToBlocks(combos));
-		});
-
-		const merged = fullyMergeBlocks(blocksAll);
-		comboList.push(`--- 本命${k}勝：${validForK}通り ---`);
-		merged.forEach(b => comboList.push(blockToLine(b, colorMaps)));
-
-		totalValid += validForK;
+	function isColorDuplicate(combo){
+		let used=0;
+		for(let i=0;i<combo.length;i++){
+			const bg=colorMaps[i][combo[i]];
+			if(!bg||bg==="none")continue;
+			const bit=bg==="red"?1:bg==="blue"?2:4;
+			if(used&bit)return true;
+			used|=bit;
+		}
+		return false;
 	}
 
-	document.getElementById('result').innerHTML =
-		`総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
+	for(let k=TOTAL_RACES;k>=minFav;k--){
+		const masks=combinations([...Array(TOTAL_RACES).keys()],k);
+		let validForK=0;
+		let blocksAll=[];
+		masks.forEach(mask=>{
+			const candidates=[];
+			for(let i=0;i<TOTAL_RACES;i++){
+				if(mask.includes(i)) candidates.push(f[i]);
+				else candidates.push(r[i].filter(x=>!f[i].includes(x)));
+			}
+			if(!candidates.every(a=>a.length>0)) return;
+			const combos=cartesian(candidates,(combo)=>!isColorDuplicate(combo));
+			validForK+=combos.length;
+			blocksAll.push(...combosToBlocks(combos));
+		});
+		const merged=fullyMergeBlocks(blocksAll);
+		comboList.push(`--- 本命${k}勝：${validForK}通り ---`);
+		merged.forEach(b=>comboList.push(blockToLine(b,colorMaps)));
+		totalValid+=validForK;
+	}
 
-	const combosArea = document.getElementById('combos');
-	combosArea.innerHTML = comboList.join('\n');
-	combosArea.style.height = 'auto';
-	combosArea.style.height = combosArea.scrollHeight + 'px';
+	document.getElementById('result').innerHTML=`総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
+	const combosArea=document.getElementById('combos');
+	combosArea.innerHTML=comboList.join('\n');
 	saveState();
-
-	loading.style.display = 'none';
+	loading.style.display='none';
 }
 
-function copyCombos() {
-	const combosArea = document.getElementById('combos');
-	if (!combosArea.innerText.trim()) return;
-	navigator.clipboard.writeText(combosArea.innerText).catch(() => {
-		console.error("コピーに失敗しました。");
-	});
+function copyCombos(){
+	const combosArea=document.getElementById('combos');
+	if(!combosArea.innerText.trim())return;
+	navigator.clipboard.writeText(combosArea.innerText).catch(()=>console.error("コピー失敗"));
 }
 
 createTable();
