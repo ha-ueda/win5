@@ -175,6 +175,7 @@ table thead th {
 <button class="calc-btn" onclick="calc()">計算する</button>
 <button class="calc-btn" id="copyBtn" onclick="copyCombos()" style="float:right; margin-top:6px;">コピーする</button>
 <div id="result"></div>
+<div id="loading" style="display:none; margin-top:10px; font-size:16px; color:#0078d4;">計算中...</div>
 <div id="combos" style="margin-top:10px; white-space:pre-wrap; font-family:monospace; font-size:14px;"></div>
 
 <script>
@@ -399,7 +400,11 @@ function blockToLine(block, colorMaps) {
 	}).join('-');
 }
 
-function calc() {
+async function calc() {
+	const loading = document.getElementById('loading');
+	loading.style.display = 'block';
+	await new Promise(r => setTimeout(r));
+
 	const r = [], f = [], colorMaps = [];
 	for (let i = 1; i <= TOTAL_RACES; i++) {
 		const data = getRaceData(i);
@@ -412,17 +417,17 @@ function calc() {
 	let totalValid = 0;
 	const comboList = [];
 
-	function isColorDuplicate(combo) {
-		const used = new Set();
-		for (let i = 0; i < TOTAL_RACES; i++) {
-			const bg = colorMaps[i][combo[i]];
-			if (bg && bg !== "none") {
-				if (used.has(bg)) return true;
-				used.add(bg);
-			}
-		}
-		return false;
-	}
+    function isColorDuplicate(combo) {
+        let used = 0;
+        for (let i = 0; i < TOTAL_RACES; i++) {
+            const bg = colorMaps[i][combo[i]];
+            if (!bg || bg === "none") continue;
+            const bit = bg === "red" ? 1 : bg === "blue" ? 2 : 4;
+            if (used & bit) return true;
+            used |= bit;
+        }
+        return false;
+    }
 
 	for (let k = TOTAL_RACES; k >= minFav; k--) {
 		const masks = combinations([...Array(TOTAL_RACES).keys()], k);
@@ -452,11 +457,13 @@ function calc() {
 	document.getElementById('result').innerHTML =
 		`総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
 
-    const combosArea = document.getElementById('combos');
-    combosArea.innerHTML = comboList.join('\n');
+	const combosArea = document.getElementById('combos');
+	combosArea.innerHTML = comboList.join('\n');
 	combosArea.style.height = 'auto';
 	combosArea.style.height = combosArea.scrollHeight + 'px';
 	saveState();
+
+	loading.style.display = 'none';
 }
 
 function copyCombos() {
