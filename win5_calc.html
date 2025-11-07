@@ -13,7 +13,15 @@ th { background-color: #e0f0ff; font-weight: bold; }
 button.calc-btn { padding: 10px 16px; margin-top: 10px; font-size: 16px; background-color: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; }
 button.calc-btn:hover { background-color: #005fa3; }
 #result { margin-top: 20px; font-weight: bold; font-size: 18px; }
-#combos { margin-top: 10px; width: 100%; min-height: 150px; padding: 6px; font-family: monospace; font-size: 14px; box-sizing: border-box; white-space: pre-wrap; word-wrap: break-word; resize: none; }
+#combos {
+	margin-top: 10px;
+	font-family: monospace;
+	font-size: 18px;
+	white-space: nowrap;
+	word-break: keep-all;
+	overflow-x: auto;
+	display: block;
+}
 .clear-btn {
     padding: 4px 6px;
     font-size: 18px;
@@ -397,7 +405,7 @@ function blockToLine(block, colorMaps) {
 			return num;
 		}).join('');
 		return arr;
-	}).join('-');
+	}).join('&#8209;');
 }
 
 async function calc() {
