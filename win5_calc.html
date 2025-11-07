@@ -343,6 +343,7 @@ async function calc(){
 	}
 
 	for(let k=TOTAL_RACES;k>=minFav;k--){
+        await new Promise(r => setTimeout(r, 0));
 		const masks=combinations([...Array(TOTAL_RACES).keys()],k);
 		let validForK=0;
 		let blocksAll=[];
