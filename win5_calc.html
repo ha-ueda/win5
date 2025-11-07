@@ -358,7 +358,7 @@ async function calc(){
 			blocksAll.push(...combosToBlocks(combos));
 		});
 		const merged=fullyMergeBlocks(blocksAll);
-		comboList.push(`--- 本命${k}勝：${validForK}通り ---`);
+		comboList.push(`─── 本命${k}勝：${validForK}通り ───`);
 		merged.forEach(b=>comboList.push(blockToLine(b,colorMaps)));
 		totalValid+=validForK;
 	}
