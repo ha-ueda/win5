@@ -135,18 +135,20 @@ table thead th { background: #f4f2ec !important; }
 </table>
 
 <div style="margin-top:18px;">
-本命が最低
-<select id="minFav" style="font-size: 18px;">
-<option value="1" selected>1</option>
-<option value="2">2</option>
-<option value="3">3</option>
-<option value="4">4</option>
-<option value="5">5</option>
-</select> 頭当たらないとハズレ
+	本命
+	<select id="minFav" style="font-size: 18px;">
+		<option value="1" selected>1</option>
+		<option value="2">2</option>
+		<option value="3">3</option>
+		<option value="4">4</option>
+		<option value="5">5</option>
+	</select> 勝以上
 </div>
 
-<button class="calc-btn" onclick="calc()">計算する</button>
-<button class="calc-btn" id="copyBtn" onclick="copyCombos()" style="float:right; margin-top:6px;">コピーする</button>
+<div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+	<button class="calc-btn" onclick="calc()">計算する</button>
+</div>
+
 <div id="result"></div>
 <div id="loading" style="display:none; margin-top:10px; font-size:18px;">計算中...</div>
 <div id="combos"></div>
@@ -325,7 +327,7 @@ function blockToLine(block,colorMaps){
 			return color?`<span style="background-color:${color}; padding:1px 3px; border-radius:4px;">${num}</span>`:num;
 		}).join('');
 		return arr;
-	}).join('&#8209;');
+	}).join('→');
 }
 
 async function calc(){
