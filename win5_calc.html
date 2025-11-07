@@ -111,6 +111,23 @@ table thead th {
 .selected:focus {
   outline: none;
 }
+#copyNotice {
+	position: fixed;
+	right: 20px;
+	bottom: 20px;
+	background: #0078d4;
+	color: white;
+	padding: 10px 16px;
+	border-radius: 6px;
+	font-size: 14px;
+	opacity: 0;
+	transition: opacity 0.3s;
+	pointer-events: none;
+	z-index: 9999;
+}
+#copyNotice.show {
+	opacity: 1;
+}
 </style>
 </head>
 <body>
@@ -156,8 +173,9 @@ table thead th {
 </div>
 
 <button class="calc-btn" onclick="calc()">計算する</button>
+<button class="calc-btn" id="copyBtn" onclick="copyCombos()" style="float:right; margin-top:6px;">コピーする</button>
 <div id="result"></div>
-<textarea id="combos" readonly placeholder="まとめた買い目がここに表示されます"></textarea>
+<div id="combos" style="margin-top:10px; white-space:pre-wrap; font-family:monospace; font-size:14px;"></div>
 
 <script>
 const TOTAL_RACES = 5;
@@ -301,62 +319,164 @@ function clearColumn(colNum){
 
 function getRaceData(r){
     const favs=[], himo=[];
+    const colorMap={};
     document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
         const v=sel.querySelector('.selected').textContent;
-        if(v==="◎") favs.push(Number(sel.dataset.horse));
-        if(v==="✔") himo.push(Number(sel.dataset.horse));
+        const bg=sel.querySelector('.selected').dataset.bg;
+        const num=Number(sel.dataset.horse);
+        colorMap[num]=bg;
+        if(v==="◎") favs.push(num);
+        if(v==="✔") himo.push(num);
     });
     const all=[...new Set([...favs,...himo])];
-    return {fav:favs, horse:all};
+    return {fav:favs, horse:all, colorMap};
 }
 
 function cartesian(arrays){ return arrays.reduce((a,b)=>a.flatMap(d=>b.map(e=>[...d,e])),[[]]); }
 function combinations(arr,k){ const res=[]; function helper(s,comb){ if(comb.length===k){ res.push([...comb]); return; } for(let i=s;i<arr.length;i++){ comb.push(arr[i]); helper(i+1,comb); comb.pop(); } } helper(0,[]); return res; }
 
-function calc(){
-    const r=[],f=[];
-    for(let i=1;i<=TOTAL_RACES;i++){
-        const data=getRaceData(i);
-        r.push(data.horse);
-        f.push(data.fav);
-    }
-    const minFav=Number(document.getElementById('minFav').value);
-    let totalValid=0, comboList=[];
-    for(let k=TOTAL_RACES;k>=minFav;k--){
-        const masks=combinations([...Array(TOTAL_RACES).keys()],k);
-        let validForK=0;
-        masks.forEach(mask=>{
-            const candidates=[];
-            for(let i=0;i<TOTAL_RACES;i++){
-                if(mask.includes(i)) candidates.push(f[i]);
-                else candidates.push(r[i].filter(x=>!f[i].includes(x)));
-            }
-            if(candidates.every(a=>a.length>0)) validForK+=cartesian(candidates).length;
-        });
-        comboList.push(`--- 本命${k}勝：${validForK}通り ---`);
-        masks.forEach(mask=>{
-            const candidates=[];
-            for(let i=0;i<TOTAL_RACES;i++){
-                if(mask.includes(i)) candidates.push(f[i]);
-                else candidates.push(r[i].filter(x=>!f[i].includes(x)));
-            }
-            if(candidates.every(a=>a.length>0)){
-                const line=candidates.map(a=>a.map(n=>toCircleNumber(n)).join('')).join('-');
-                comboList.push(line);
-            }
-        });
-        totalValid+=validForK;
-    }
-    document.getElementById('result').innerHTML=`総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
-    const combosArea=document.getElementById('combos');
-    combosArea.value=comboList.join('\n');
-    combosArea.style.height='auto';
-    combosArea.style.height=combosArea.scrollHeight+'px';
-    saveState();
+function setEq(a, b) {
+	const arrA = [...a], arrB = [...b];
+	if (arrA.length !== arrB.length) return false;
+	for (const x of arrA) if (!b.has(x)) return false;
+	return true;
+}
+function setUnion(a, b) {
+	const s = new Set(a);
+	for (const x of b) s.add(x);
+	return s;
+}
+function setInterEmpty(a, b) {
+	for (const x of a) if (b.has(x)) return false;
+	return true;
+}
+
+function combosToBlocks(combos) {
+	return combos.map(c => c.map(x => new Set([x])));
+}
+
+function mergeBlocksOnce(blocks) {
+	for (let i = 0; i < blocks.length; i++) {
+		for (let j = i + 1; j < blocks.length; j++) {
+			const A = blocks[i], B = blocks[j];
+			let diffIdx = -1, diffCount = 0, ok = true;
+			for (let r = 0; r < TOTAL_RACES; r++) {
+				if (setEq(A[r], B[r])) continue;
+				diffCount++;
+				if (diffCount > 1) { ok = false; break; }
+				diffIdx = r;
+			}
+			if (ok && diffCount === 1 && setInterEmpty(A[diffIdx], B[diffIdx])) {
+				const merged = A.map((s, idx) =>
+					idx === diffIdx ? setUnion(A[idx], B[idx]) : s
+				);
+				blocks.splice(j, 1);
+				blocks[i] = merged;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+function fullyMergeBlocks(blocks) {
+	while (mergeBlocksOnce(blocks)) { }
+	return blocks;
+}
+
+function blockToLine(block, colorMaps) {
+	return block.map((set, raceIdx) => {
+		const arr = [...set].sort((a, b) => a - b).map(n => {
+			const bg = colorMaps[raceIdx][n];
+			const color = (bg && bg !== "none") ? COLOR_MAP[bg] : "";
+			const num = toCircleNumber(n);
+			if (color) {
+				return `<span style="background-color:${color}; padding:1px 3px; border-radius:4px;">${num}</span>`;
+			}
+			return num;
+		}).join('');
+		return arr;
+	}).join('-');
+}
+
+function calc() {
+	const r = [], f = [], colorMaps = [];
+	for (let i = 1; i <= TOTAL_RACES; i++) {
+		const data = getRaceData(i);
+		r.push(data.horse);
+		f.push(data.fav);
+		colorMaps.push(data.colorMap);
+	}
+
+	const minFav = Number(document.getElementById('minFav').value);
+	let totalValid = 0;
+	const comboList = [];
+
+	function isColorDuplicate(combo) {
+		const used = new Set();
+		for (let i = 0; i < TOTAL_RACES; i++) {
+			const bg = colorMaps[i][combo[i]];
+			if (bg && bg !== "none") {
+				if (used.has(bg)) return true;
+				used.add(bg);
+			}
+		}
+		return false;
+	}
+
+	for (let k = TOTAL_RACES; k >= minFav; k--) {
+		const masks = combinations([...Array(TOTAL_RACES).keys()], k);
+		let validForK = 0;
+		let blocksAll = [];
+
+		masks.forEach(mask => {
+			const candidates = [];
+			for (let i = 0; i < TOTAL_RACES; i++) {
+				if (mask.includes(i)) candidates.push(f[i]);
+				else candidates.push(r[i].filter(x => !f[i].includes(x)));
+			}
+			if (!candidates.every(a => a.length > 0)) return;
+
+			const combos = cartesian(candidates).filter(c => !isColorDuplicate(c));
+			validForK += combos.length;
+			blocksAll.push(...combosToBlocks(combos));
+		});
+
+		const merged = fullyMergeBlocks(blocksAll);
+		comboList.push(`--- 本命${k}勝：${validForK}通り ---`);
+		merged.forEach(b => comboList.push(blockToLine(b, colorMaps)));
+
+		totalValid += validForK;
+	}
+
+	document.getElementById('result').innerHTML =
+		`総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
+
+    const combosArea = document.getElementById('combos');
+    combosArea.innerHTML = comboList.join('\n');
+	combosArea.style.height = 'auto';
+	combosArea.style.height = combosArea.scrollHeight + 'px';
+	saveState();
+}
+
+function copyCombos() {
+	const combosArea = document.getElementById('combos');
+	if (!combosArea.innerText.trim()) return;
+
+	navigator.clipboard.writeText(combosArea.innerText)
+		.then(() => {
+			const notice = document.getElementById('copyNotice');
+			notice.classList.add('show');
+			setTimeout(() => notice.classList.remove('show'), 2000);
+		})
+		.catch(() => {
+			console.error("コピーに失敗しました。");
+		});
 }
 
 createTable();
 restoreState();
 </script>
+<div id="copyNotice">買い目をコピーしました</div>
 </body>
 </html>
