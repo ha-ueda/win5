@@ -157,6 +157,7 @@ const HORSE_MAX = 18;
 const MARKS = ["", "✔", "◎"];
 const COLORS = ["none", "red", "blue", "yellow"];
 const COLOR_MAP = { none: "", red: "#ffb3b3", blue: "#b3d1ff", yellow: "#fff3b3" };
+const CIRCLES = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
 
 let backgroundMode = false;
 const modeBtn = document.getElementById("modeToggle");
@@ -175,7 +176,7 @@ modeBtn.addEventListener("click", () => {
 });
 updateSwitch();
 
-function toCircleNumber(num){ const n=['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱']; return n[num-1]||String(num); }
+function toCircleNumber(num){ return CIRCLES[num-1] || String(num); }
 
 function createCustomSelect(raceNum, horseNum){
 	const wrapper=document.createElement("div");
@@ -277,29 +278,43 @@ function getRaceData(r){
 	return {fav:favs,horse:all,colorMap};
 }
 
-// ✅ 高速化版 cartesian
-function cartesian(arrays,isValid){
-	const result=[];
-	function helper(prefix,depth){
-		if(depth===arrays.length){ result.push(prefix); return; }
-		for(const val of arrays[depth]){
-			const combo=[...prefix,val];
-			if(isValid && !isValid(combo,depth)) continue;
-			helper(combo,depth+1);
-		}
-	}
-	helper([],0);
-	return result;
-}
-
 function combinations(arr,k){ const res=[]; (function h(s,c){ if(c.length===k){res.push([...c]);return;} for(let i=s;i<arr.length;i++){ c.push(arr[i]); h(i+1,c); c.pop(); } })(0,[]); return res; }
 
 function setEq(a,b){ if(a.size!==b.size) return false; for(const x of a) if(!b.has(x)) return false; return true; }
 function setUnion(a,b){ const s=new Set(a); for(const x of b) s.add(x); return s; }
 function setInterEmpty(a,b){ for(const x of a) if(b.has(x)) return false; return true; }
-function combosToBlocks(c){ return c.map(x=>x.map(v=>new Set([v]))); }
-function mergeBlocksOnce(b){ for(let i=0;i<b.length;i++){ for(let j=i+1;j<b.length;j++){ const A=b[i],B=b[j]; let d=-1,c=0,ok=true; for(let r=0;r<TOTAL_RACES;r++){ if(setEq(A[r],B[r]))continue; c++; if(c>1){ok=false;break;} d=r; } if(ok&&c===1&&setInterEmpty(A[d],B[d])){ b[i]=A.map((s,idx)=>idx===d?setUnion(A[idx],B[idx]):s); b.splice(j,1); return true; } } } return false; }
-function fullyMergeBlocks(b){ while(mergeBlocksOnce(b)){} return b; }
+
+function fullyMergeBlocksStable(blocks){
+	let merged=true;
+	while(merged){
+		merged=false;
+		const newBlocks=[];
+		const used=new Set();
+		for(let i=0;i<blocks.length;i++){
+			if(used.has(i)) continue;
+			let base=blocks[i];
+			for(let j=i+1;j<blocks.length;j++){
+				if(used.has(j)) continue;
+				const A=base,B=blocks[j];
+				let diff=-1,diffCount=0,ok=true;
+				for(let r=0;r<TOTAL_RACES;r++){
+					if(setEq(A[r],B[r])) continue;
+					diffCount++;
+					if(diffCount>1){ ok=false; break; }
+					diff=r;
+				}
+				if(ok&&diffCount===1&&setInterEmpty(A[diff],B[diff])){
+					base=A.map((s,idx)=>idx===diff?setUnion(A[idx],B[idx]):s);
+					used.add(j);
+					merged=true;
+				}
+			}
+			newBlocks.push(base);
+		}
+		blocks=newBlocks;
+	}
+	return blocks;
+}
 
 function blockToLine(block,colorMaps){
 	return block.map((set,raceIdx)=>{
@@ -318,55 +333,76 @@ async function calc(){
 	loading.style.display='block';
 	await new Promise(r=>setTimeout(r,50));
 
-	const r=[],f=[],colorMaps=[];
+	const races=[],favs=[],colorMaps=[];
 	for(let i=1;i<=TOTAL_RACES;i++){
-		const data=getRaceData(i);
-		r.push(data.horse);
-		f.push(data.fav);
-		colorMaps.push(data.colorMap);
+		const d=getRaceData(i);
+		races.push(d.horse);
+		favs.push(d.fav);
+		colorMaps.push(d.colorMap);
 	}
 
-	const minFav=Number(document.getElementById('minFav').value);
-	let totalValid=0;
-	const comboList=[];
+	const colorBits=colorMaps.map(m=>{
+		const c={};
+		for(const k in m)
+			c[k]=m[k]==="red"?1:m[k]==="blue"?2:m[k]==="yellow"?4:0;
+		return c;
+	});
 
-	function isColorDuplicate(combo){
+	function isColorDuplicateBits(combo){
 		let used=0;
 		for(let i=0;i<combo.length;i++){
-			const bg=colorMaps[i][combo[i]];
-			if(!bg||bg==="none")continue;
-			const bit=bg==="red"?1:bg==="blue"?2:4;
-			if(used&bit)return true;
+			const bit=colorBits[i][combo[i]];
+			if(bit&&(used&bit)) return true;
 			used|=bit;
 		}
 		return false;
 	}
 
-	for(let k=TOTAL_RACES;k>=minFav;k--){
-        await new Promise(r => setTimeout(r, 0));
-		const masks=combinations([...Array(TOTAL_RACES).keys()],k);
-		let validForK=0;
-		let blocksAll=[];
-		masks.forEach(mask=>{
-			const candidates=[];
-			for(let i=0;i<TOTAL_RACES;i++){
-				if(mask.includes(i)) candidates.push(f[i]);
-				else candidates.push(r[i].filter(x=>!f[i].includes(x)));
-			}
-			if(!candidates.every(a=>a.length>0)) return;
-			const combos=cartesian(candidates,(combo)=>!isColorDuplicate(combo));
-			validForK+=combos.length;
-			blocksAll.push(...combosToBlocks(combos));
-		});
-		const merged=fullyMergeBlocks(blocksAll);
-		comboList.push(`─── 本命${k}勝：${validForK}通り ───`);
-		merged.forEach(b=>comboList.push(blockToLine(b,colorMaps)));
-		totalValid+=validForK;
+	function* cartesianGen(arrays,isValid){
+		const n=arrays.length;
+		const indices=Array(n).fill(0);
+		while(true){
+			const combo=arrays.map((a,i)=>a[indices[i]]);
+			if(!isValid||isValid(combo)) yield combo;
+			let i=n-1;
+			while(i>=0&&++indices[i]===arrays[i].length) indices[i--]=0;
+			if(i<0) break;
+		}
 	}
 
-	document.getElementById('result').innerHTML=`総買い目：<span style="color:#0078d4;">${totalValid.toLocaleString()}</span> 通り`;
-	const combosArea=document.getElementById('combos');
-	combosArea.innerHTML=comboList.join('\n');
+	const minFav=Number(document.getElementById('minFav').value);
+	let total=0;
+	const comboList=[];
+
+	for(let k=TOTAL_RACES;k>=minFav;k--){
+		await new Promise(r=>setTimeout(r,0));
+		const masks=combinations([...Array(TOTAL_RACES).keys()],k);
+		let count=0;
+		let blocks=[];
+
+		for(const mask of masks){
+			const candidates=[];
+			for(let i=0;i<TOTAL_RACES;i++){
+				candidates.push(mask.includes(i)
+					? favs[i]
+					: races[i].filter(x=>!favs[i].includes(x)));
+			}
+			if(!candidates.every(a=>a.length>0)) continue;
+
+			for(const combo of cartesianGen(candidates,c=>!isColorDuplicateBits(c))){
+				count++;
+				blocks.push(combo.map(v=>new Set([v])));
+			}
+		}
+
+		blocks=fullyMergeBlocksStable(blocks);
+		comboList.push(`─── 本命${k}勝：${count}通り ───`);
+		blocks.forEach(b=>comboList.push(blockToLine(b,colorMaps)));
+		total+=count;
+	}
+
+	document.getElementById('result').innerHTML=`総買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 通り`;
+	document.getElementById('combos').innerHTML=comboList.join('\n');
 	saveState();
 	loading.style.display='none';
 }
@@ -380,5 +416,6 @@ function copyCombos(){
 createTable();
 restoreState();
 </script>
+
 </body>
 </html>
