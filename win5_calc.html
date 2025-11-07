@@ -161,9 +161,9 @@ table thead th {
 </tfoot>
 </table>
 
-<div style="margin-top:16px;">
+<div style="margin-top:18px;">
 本命が最低
-<select id="minFav" style="font-size: 16px;">
+<select id="minFav" style="font-size: 18px;">
 <option value="1" selected>1</option>
 <option value="2">2</option>
 <option value="3">3</option>
@@ -175,8 +175,8 @@ table thead th {
 <button class="calc-btn" onclick="calc()">計算する</button>
 <button class="calc-btn" id="copyBtn" onclick="copyCombos()" style="float:right; margin-top:6px;">コピーする</button>
 <div id="result"></div>
-<div id="loading" style="display:none; margin-top:10px; font-size:16px; color:#0078d4;">計算中...</div>
-<div id="combos" style="margin-top:10px; white-space:pre-wrap; font-family:monospace; font-size:14px;"></div>
+<div id="loading" style="display:none; margin-top:10px; font-size:18px;">計算中...</div>
+<div id="combos" style="margin-top:10px; white-space:pre-wrap; font-family:monospace; font-size:18px;"></div>
 
 <script>
 const TOTAL_RACES = 5;
@@ -469,16 +469,9 @@ async function calc() {
 function copyCombos() {
 	const combosArea = document.getElementById('combos');
 	if (!combosArea.innerText.trim()) return;
-
-	navigator.clipboard.writeText(combosArea.innerText)
-		.then(() => {
-			const notice = document.getElementById('copyNotice');
-			notice.classList.add('show');
-			setTimeout(() => notice.classList.remove('show'), 2000);
-		})
-		.catch(() => {
-			console.error("コピーに失敗しました。");
-		});
+	navigator.clipboard.writeText(combosArea.innerText).catch(() => {
+		console.error("コピーに失敗しました。");
+	});
 }
 
 createTable();
