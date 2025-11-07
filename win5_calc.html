@@ -327,7 +327,7 @@ function blockToLine(block,colorMaps){
 			return color?`<span style="background-color:${color}; padding:1px 3px; border-radius:4px;">${num}</span>`:num;
 		}).join('');
 		return arr;
-	}).join('→');
+	}).join(' | ');
 }
 
 async function calc(){
@@ -407,12 +407,6 @@ async function calc(){
 	document.getElementById('combos').innerHTML=comboList.join('\n');
 	saveState();
 	loading.style.display='none';
-}
-
-function copyCombos(){
-	const combosArea=document.getElementById('combos');
-	if(!combosArea.innerText.trim())return;
-	navigator.clipboard.writeText(combosArea.innerText).catch(()=>console.error("コピー失敗"));
 }
 
 createTable();
