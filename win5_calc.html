@@ -41,6 +41,7 @@ button.calc-btn:hover { background-color: #005fa3; }
 	cursor: pointer;
 	width: fit-content;
 	margin: 0 auto;
+	position: relative;
 }
 .selected {
 	touch-action: manipulation;
@@ -94,12 +95,8 @@ button.calc-btn:hover { background-color: #005fa3; }
 	border-radius: 50%;
 	transition: left 0.2s;
 }
-.switch.on {
-	background: #2196F3;
-}
-.switch.on::after {
-	left: 24px;
-}
+.switch.on { background: #2196F3; }
+.switch.on::after { left: 24px; }
 table thead th { background: #f4f2ec !important; }
 #raceBody tr:nth-child(even) td { background: #fbfbfb !important; }
 * { -webkit-tap-highlight-color: rgba(0,0,0,0); }
@@ -157,53 +154,99 @@ table thead th { background: #f4f2ec !important; }
 const TOTAL_RACES = 5;
 const HORSE_MAX = 18;
 const MARKS = ["", "✔", "◎"];
-const COLORS = ["none", "red", "blue", "yellow"];
-const COLOR_MAP = { none: "", red: "#ffb3b3", blue: "#b3d1ff", yellow: "#fff3b3" };
 const CIRCLES = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
-
 let backgroundMode = false;
 const modeBtn = document.getElementById("modeToggle");
 
-function updateSwitch(){ backgroundMode ? modeBtn.classList.add("on") : modeBtn.classList.remove("on"); }
-
+function updateSwitch() {
+	backgroundMode ? modeBtn.classList.add("on") : modeBtn.classList.remove("on");
+}
 modeBtn.addEventListener("click", () => {
 	backgroundMode = !backgroundMode;
 	updateSwitch();
-	if (backgroundMode) {
-		document.querySelectorAll(".selected").forEach(d => {
-			if (!d.dataset.bg) d.dataset.bg = "none";
-			d.style.backgroundColor = COLOR_MAP[d.dataset.bg];
-		});
-	}
 });
 updateSwitch();
 
 function toCircleNumber(num){ return CIRCLES[num-1] || String(num); }
 
 function createCustomSelect(raceNum, horseNum){
-	const wrapper=document.createElement("div");
-	wrapper.className="custom-select";
-	wrapper.dataset.race=raceNum;
-	wrapper.dataset.horse=horseNum;
+	const wrapper = document.createElement("div");
+	wrapper.className = "custom-select";
+	wrapper.dataset.race = raceNum;
+	wrapper.dataset.horse = horseNum;
 
-	const selected=document.createElement("div");
-	selected.className="selected";
-	selected.textContent="";
-	selected.dataset.bg="none";
-	selected.addEventListener("click",()=>{
-		if(backgroundMode){
-			const next=(COLORS.indexOf(selected.dataset.bg)+1)%COLORS.length;
-			selected.dataset.bg=COLORS[next];
-			selected.style.backgroundColor=COLOR_MAP[selected.dataset.bg];
-		}else{
-			const cur=MARKS.indexOf(selected.textContent);
-			selected.textContent=MARKS[(cur+1)%MARKS.length];
+	const selected = document.createElement("div");
+	selected.className = "selected";
+	selected.textContent = "";
+	selected.dataset.bg = "none";
+
+	selected.addEventListener("click", (e) => {
+		if (backgroundMode) {
+			const palette = document.createElement("div");
+			palette.style.position = "absolute";
+			palette.style.zIndex = 9999;
+			palette.style.display = "flex";
+			palette.style.gap = "6px";
+			palette.style.background = "#fff";
+			palette.style.border = "1px solid #ccc";
+			palette.style.padding = "6px";
+			palette.style.borderRadius = "6px";
+			palette.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
+			document.body.appendChild(palette);
+
+			palette.style.left = e.pageX + "px";
+			palette.style.top = e.pageY + "px";
+
+			const colors = ["#ffb3b3", "#b3d1ff", "#fff3b3", "#b3ffb3", "#e0b3ff"];
+			colors.forEach(c => {
+				const btn = document.createElement("div");
+				btn.style.width = "24px";
+				btn.style.height = "24px";
+				btn.style.backgroundColor = c;
+				btn.style.border = "1px solid #999";
+				btn.style.borderRadius = "4px";
+				btn.style.cursor = "pointer";
+				btn.addEventListener("click", () => {
+					selected.dataset.bg = c;
+					selected.style.backgroundColor = c;
+					palette.remove();
+					saveState();
+				});
+				palette.appendChild(btn);
+			});
+
+			const noneBtn=document.createElement("div");
+			noneBtn.style.width="24px";
+			noneBtn.style.height="24px";
+			noneBtn.style.background="#fff";
+			noneBtn.style.border="1px solid #999";
+			noneBtn.style.borderRadius="4px";
+			noneBtn.style.cursor="pointer";
+			noneBtn.addEventListener("click",()=>{
+				selected.dataset.bg="none";
+				selected.style.backgroundColor="";
+				palette.remove();
+				saveState();
+			});
+			palette.appendChild(noneBtn);
+
+			const closePalette = (ev) => {
+				if (!palette.contains(ev.target)) {
+					palette.remove();
+					document.removeEventListener("click", closePalette);
+				}
+			};
+			setTimeout(() => document.addEventListener("click", closePalette), 0);
+		} else {
+			const cur = MARKS.indexOf(selected.textContent);
+			selected.textContent = MARKS[(cur + 1) % MARKS.length];
+			saveState();
 		}
-		saveState();
 	});
-	const label=document.createElement("span");
-	label.className="horse-label";
-	label.textContent=toCircleNumber(horseNum);
+
+	const label = document.createElement("span");
+	label.className = "horse-label";
+	label.textContent = toCircleNumber(horseNum);
 	wrapper.appendChild(label);
 	wrapper.appendChild(selected);
 	return wrapper;
@@ -228,14 +271,14 @@ function saveState(){
 		state.races[`r${r}`]={};
 		document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
 			const d=sel.querySelector('.selected');
-			state.races[`r${r}`][sel.dataset.horse]={mark:d.textContent,bg:d.dataset.bg};
+			state.races[`r${r}`][sel.dataset.horse]={mark:d.textContent,bg:d.dataset.bg||"none"};
 		});
 	}
-	localStorage.setItem('win5_state_v5',JSON.stringify(state));
+	localStorage.setItem('win5_state_v7',JSON.stringify(state));
 }
 
 function restoreState(){
-	const data=localStorage.getItem('win5_state_v5');
+	const data=localStorage.getItem('win5_state_v7');
 	if(!data) return;
 	try{
 		const state=JSON.parse(data);
@@ -249,7 +292,7 @@ function restoreState(){
 					const d=sel.querySelector('.selected');
 					d.textContent=val.mark;
 					d.dataset.bg=val.bg;
-					d.style.backgroundColor=COLOR_MAP[val.bg];
+					d.style.backgroundColor = (val.bg && val.bg !== "none") ? val.bg : "";
 				}
 			});
 		}
@@ -318,16 +361,10 @@ function fullyMergeBlocksStable(blocks){
 	return blocks;
 }
 
-function blockToLine(block,colorMaps){
-	return block.map((set,raceIdx)=>{
-		const arr=[...set].sort((a,b)=>a-b).map(n=>{
-			const bg=colorMaps[raceIdx][n];
-			const color=(bg&&bg!=="none")?COLOR_MAP[bg]:"";
-			const num=toCircleNumber(n);
-			return color?`<span style="background-color:${color}; padding:1px 3px; border-radius:4px;">${num}</span>`:num;
-		}).join('');
-		return arr;
-	}).join('&#8209;');
+function blockToLine(block){
+	return block.map(set=>{
+		return [...set].sort((a,b)=>a-b).map(toCircleNumber).join('');
+	}).join('&nbsp;&#8209;&nbsp;');
 }
 
 async function calc(){
@@ -343,19 +380,15 @@ async function calc(){
 		colorMaps.push(d.colorMap);
 	}
 
-	const colorBits=colorMaps.map(m=>{
-		const c={};
-		for(const k in m)
-			c[k]=m[k]==="red"?1:m[k]==="blue"?2:m[k]==="yellow"?4:0;
-		return c;
-	});
-
-	function isColorDuplicateBits(combo){
-		let used=0;
+	function isColorDuplicate(combo){
+		const used=new Set();
 		for(let i=0;i<combo.length;i++){
-			const bit=colorBits[i][combo[i]];
-			if(bit&&(used&bit)) return true;
-			used|=bit;
+			const horseNum=combo[i];
+			const color=colorMaps[i][horseNum];
+			if(color && color!=="none"){
+				if(used.has(color)) return true;
+				used.add(color);
+			}
 		}
 		return false;
 	}
@@ -391,7 +424,7 @@ async function calc(){
 			}
 			if(!candidates.every(a=>a.length>0)) continue;
 
-			for(const combo of cartesianGen(candidates,c=>!isColorDuplicateBits(c))){
+			for(const combo of cartesianGen(candidates,c=>!isColorDuplicate(c))){
 				count++;
 				blocks.push(combo.map(v=>new Set([v])));
 			}
@@ -399,7 +432,7 @@ async function calc(){
 
 		blocks=fullyMergeBlocksStable(blocks);
 		comboList.push(`─── 本命${k}勝：${count}通り ───`);
-		blocks.forEach(b=>comboList.push(blockToLine(b,colorMaps)));
+		blocks.forEach(b=>comboList.push(blockToLine(b)));
 		total+=count;
 	}
 
@@ -412,6 +445,5 @@ async function calc(){
 createTable();
 restoreState();
 </script>
-
 </body>
 </html>
