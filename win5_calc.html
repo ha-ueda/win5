@@ -17,7 +17,7 @@ button.calc-btn:hover { background-color: #005fa3; }
 	margin-top: 10px;
 	font-family: monospace;
 	font-size: 18px;
-	white-space: pre;
+	white-space: normal;
 	word-break: keep-all;
 	overflow-x: auto;
 	display: block;
@@ -86,9 +86,9 @@ button.calc-btn:hover { background-color: #005fa3; }
 }
 .switch::after {
 	content: "";
-	position: absolute;
 	top: 2px;
 	left: 2px;
+	position: absolute;
 	width: 20px;
 	height: 20px;
 	background: #fff;
@@ -105,13 +105,63 @@ table thead th { background: #f4f2ec !important; }
 
 .combo-grid {
 	display: grid;
-	grid-template-columns: repeat(5, max-content);
-	column-gap: 14px;
+	grid-template-columns: 32px repeat(5, max-content);
+	column-gap: 0;
 	row-gap: 2px;
 	font-family: monospace;
+	padding: 4px 0;
 }
+.combo-row {
+	display: contents;
+}
+
+.combo-check-wrap,
+.combo-cell {
+	min-height: 32px;
+	display: flex;
+	align-items: center;
+}
+
 .combo-cell {
 	white-space: nowrap;
+	padding: 0 12px;
+	border-radius: 0;
+}
+
+.combo-check-wrap {
+	justify-content: center;
+	padding: 0 4px;
+	cursor: pointer;
+}
+
+.combo-check {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.combo-check-visual {
+	width: 24px;
+	height: 24px;
+	border-radius: 4px;
+	background-color: #f3f3f3;
+	border: 1px solid #d5d5d5;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 16px;
+	font-weight: bold;
+	color: #c5c5c5;
+}
+
+.combo-row.checked .combo-check-wrap,
+.combo-row.checked .combo-cell {
+	background-color: #ffe6ea;
+}
+.combo-row.checked .combo-check-visual {
+	background-color: #e85b4a;
+	border-color: #e85b4a;
+	color: #ffffff;
 }
 </style>
 </head>
@@ -166,6 +216,7 @@ const TOTAL_RACES = 5;
 const HORSE_MAX = 18;
 const MARKS = ["", "✔", "◎"];
 const CIRCLES = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
+const MERGE_LIMIT = 100000;
 let backgroundMode = false;
 const modeBtn = document.getElementById("modeToggle");
 
@@ -229,7 +280,6 @@ function createCustomSelect(raceNum, horseNum){
 			noneBtn.style.border = "1px solid #777";
 			noneBtn.style.borderRadius = "6px";
 			noneBtn.style.cursor = "pointer";
-			noneBtn.title = "色を消す";
 			noneBtn.addEventListener("click", () => {
 				selected.dataset.bg = "none";
 				selected.style.backgroundColor = "";
@@ -344,11 +394,33 @@ function getRaceData(r){
 	return {fav:favs,horse:all,colorMap};
 }
 
-function combinations(arr,k){ const res=[]; (function h(s,c){ if(c.length===k){res.push([...c]);return;} for(let i=s;i<arr.length;i++){ c.push(arr[i]); h(i+1,c); c.pop(); } })(0,[]); return res; }
+function combinations(arr,k){
+	const res=[];
+	(function h(s,c){
+		if(c.length===k){res.push([...c]);return;}
+		for(let i=s;i<arr.length;i++){
+			c.push(arr[i]);
+			h(i+1,c);
+			c.pop();
+		}
+	})(0,[]);
+	return res;
+}
 
-function setEq(a,b){ if(a.size!==b.size) return false; for(const x of a) if(!b.has(x)) return false; return true; }
-function setUnion(a,b){ const s=new Set(a); for(const x of b) s.add(x); return s; }
-function setInterEmpty(a,b){ for(const x of a) if(b.has(x)) return false; return true; }
+function setEq(a,b){
+	if(a.size!==b.size) return false;
+	for(const x of a) if(!b.has(x)) return false;
+	return true;
+}
+function setUnion(a,b){
+	const s=new Set(a);
+	for(const x of b) s.add(x);
+	return s;
+}
+function setInterEmpty(a,b){
+	for(const x of a) if(b.has(x)) return false;
+	return true;
+}
 
 function fullyMergeBlocksStable(blocks){
 	let merged=true;
@@ -383,10 +455,33 @@ function fullyMergeBlocksStable(blocks){
 }
 
 function blockToLine(block) {
-  const parts = block.map(set =>
-    [...set].sort((a,b)=>a-b).map(toCircleNumber).join('')
-  );
-  return parts.map(p => `<span class="combo-cell">${p}</span>`).join('');
+	const parts = block.map(set =>
+		[...set].sort((a,b)=>a-b).map(toCircleNumber).join('')
+	);
+	const cells = parts.map(p => `<span class="combo-cell">${p}</span>`).join('');
+	return (
+		'<div class="combo-row">' +
+			'<label class="combo-check-wrap">' +
+				'<input type="checkbox" class="combo-check">' +
+				'<span class="combo-check-visual">✓</span>' +
+			'</label>' +
+			cells +
+		'</div>'
+	);
+}
+
+function attachComboEvents(){
+	document.querySelectorAll('#combos .combo-check').forEach(chk=>{
+		chk.addEventListener('change',()=>{
+			const row = chk.closest('.combo-row');
+			if(!row) return;
+			if(chk.checked){
+				row.classList.add('checked');
+			}else{
+				row.classList.remove('checked');
+			}
+		});
+	});
 }
 
 async function calc(){
@@ -436,32 +531,54 @@ async function calc(){
 		const masks=combinations([...Array(TOTAL_RACES).keys()],k);
 		let count=0;
 		let blocks=[];
+		let storeBlocks=true;
 
 		for(const mask of masks){
 			const candidates=[];
 			for(let i=0;i<TOTAL_RACES;i++){
-				candidates.push(mask.includes(i)
-					? favs[i]
-					: races[i].filter(x=>!favs[i].includes(x)));
+				candidates.push(
+					mask.includes(i)
+						? favs[i]
+						: races[i].filter(x=>!favs[i].includes(x))
+				);
 			}
 			if(!candidates.every(a=>a.length>0)) continue;
 
 			for(const combo of cartesianGen(candidates,c=>!isColorDuplicate(c))){
 				count++;
-				blocks.push(combo.map(v=>new Set([v])));
+				if(storeBlocks){
+					if(count <= MERGE_LIMIT){
+						blocks.push(combo.map(v=>new Set([v])));
+					}else{
+						storeBlocks=false;
+						blocks = [];
+					}
+				}
 			}
 		}
 
-		blocks=fullyMergeBlocksStable(blocks);
-		comboList.push(`<b>─── 本命${k}勝：${count}通り ───</b>`);
-		comboList.push('<div class="combo-grid">');
-		blocks.forEach(b=>comboList.push(blockToLine(b)));
-		comboList.push('</div>');
+		comboList.push(
+			`<b>─── 本命${k}勝：${count.toLocaleString()}通り ───</b>`
+		);
+
+		if(count > MERGE_LIMIT){
+			comboList.push(
+				'<div>※10万通り以上のため買い目は省略。</div>'
+			);
+		}else{
+			const displayBlocks = fullyMergeBlocksStable(blocks);
+			comboList.push('<div class="combo-grid">');
+			displayBlocks.forEach(b=>comboList.push(blockToLine(b)));
+			comboList.push('</div>');
+		}
+
 		total+=count;
 	}
 
-	document.getElementById('result').innerHTML=`総買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 通り`;
+	document.getElementById('result').innerHTML =
+		`総買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 通り`;
 	document.getElementById('combos').innerHTML = comboList.join('');
+	attachComboEvents();
 	saveState();
 	loading.style.display='none';
 }
