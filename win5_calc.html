@@ -193,9 +193,17 @@ function createCustomSelect(raceNum, horseNum){
 			palette.style.borderRadius = "6px";
 			palette.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
 			document.body.appendChild(palette);
-
-			palette.style.left = e.pageX + "px";
-			palette.style.top = e.pageY + "px";
+			const rect = palette.getBoundingClientRect();
+			const pw = rect.width;
+			const ph = rect.height;
+			const vw = window.innerWidth;
+			const vh = window.innerHeight;
+			let left = e.pageX;
+			let top = e.pageY;
+			if (left + pw > vw - 10) left = vw - pw - 10;
+			if (top + ph > vh - 10) top = vh - ph - 10;
+			palette.style.left = left + "px";
+			palette.style.top = top + "px";
 
 			const colors = ["#ffb3b3", "#b3d1ff", "#fff3b3", "#b3ffb3", "#e0b3ff"];
 			colors.forEach(c => {
