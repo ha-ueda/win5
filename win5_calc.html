@@ -17,7 +17,7 @@ button.calc-btn:hover { background-color: #005fa3; }
 	margin-top: 10px;
 	font-family: monospace;
 	font-size: 18px;
-	white-space: pre-wrap;
+	white-space: pre;
 	word-break: keep-all;
 	overflow-x: auto;
 	display: block;
@@ -371,10 +371,15 @@ function fullyMergeBlocksStable(blocks){
 	return blocks;
 }
 
-function blockToLine(block){
-	return block.map(set=>{
-		return [...set].sort((a,b)=>a-b).map(toCircleNumber).join('');
-	}).join('&nbsp;&#8209;&nbsp;');
+function blockToLine(block) {
+  const parts = block.map(set =>
+    [...set].sort((a, b) => a - b).map(toCircleNumber).join('')
+  );
+  return parts
+    .map(
+      p => `<span style="display:inline-block; width:90px; text-align:left; white-space:nowrap;">${p}</span>`
+    )
+    .join('');
 }
 
 async function calc(){
