@@ -186,48 +186,48 @@ function createCustomSelect(raceNum, horseNum){
 			palette.style.position = "absolute";
 			palette.style.zIndex = 9999;
 			palette.style.display = "flex";
-			palette.style.gap = "6px";
+			palette.style.gap = "10px";
 			palette.style.background = "#fff";
-			palette.style.border = "1px solid #ccc";
-			palette.style.padding = "6px";
-			palette.style.borderRadius = "6px";
-			palette.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
+			palette.style.border = "1px solid #999";
+			palette.style.padding = "10px";
+			palette.style.borderRadius = "10px";
+			palette.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
 
 			const colors = ["#ffb3b3", "#b3d1ff", "#fff3b3", "#b3ffb3", "#e0b3ff"];
 			colors.forEach(c => {
-			const btn = document.createElement("div");
-			btn.style.width = "24px";
-			btn.style.height = "24px";
-			btn.style.backgroundColor = c;
-			btn.style.border = "1px solid #999";
-			btn.style.borderRadius = "4px";
-			btn.style.cursor = "pointer";
-			btn.addEventListener("click", () => {
-				selected.dataset.bg = c;
-				selected.style.backgroundColor = c;
-				palette.remove();
-				saveState();
-			});
-			palette.appendChild(btn);
+				const btn = document.createElement("div");
+				btn.style.width = "36px";
+				btn.style.height = "36px";
+				btn.style.backgroundColor = c;
+				btn.style.border = "1px solid #777";
+				btn.style.borderRadius = "6px";
+				btn.style.cursor = "pointer";
+				btn.addEventListener("click", () => {
+					selected.dataset.bg = c;
+					selected.style.backgroundColor = c;
+					palette.remove();
+					saveState();
+				});
+				palette.appendChild(btn);
 			});
 
 			const noneBtn = document.createElement("div");
-			noneBtn.style.width = "24px";
-			noneBtn.style.height = "24px";
+			noneBtn.style.width = "36px";
+			noneBtn.style.height = "36px";
 			noneBtn.style.background = "#fff";
-			noneBtn.style.border = "1px solid #999";
-			noneBtn.style.borderRadius = "4px";
+			noneBtn.style.border = "1px solid #777";
+			noneBtn.style.borderRadius = "6px";
 			noneBtn.style.cursor = "pointer";
+			noneBtn.title = "色を消す";
 			noneBtn.addEventListener("click", () => {
-			selected.dataset.bg = "none";
-			selected.style.backgroundColor = "";
-			palette.remove();
-			saveState();
+				selected.dataset.bg = "none";
+				selected.style.backgroundColor = "";
+				palette.remove();
+				saveState();
 			});
 			palette.appendChild(noneBtn);
 
 			document.body.appendChild(palette);
-
 			const rect = palette.getBoundingClientRect();
 			const pw = rect.width;
 			const ph = rect.height;
@@ -241,10 +241,10 @@ function createCustomSelect(raceNum, horseNum){
 			palette.style.top = top + "px";
 
 			const closePalette = (ev) => {
-			if (!palette.contains(ev.target)) {
-				palette.remove();
-				document.removeEventListener("click", closePalette);
-			}
+				if (!palette.contains(ev.target)) {
+					palette.remove();
+					document.removeEventListener("click", closePalette);
+				}
 			};
 			setTimeout(() => document.addEventListener("click", closePalette), 0);
 		} else {
