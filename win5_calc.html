@@ -1,590 +1,706 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<title>WIN5 本命あり買い目計算ツール</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body { font-family: "Segoe UI", sans-serif; margin: 20px; background: #f9fafb; color: #333; }
-h1 { font-size: 22px; margin-bottom: 15px; }
-table { border-collapse: collapse; width: 100%; }
-th, td { border: 1px solid #d9d8ce; padding: 4px; text-align: center; font-size: 18px; }
-th { background-color: #e0f0ff; font-weight: bold; }
-button.calc-btn { padding: 10px 16px; margin-top: 10px; font-size: 16px; background-color: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; }
-button.calc-btn:hover { background-color: #005fa3; }
-#result { margin-top: 20px; font-weight: bold; font-size: 18px; }
-#combos {
-	margin-top: 10px;
-	font-family: monospace;
-	font-size: 18px;
-	white-space: normal;
-	word-break: keep-all;
-	overflow-x: auto;
-	display: block;
-}
-.clear-btn {
-	padding: 4px 6px;
-	font-size: 18px;
-	background-color: #edebe5;
-	color: #444;
-	border: none;
-	border-radius: 4px;
-	cursor: pointer;
-	width: 100%;
-	box-sizing: border-box;
-}
-.custom-select {
-	touch-action: manipulation;
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	cursor: pointer;
-	width: fit-content;
-	margin: 0 auto;
-	position: relative;
-}
-.selected {
-	touch-action: manipulation;
-	background-color: white;
-	border: 1px solid #aaa;
-	border-radius: 4px;
-	padding: 4px 2px;
-	text-align: center;
-	user-select: none;
-	width: 32px;
-	height: 32px;
-	line-height: 32px;
-	font-size: 18px;
-	font-weight: bold;
-}
-.custom-select .horse-label {
-	display: flex;
-	width: 32px;
-	height: 32px;
-	align-items: center;
-	justify-content: center;
-	font-size: 18px !important;
-	font-weight: bold;
-	color: #555;
-	user-select: none;
-}
-.toggle-container {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	margin-bottom: 10px;
-	font-size: 16px;
-}
-.switch {
-	position: relative;
-	width: 46px;
-	height: 24px;
-	background: #ccc;
-	border-radius: 24px;
-	cursor: pointer;
-	transition: background 0.2s;
-}
-.switch::after {
-	content: "";
-	top: 2px;
-	left: 2px;
-	position: absolute;
-	width: 20px;
-	height: 20px;
-	background: #fff;
-	border-radius: 50%;
-	transition: left 0.2s;
-}
-.switch.on { background: #2196F3; }
-.switch.on::after { left: 24px; }
-table thead th { background: #f4f2ec !important; }
-#raceBody tr:nth-child(even) td { background: #fbfbfb !important; }
-* { -webkit-tap-highlight-color: rgba(0,0,0,0); }
-.custom-select, .custom-select * { -webkit-user-select: none; user-select: none; }
-.selected:focus { outline: none; }
-
-.combo-grid {
-	display: grid;
-	grid-template-columns: 32px repeat(5, max-content);
-	column-gap: 0;
-	row-gap: 2px;
-	font-family: monospace;
-	padding: 4px 0;
-}
-.combo-row {
-	display: contents;
-}
-
-.combo-check-wrap,
-.combo-cell {
-	min-height: 32px;
-	display: flex;
-	align-items: center;
-}
-
-.combo-cell {
-	white-space: nowrap;
-	padding: 0 12px;
-	border-radius: 0;
-}
-
-.combo-check-wrap {
-	justify-content: center;
-	padding: 0 4px;
-	cursor: pointer;
-}
-
-.combo-check {
-	position: absolute;
-	opacity: 0;
-	pointer-events: none;
-}
-
-.combo-check-visual {
-	width: 24px;
-	height: 24px;
-	border-radius: 4px;
-	background-color: #f3f3f3;
-	border: 1px solid #d5d5d5;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: 16px;
-	font-weight: bold;
-	color: #c5c5c5;
-}
-
-.combo-row.checked .combo-check-wrap,
-.combo-row.checked .combo-cell {
-	background-color: #ffe6ea;
-}
-.combo-row.checked .combo-check-visual {
-	background-color: #e85b4a;
-	border-color: #e85b4a;
-	color: #ffffff;
-}
-</style>
+    <meta charset="UTF-8">
+    <title>WIN5 本命あり買い目計算ツール</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: "Segoe UI", sans-serif;
+            margin: 20px;
+            background: #f9fafb;
+            color: #333;
+        }
+        h1 {
+            font-size: 22px;
+            margin-bottom: 15px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #d9d8ce;
+            padding: 4px;
+            text-align: center;
+            font-size: 18px;
+        }
+        th {
+            background-color: #e0f0ff;
+            font-weight: bold;
+        }
+        button.calc-btn {
+            padding: 10px 16px;
+            margin-top: 10px;
+            font-size: 16px;
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button.calc-btn:hover {
+            background-color: #005fa3;
+        }
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        #combos {
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 18px;
+            white-space: normal;
+            word-break: keep-all;
+            overflow-x: auto;
+            display: block;
+        }
+        .clear-btn {
+            padding: 4px 6px;
+            font-size: 18px;
+            background-color: #edebe5;
+            color: #444;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .custom-select {
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            width: fit-content;
+            margin: 0 auto;
+            position: relative;
+        }
+        .selected {
+            touch-action: manipulation;
+            background-color: white;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            padding: 4px 2px;
+            text-align: center;
+            user-select: none;
+            width: 32px;
+            height: 32px;
+            line-height: 32px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .custom-select .horse-label {
+            display: flex;
+            width: 32px;
+            height: 32px;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px !important;
+            font-weight: bold;
+            color: #555;
+            user-select: none;
+        }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .switch {
+            position: relative;
+            width: 46px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .switch::after {
+            content: "";
+            top: 2px;
+            left: 2px;
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            transition: left 0.2s;
+        }
+        .switch.on {
+            background: #2196F3;
+        }
+        .switch.on::after {
+            left: 24px;
+        }
+        table thead th {
+            background: #f4f2ec !important;
+        }
+        #raceBody tr:nth-child(even) td {
+            background: #fbfbfb !important;
+        }
+        * {
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        }
+        .custom-select, .custom-select * {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .selected:focus {
+            outline: none;
+        }
+        .combo-grid {
+            display: grid;
+            grid-template-columns: 32px repeat(5, max-content);
+            column-gap: 0;
+            row-gap: 2px;
+            font-family: monospace;
+            padding: 4px 0;
+        }
+        .combo-row {
+            display: contents;
+        }
+        .combo-check-wrap,
+        .combo-cell {
+            min-height: 32px;
+            display: flex;
+            align-items: center;
+        }
+        .combo-cell {
+            white-space: nowrap;
+            padding: 0 12px;
+            border-radius: 0;
+        }
+        .combo-check-wrap {
+            justify-content: center;
+            padding: 0 4px;
+            cursor: pointer;
+        }
+        .combo-check {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .combo-check-visual {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            background-color: #f3f3f3;
+            border: 1px solid #d5d5d5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #c5c5c5;
+        }
+        .combo-row.checked .combo-check-wrap,
+        .combo-row.checked .combo-cell {
+            background-color: #ffe6ea;
+        }
+        .combo-row.checked .combo-check-visual {
+            background-color: #e85b4a;
+            border-color: #e85b4a;
+            color: #ffffff;
+        }
+    </style>
 </head>
 <body>
 
-<h1>WIN5 本命あり買い目計算ツール</h1>
+    <h1>WIN5 本命あり買い目計算ツール</h1>
 
-<div class="toggle-container">
-  背景選択
-  <div id="modeToggle" class="switch"></div>
-</div>
+    <div class="toggle-container">
+        背景選択
+        <div id="modeToggle" class="switch"></div>
+    </div>
 
-<table id="raceTable">
-<thead>
-<tr>
-<th>WIN1</th><th>WIN2</th><th>WIN3</th><th>WIN4</th><th>WIN5</th>
-</tr>
-</thead>
-<tbody id="raceBody"></tbody>
-<tfoot>
-<tr>
-<td><button class="clear-btn" onclick="clearColumn(1)">クリア</button></td>
-<td><button class="clear-btn" onclick="clearColumn(2)">クリア</button></td>
-<td><button class="clear-btn" onclick="clearColumn(3)">クリア</button></td>
-<td><button class="clear-btn" onclick="clearColumn(4)">クリア</button></td>
-<td><button class="clear-btn" onclick="clearColumn(5)">クリア</button></td>
-</tr>
-</tfoot>
-</table>
+    <table id="raceTable">
+        <thead>
+            <tr>
+                <th>WIN1</th>
+                <th>WIN2</th>
+                <th>WIN3</th>
+                <th>WIN4</th>
+                <th>WIN5</th>
+            </tr>
+        </thead>
+        <tbody id="raceBody"></tbody>
+        <tfoot>
+            <tr>
+                <td><button class="clear-btn" onclick="clearColumn(1)">クリア</button></td>
+                <td><button class="clear-btn" onclick="clearColumn(2)">クリア</button></td>
+                <td><button class="clear-btn" onclick="clearColumn(3)">クリア</button></td>
+                <td><button class="clear-btn" onclick="clearColumn(4)">クリア</button></td>
+                <td><button class="clear-btn" onclick="clearColumn(5)">クリア</button></td>
+            </tr>
+        </tfoot>
+    </table>
 
-<div style="margin-top:18px;">
-	本命
-	<select id="minFav" style="font-size: 18px;">
-		<option value="1" selected>1</option>
-		<option value="2">2</option>
-		<option value="3">3</option>
-		<option value="4">4</option>
-		<option value="5">5</option>
-	</select> 勝以上
-</div>
+    <div style="margin-top:18px;">
+        本命
+        <select id="minFav" style="font-size: 18px;">
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+        </select> 勝以上
+    </div>
 
-<div style="display: flex; justify-content: flex-end; margin-top: 6px;">
-	<button class="calc-btn" onclick="calc()">計算する</button>
-</div>
+    <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+        <button class="calc-btn" onclick="calc()">計算する</button>
+    </div>
 
-<div id="result"></div>
-<div id="loading" style="display:none; margin-top:10px; font-size:18px;">計算中...</div>
-<div id="combos"></div>
+    <div id="result"></div>
+    <div id="loading" style="display:none; margin-top:10px; font-size:18px;">計算中...</div>
+    <div id="combos"></div>
 
-<script>
-const TOTAL_RACES = 5;
-const HORSE_MAX = 18;
-const MARKS = ["", "✔", "◎"];
-const CIRCLES = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
-const MERGE_LIMIT = 100000;
-let backgroundMode = false;
-const modeBtn = document.getElementById("modeToggle");
+	<script>
+		const TOTAL_RACES = 5;
+		const HORSE_MAX = 18;
+		const MARKS = ["", "✔", "◎"];
+		const CIRCLES = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
+		const MERGE_LIMIT = 200000;
+		let backgroundMode = false;
+		const modeBtn = document.getElementById("modeToggle");
 
-function updateSwitch() {
-	backgroundMode ? modeBtn.classList.add("on") : modeBtn.classList.remove("on");
-}
-modeBtn.addEventListener("click", () => {
-	backgroundMode = !backgroundMode;
-	updateSwitch();
-});
-updateSwitch();
+		function updateSwitch() {
+			backgroundMode ? modeBtn.classList.add("on") : modeBtn.classList.remove("on");
+		}
+		modeBtn.addEventListener("click", () => {
+			backgroundMode = !backgroundMode;
+			updateSwitch();
+		});
+		updateSwitch();
 
-function toCircleNumber(num){ return CIRCLES[num-1] || String(num); }
+		function toCircleNumber(num) {
+			return CIRCLES[num - 1] || String(num);
+		}
 
-function createCustomSelect(raceNum, horseNum){
-	const wrapper = document.createElement("div");
-	wrapper.className = "custom-select";
-	wrapper.dataset.race = raceNum;
-	wrapper.dataset.horse = horseNum;
+		function createCustomSelect(raceNum, horseNum) {
+			const wrapper = document.createElement("div");
+			wrapper.className = "custom-select";
+			wrapper.dataset.race = raceNum;
+			wrapper.dataset.horse = horseNum;
 
-	const selected = document.createElement("div");
-	selected.className = "selected";
-	selected.textContent = "";
-	selected.dataset.bg = "none";
+			const selected = document.createElement("div");
+			selected.className = "selected";
+			selected.textContent = "";
+			selected.dataset.bg = "none";
 
-	selected.addEventListener("click", (e) => {
-		if (backgroundMode) {
-			const palette = document.createElement("div");
-			palette.style.position = "absolute";
-			palette.style.zIndex = 9999;
-			palette.style.display = "flex";
-			palette.style.gap = "10px";
-			palette.style.background = "#fff";
-			palette.style.border = "1px solid #999";
-			palette.style.padding = "10px";
-			palette.style.borderRadius = "10px";
-			palette.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
+			selected.addEventListener("click", (e) => {
+				if (backgroundMode) {
+					const palette = document.createElement("div");
+					palette.style.position = "absolute";
+					palette.style.zIndex = 9999;
+					palette.style.display = "flex";
+					palette.style.gap = "10px";
+					palette.style.background = "#fff";
+					palette.style.border = "1px solid #999";
+					palette.style.padding = "10px";
+					palette.style.borderRadius = "10px";
+					palette.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
 
-			const colors = ["#ffb3b3", "#b3d1ff", "#fff3b3", "#b3ffb3", "#e0b3ff"];
-			colors.forEach(c => {
-				const btn = document.createElement("div");
-				btn.style.width = "36px";
-				btn.style.height = "36px";
-				btn.style.backgroundColor = c;
-				btn.style.border = "1px solid #777";
-				btn.style.borderRadius = "6px";
-				btn.style.cursor = "pointer";
-				btn.addEventListener("click", () => {
-					selected.dataset.bg = c;
-					selected.style.backgroundColor = c;
-					palette.remove();
+					const colors = ["#ffb3b3", "#b3d1ff", "#fff3b3", "#b3ffb3", "#e0b3ff"];
+					colors.forEach(c => {
+						const btn = document.createElement("div");
+						btn.style.width = "36px";
+						btn.style.height = "36px";
+						btn.style.backgroundColor = c;
+						btn.style.border = "1px solid #777";
+						btn.style.borderRadius = "6px";
+						btn.style.cursor = "pointer";
+						btn.addEventListener("click", () => {
+							selected.dataset.bg = c;
+							selected.style.backgroundColor = c;
+							palette.remove();
+							saveState();
+						});
+						palette.appendChild(btn);
+					});
+
+					const noneBtn = document.createElement("div");
+					noneBtn.style.width = "36px";
+					noneBtn.style.height = "36px";
+					noneBtn.style.background = "#fff";
+					noneBtn.style.border = "1px solid #777";
+					noneBtn.style.borderRadius = "6px";
+					noneBtn.style.cursor = "pointer";
+					noneBtn.addEventListener("click", () => {
+						selected.dataset.bg = "none";
+						selected.style.backgroundColor = "";
+						palette.remove();
+						saveState();
+					});
+					palette.appendChild(noneBtn);
+
+					document.body.appendChild(palette);
+					const rect = palette.getBoundingClientRect();
+					const pw = rect.width;
+					const ph = rect.height;
+					const vw = window.innerWidth;
+					const vh = window.innerHeight;
+					let left = e.pageX;
+					let top = e.pageY;
+					if (left + pw > vw - 10) left = vw - pw - 10;
+					if (top + ph > vh - 10) top = vh - ph - 10;
+					palette.style.left = left + "px";
+					palette.style.top = top + "px";
+
+					const closePalette = (ev) => {
+						if (!palette.contains(ev.target)) {
+							palette.remove();
+							document.removeEventListener("click", closePalette);
+						}
+					};
+					setTimeout(() => document.addEventListener("click", closePalette), 0);
+				} else {
+					const cur = MARKS.indexOf(selected.textContent);
+					selected.textContent = MARKS[(cur + 1) % MARKS.length];
 					saveState();
-				});
-				palette.appendChild(btn);
-			});
-
-			const noneBtn = document.createElement("div");
-			noneBtn.style.width = "36px";
-			noneBtn.style.height = "36px";
-			noneBtn.style.background = "#fff";
-			noneBtn.style.border = "1px solid #777";
-			noneBtn.style.borderRadius = "6px";
-			noneBtn.style.cursor = "pointer";
-			noneBtn.addEventListener("click", () => {
-				selected.dataset.bg = "none";
-				selected.style.backgroundColor = "";
-				palette.remove();
-				saveState();
-			});
-			palette.appendChild(noneBtn);
-
-			document.body.appendChild(palette);
-			const rect = palette.getBoundingClientRect();
-			const pw = rect.width;
-			const ph = rect.height;
-			const vw = window.innerWidth;
-			const vh = window.innerHeight;
-			let left = e.pageX;
-			let top = e.pageY;
-			if (left + pw > vw - 10) left = vw - pw - 10;
-			if (top + ph > vh - 10) top = vh - ph - 10;
-			palette.style.left = left + "px";
-			palette.style.top = top + "px";
-
-			const closePalette = (ev) => {
-				if (!palette.contains(ev.target)) {
-					palette.remove();
-					document.removeEventListener("click", closePalette);
 				}
-			};
-			setTimeout(() => document.addEventListener("click", closePalette), 0);
-		} else {
-			const cur = MARKS.indexOf(selected.textContent);
-			selected.textContent = MARKS[(cur + 1) % MARKS.length];
+			});
+
+			const label = document.createElement("span");
+			label.className = "horse-label";
+			label.textContent = toCircleNumber(horseNum);
+			wrapper.appendChild(label);
+			wrapper.appendChild(selected);
+			return wrapper;
+		}
+
+		function createTable() {
+			const tbody = document.getElementById('raceBody');
+			for (let i = 1; i <= HORSE_MAX; i++) {
+				const tr = document.createElement('tr');
+				for (let r = 1; r <= TOTAL_RACES; r++) {
+					const td = document.createElement('td');
+					td.appendChild(createCustomSelect(r, i));
+					tr.appendChild(td);
+				}
+				tbody.appendChild(tr);
+			}
+		}
+
+		let lastState = '';
+		function saveState() {
+			const state = { races: {}, minFav: document.getElementById('minFav').value };
+			for (let r = 1; r <= TOTAL_RACES; r++) {
+				state.races[`r${r}`] = {};
+				document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
+					const d = sel.querySelector('.selected');
+					state.races[`r${r}`][sel.dataset.horse] = {
+						mark: d.textContent,
+						bg: d.dataset.bg || "none"
+					};
+				});
+			}
+			const str = JSON.stringify(state);
+			if (str !== lastState) {
+				localStorage.setItem('win5_state_v7', str);
+				lastState = str;
+			}
+		}
+
+		function restoreState() {
+			const data = localStorage.getItem('win5_state_v7');
+			if (!data) return;
+			try {
+				const state = JSON.parse(data);
+				document.getElementById('minFav').value = state.minFav;
+				for (let r = 1; r <= TOTAL_RACES; r++) {
+					const race = state.races[`r${r}`];
+					if (!race) continue;
+					document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
+						const val = race[sel.dataset.horse];
+						if (val) {
+							const d = sel.querySelector('.selected');
+							d.textContent = val.mark;
+							d.dataset.bg = val.bg;
+							d.style.backgroundColor = (val.bg && val.bg !== "none") ? val.bg : "";
+						}
+					});
+				}
+			} catch (e) {}
+		}
+
+		function clearColumn(colNum) {
+			document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel => {
+				const d = sel.querySelector(".selected");
+				d.textContent = "";
+				d.dataset.bg = "none";
+				d.style.backgroundColor = "";
+			});
 			saveState();
 		}
-	});
 
-	const label = document.createElement("span");
-	label.className = "horse-label";
-	label.textContent = toCircleNumber(horseNum);
-	wrapper.appendChild(label);
-	wrapper.appendChild(selected);
-	return wrapper;
-}
-
-function createTable(){
-	const tbody=document.getElementById('raceBody');
-	for(let i=1;i<=HORSE_MAX;i++){
-		const tr=document.createElement('tr');
-		for(let r=1;r<=TOTAL_RACES;r++){
-			const td=document.createElement('td');
-			td.appendChild(createCustomSelect(r,i));
-			tr.appendChild(td);
+		function getRaceData(r) {
+			const favs = [], himo = [], colorMap = {};
+			document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
+				const v = sel.querySelector('.selected').textContent;
+				const bg = sel.querySelector('.selected').dataset.bg;
+				const num = Number(sel.dataset.horse);
+				colorMap[num] = bg;
+				if (v === "◎") favs.push(num);
+				if (v === "✔") himo.push(num);
+			});
+			const all = [...new Set([...favs, ...himo])];
+			return { fav: favs, horse: all, colorMap };
 		}
-		tbody.appendChild(tr);
-	}
-}
 
-function saveState(){
-	const state={races:{},minFav:document.getElementById('minFav').value};
-	for(let r=1;r<=TOTAL_RACES;r++){
-		state.races[`r${r}`]={};
-		document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
-			const d=sel.querySelector('.selected');
-			state.races[`r${r}`][sel.dataset.horse]={mark:d.textContent,bg:d.dataset.bg||"none"};
-		});
-	}
-	localStorage.setItem('win5_state_v7',JSON.stringify(state));
-}
-
-function restoreState(){
-	const data=localStorage.getItem('win5_state_v7');
-	if(!data) return;
-	try{
-		const state=JSON.parse(data);
-		document.getElementById('minFav').value=state.minFav;
-		for(let r=1;r<=TOTAL_RACES;r++){
-			const race=state.races[`r${r}`];
-			if(!race) continue;
-			document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
-				const val=race[sel.dataset.horse];
-				if(val){
-					const d=sel.querySelector('.selected');
-					d.textContent=val.mark;
-					d.dataset.bg=val.bg;
-					d.style.backgroundColor = (val.bg && val.bg !== "none") ? val.bg : "";
+		function combinations(arr, k) {
+			const res = [];
+			(function h(s, c) {
+				if (c.length === k) {
+					res.push([...c]);
+					return;
 				}
+				for (let i = s; i < arr.length; i++) {
+					c.push(arr[i]);
+					h(i + 1, c);
+					c.pop();
+				}
+			})(0, []);
+			return res;
+		}
+
+		function setEq(a, b) {
+			if (a.size !== b.size) return false;
+			for (const x of a) if (!b.has(x)) return false;
+			return true;
+		}
+
+		function setUnion(a, b) {
+			const s = new Set(a);
+			for (const x of b) s.add(x);
+			return s;
+		}
+
+		function setInterEmpty(a, b) {
+			for (const x of a) if (b.has(x)) return false;
+			return true;
+		}
+
+		function attachComboEvents() {
+			document.querySelectorAll('#combos .combo-check').forEach(chk => {
+				chk.addEventListener('change', () => {
+					const row = chk.closest('.combo-row');
+					if (!row) return;
+					if (chk.checked) {
+						row.classList.add('checked');
+					} else {
+						row.classList.remove('checked');
+					}
+				});
 			});
 		}
-	}catch(e){}
-}
 
-function clearColumn(colNum){
-	document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel=>{
-		const d=sel.querySelector(".selected");
-		d.textContent="";
-		d.dataset.bg="none";
-		d.style.backgroundColor="";
-	});
-	saveState();
-}
+		async function calc() {
+			const loading = document.getElementById('loading');
+			loading.style.display = 'block';
+			await new Promise(r => setTimeout(r, 10));
 
-function getRaceData(r){
-	const favs=[],himo=[],colorMap={};
-	document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{
-		const v=sel.querySelector('.selected').textContent;
-		const bg=sel.querySelector('.selected').dataset.bg;
-		const num=Number(sel.dataset.horse);
-		colorMap[num]=bg;
-		if(v==="◎") favs.push(num);
-		if(v==="✔") himo.push(num);
-	});
-	const all=[...new Set([...favs,...himo])];
-	return {fav:favs,horse:all,colorMap};
-}
-
-function combinations(arr,k){
-	const res=[];
-	(function h(s,c){
-		if(c.length===k){res.push([...c]);return;}
-		for(let i=s;i<arr.length;i++){
-			c.push(arr[i]);
-			h(i+1,c);
-			c.pop();
-		}
-	})(0,[]);
-	return res;
-}
-
-function setEq(a,b){
-	if(a.size!==b.size) return false;
-	for(const x of a) if(!b.has(x)) return false;
-	return true;
-}
-function setUnion(a,b){
-	const s=new Set(a);
-	for(const x of b) s.add(x);
-	return s;
-}
-function setInterEmpty(a,b){
-	for(const x of a) if(b.has(x)) return false;
-	return true;
-}
-
-function fullyMergeBlocksStable(blocks){
-	let merged=true;
-	while(merged){
-		merged=false;
-		const newBlocks=[];
-		const used=new Set();
-		for(let i=0;i<blocks.length;i++){
-			if(used.has(i)) continue;
-			let base=blocks[i];
-			for(let j=i+1;j<blocks.length;j++){
-				if(used.has(j)) continue;
-				const A=base,B=blocks[j];
-				let diff=-1,diffCount=0,ok=true;
-				for(let r=0;r<TOTAL_RACES;r++){
-					if(setEq(A[r],B[r])) continue;
-					diffCount++;
-					if(diffCount>1){ ok=false; break; }
-					diff=r;
-				}
-				if(ok&&diffCount===1&&setInterEmpty(A[diff],B[diff])){
-					base=A.map((s,idx)=>idx===diff?setUnion(A[idx],B[idx]):s);
-					used.add(j);
-					merged=true;
-				}
+			const races = [], favs = [], colorArray = [];
+			for (let i = 1; i <= TOTAL_RACES; i++) {
+				const d = getRaceData(i);
+				races.push(d.horse);
+				favs.push(d.fav);
+				const colors = new Array(HORSE_MAX + 1);
+				for (let h = 1; h <= HORSE_MAX; h++) colors[h] = d.colorMap[h] || "none";
+				colorArray.push(colors);
 			}
-			newBlocks.push(base);
-		}
-		blocks=newBlocks;
-	}
-	return blocks;
-}
 
-function blockToLine(block) {
-	const parts = block.map(set =>
-		[...set].sort((a,b)=>a-b).map(toCircleNumber).join('')
-	);
-	const cells = parts.map(p => `<span class="combo-cell">${p}</span>`).join('');
-	return (
-		'<div class="combo-row">' +
-			'<label class="combo-check-wrap">' +
-				'<input type="checkbox" class="combo-check">' +
-				'<span class="combo-check-visual">✓</span>' +
-			'</label>' +
-			cells +
-		'</div>'
-	);
-}
+			const favMaskList = favs.map(a => a.map(x => 1 << (x - 1)));
+			const nonFavMaskList = races.map((a, idx) => {
+				const favSet = new Set(favs[idx]);
+				return a.filter(x => !favSet.has(x)).map(x => 1 << (x - 1));
+			});
 
-function attachComboEvents(){
-	document.querySelectorAll('#combos .combo-check').forEach(chk=>{
-		chk.addEventListener('change',()=>{
-			const row = chk.closest('.combo-row');
-			if(!row) return;
-			if(chk.checked){
-				row.classList.add('checked');
-			}else{
-				row.classList.remove('checked');
-			}
-		});
-	});
-}
-
-async function calc(){
-	const loading=document.getElementById('loading');
-	loading.style.display='block';
-	await new Promise(r=>setTimeout(r,50));
-
-	const races=[],favs=[],colorMaps=[];
-	for(let i=1;i<=TOTAL_RACES;i++){
-		const d=getRaceData(i);
-		races.push(d.horse);
-		favs.push(d.fav);
-		colorMaps.push(d.colorMap);
-	}
-
-	function isColorDuplicate(combo){
-		const used=new Set();
-		for(let i=0;i<combo.length;i++){
-			const horseNum=combo[i];
-			const color=colorMaps[i][horseNum];
-			if(color && color!=="none"){
-				if(used.has(color)) return true;
-				used.add(color);
-			}
-		}
-		return false;
-	}
-
-	function* cartesianGen(arrays,isValid){
-		const n=arrays.length;
-		const indices=Array(n).fill(0);
-		while(true){
-			const combo=arrays.map((a,i)=>a[indices[i]]);
-			if(!isValid||isValid(combo)) yield combo;
-			let i=n-1;
-			while(i>=0&&++indices[i]===arrays[i].length) indices[i--]=0;
-			if(i<0) break;
-		}
-	}
-
-	const minFav=Number(document.getElementById('minFav').value);
-	let total=0;
-	const comboList=[];
-
-	for(let k=TOTAL_RACES;k>=minFav;k--){
-		await new Promise(r=>setTimeout(r,0));
-		const masks=combinations([...Array(TOTAL_RACES).keys()],k);
-		let count=0;
-		let blocks=[];
-		let storeBlocks=true;
-
-		for(const mask of masks){
-			const candidates=[];
-			for(let i=0;i<TOTAL_RACES;i++){
-				candidates.push(
-					mask.includes(i)
-						? favs[i]
-						: races[i].filter(x=>!favs[i].includes(x))
-				);
-			}
-			if(!candidates.every(a=>a.length>0)) continue;
-
-			for(const combo of cartesianGen(candidates,c=>!isColorDuplicate(c))){
-				count++;
-				if(storeBlocks){
-					if(count <= MERGE_LIMIT){
-						blocks.push(combo.map(v=>new Set([v])));
-					}else{
-						storeBlocks=false;
-						blocks = [];
+			const colorIdTable = Array.from({ length: TOTAL_RACES }, () => new Int16Array(HORSE_MAX).fill(-1));
+			const colorIdMap = new Map();
+			let nextColorId = 0;
+			for (let i = 0; i < TOTAL_RACES; i++) {
+				const usedHorses = new Set([...races[i]]);
+				for (const h of usedHorses) {
+					const c = colorArray[i][h];
+					if (c && c !== "none") {
+						if (!colorIdMap.has(c)) colorIdMap.set(c, nextColorId++);
+						colorIdTable[i][h - 1] = colorIdMap.get(c);
 					}
 				}
 			}
+			const colorIdOf = (raceIdx, singleBitMask) => {
+				const idx = Math.log2(singleBitMask) | 0;
+				return colorIdTable[raceIdx][idx];
+			};
+
+			const masksCache = {};
+			function getMasks(k) {
+				if (!masksCache[k]) masksCache[k] = combinations([...Array(TOTAL_RACES).keys()], k);
+				return masksCache[k];
+			}
+
+			function countCombosDFS(candidates, limit, allowStore) {
+				const n = candidates.length;
+				const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => candidates[a].length - candidates[b].length);
+				const revOrder = new Int8Array(n);
+				for (let i = 0; i < n; i++) revOrder[order[i]] = i;
+
+				let count = 0;
+				const blocks = [];
+				const path = new Int32Array(n);
+
+				const dfs = (depth, usedColorMask) => {
+					if (count > limit) return true;
+					if (depth === n) {
+						count++;
+						if (allowStore && count <= limit) {
+							const combo = new Array(n);
+							for (let i = 0; i < n; i++) combo[i] = path[revOrder[i]];
+							blocks.push(combo);
+						}
+						return false;
+					}
+					const raceIdx = order[depth];
+					const arr = candidates[raceIdx];
+					for (let k = 0; k < arr.length; k++) {
+						const m = arr[k];
+						const colorId = colorIdOf(raceIdx, m);
+						if (colorId >= 0 && (usedColorMask & (1 << colorId))) continue;
+
+						path[depth] = m;
+						const abort = dfs(depth + 1, colorId >= 0 ? (usedColorMask | (1 << colorId)) : usedColorMask);
+						if (abort) return true;
+					}
+					return false;
+				};
+				dfs(0, 0);
+				return { count, blocks };
+			}
+
+			const minFav = Number(document.getElementById('minFav').value);
+			let total = 0;
+			const comboList = [];
+
+			for (let k = TOTAL_RACES; k >= minFav; k--) {
+				const masks = getMasks(k);
+				let count = 0;
+				let blocks = [];
+				let stop = false;
+
+				for (let m = 0; m < masks.length; m++) {
+					const maskArr = masks[m];
+					const maskSet = new Set(maskArr);
+					const candidates = new Array(TOTAL_RACES);
+					let valid = true;
+
+					for (let i = 0; i < TOTAL_RACES; i++) {
+						candidates[i] = maskSet.has(i) ? favMaskList[i] : nonFavMaskList[i];
+						if (candidates[i].length === 0) { valid = false; break; }
+					}
+					if (!valid) continue;
+
+					const res = countCombosDFS(candidates, MERGE_LIMIT, !stop);
+					count += res.count;
+					if (res.count > MERGE_LIMIT) { stop = true; blocks = []; break; }
+					if (!stop) blocks.push(...res.blocks);
+				}
+
+				comboList.push(`<b>─── 本命${k}勝：${count.toLocaleString()}通り ───</b>`);
+				if (count > MERGE_LIMIT) {
+					comboList.push('<div>※組合せが多いため買い目は省略。</div>');
+				} else {
+					const displayBlocks = fullyMergeBlocksStableBit(blocks);
+					comboList.push('<div class="combo-grid">');
+					for (const b of displayBlocks) comboList.push(blockToLineBit(b));
+					comboList.push('</div>');
+				}
+				total += count;
+				if (k % 2 === 0) await new Promise(r => setTimeout(r, 0));
+			}
+
+			document.getElementById('result').innerHTML =
+				`総買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 通り`;
+			const fragment = document.createDocumentFragment();
+			const container = document.createElement('div');
+			container.innerHTML = comboList.join('');
+			fragment.appendChild(container);
+			document.getElementById('combos').replaceChildren(fragment);
+			attachComboEvents();
+			saveState();
+			loading.style.display = 'none';
 		}
 
-		comboList.push(
-			`<b>─── 本命${k}勝：${count.toLocaleString()}通り ───</b>`
-		);
+		function fullyMergeBlocksStableBit(blocks) {
+			if (blocks.length <= 1) return blocks;
+			const total = TOTAL_RACES | 0;
 
-		if(count > MERGE_LIMIT){
-			comboList.push(
-				'<div>※10万通り以上のため買い目は省略。</div>'
+			let merged = true;
+			while (merged) {
+				merged = false;
+				const used = new Uint8Array(blocks.length);
+				const next = [];
+
+				for (let i = 0; i < blocks.length; i++) {
+					if (used[i]) continue;
+					let base = blocks[i];
+
+					for (let j = i + 1; j < blocks.length; j++) {
+						if (used[j]) continue;
+						const b = blocks[j];
+
+						let diffCount = 0;
+						let diff = -1;
+
+						if (base[0] !== b[0]) { diffCount++; diff = 0; }
+						if (base[1] !== b[1]) { if (++diffCount > 1) continue; diff = 1; }
+						if (base[2] !== b[2]) { if (++diffCount > 1) continue; diff = 2; }
+						if (base[3] !== b[3]) { if (++diffCount > 1) continue; diff = 3; }
+						if (base[4] !== b[4]) { if (++diffCount > 1) continue; diff = 4; }
+
+						if (diffCount !== 1) continue;
+						if ((base[diff] & b[diff]) !== 0) continue;
+
+						const mergedRow = base.slice();
+						mergedRow[diff] = base[diff] | b[diff];
+						base = mergedRow;
+
+						used[j] = 1;
+						merged = true;
+					}
+					next.push(base);
+				}
+				if (!merged) break;
+				blocks = next;
+			}
+			return blocks;
+		}
+
+		function blockToLineBit(block) {
+			const parts = block.map(mask => {
+				const nums = [];
+				for (let i = 0; i < HORSE_MAX; i++) {
+					if (mask & (1 << i)) nums.push(toCircleNumber(i + 1));
+				}
+				return nums.join('');
+			});
+			const cells = parts.map(p => `<span class="combo-cell">${p}</span>`).join('');
+			return (
+				'<div class="combo-row">' +
+					'<label class="combo-check-wrap">' +
+						'<input type="checkbox" class="combo-check">' +
+						'<span class="combo-check-visual">✓</span>' +
+					'</label>' +
+					cells +
+				'</div>'
 			);
-		}else{
-			const displayBlocks = fullyMergeBlocksStable(blocks);
-			comboList.push('<div class="combo-grid">');
-			displayBlocks.forEach(b=>comboList.push(blockToLine(b)));
-			comboList.push('</div>');
 		}
 
-		total+=count;
-	}
+		createTable();
+		restoreState();
+	</script>
 
-	document.getElementById('result').innerHTML =
-		`総買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 通り`;
-	document.getElementById('combos').innerHTML = comboList.join('');
-	attachComboEvents();
-	saveState();
-	loading.style.display='none';
-}
-
-createTable();
-restoreState();
-</script>
 </body>
 </html>
