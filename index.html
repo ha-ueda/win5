@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>WIN5 本命あり買い目計算ツール</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: "Segoe UI", sans-serif; margin: 20px; background: #f9fafb; color: #333; }
+        h1 { font-size: 22px; margin-bottom: 15px; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #d9d8ce; padding: 4px; text-align: center; font-size: 18px; }
+        th { background-color: #e0f0ff; font-weight: bold; }
+        button.calc-btn { padding: 10px 16px; margin-top: 10px; font-size: 16px; background-color: #0078d4; color: white; border: none; border-radius: 6px; cursor: pointer; }
+        button.calc-btn:hover { background-color: #005fa3; }
+        #result { margin-top: 20px; font-weight: bold; font-size: 18px; }
+        #combos { margin-top: 10px; font-family: monospace; font-size: 18px; white-space: normal; word-break: keep-all; overflow-x: auto; display: block; }
+        .clear-btn { padding: 4px 6px; font-size: 18px; background-color: #edebe5; color: #444; border: none; border-radius: 4px; cursor: pointer; width: 100%; box-sizing: border-box; }
+        .custom-select { touch-action: manipulation; display: flex; align-items: center; gap: 4px; cursor: pointer; width: fit-content; margin: 0 auto; position: relative; }
+        .selected { touch-action: manipulation; background-color: white; border: 1px solid #aaa; border-radius: 4px; padding: 4px 2px; text-align: center; user-select: none; width: 32px; height: 32px; line-height: 32px; font-size: 18px; font-weight: bold; }
+        .custom-select .horse-label { display: flex; width: 32px; height: 32px; align-items: center; justify-content: center; font-size: 18px !important; font-weight: bold; color: #555; user-select: none; }
+        .toggle-container { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 16px; }
+        .switch { position: relative; width: 46px; height: 24px; background: #ccc; border-radius: 24px; cursor: pointer; transition: background 0.2s; }
+        .switch::after { content: ""; top: 2px; left: 2px; position: absolute; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: left 0.2s; }
+        .switch.on { background: #2196F3; }
+        .switch.on::after { left: 24px; }
+        table thead th { background: #f4f2ec !important; }
+        #raceBody tr:nth-child(even) td { background: #fbfbfb !important; }
+        * { -webkit-tap-highlight-color: rgba(0, 0, 0, 0); }
+        .combo-grid { display: grid; grid-template-columns: 32px repeat(5, max-content); column-gap: 0; row-gap: 2px; font-family: monospace; padding: 4px 0; }
+        .combo-row { display: contents; }
+        .combo-check-wrap, .combo-cell { min-height: 32px; display: flex; align-items: center; }
+        .combo-cell { white-space: nowrap; padding: 0 12px; border-radius: 0; }
+        .combo-check-wrap { justify-content: center; padding: 0 4px; cursor: pointer; }
+        .combo-check { position: absolute; opacity: 0; pointer-events: none; }
+        .combo-check-visual { width: 24px; height: 24px; border-radius: 4px; background-color: #f3f3f3; border: 1px solid #d5d5d5; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; color: #c5c5c5; }
+        .combo-row.checked .combo-check-wrap, .combo-row.checked .combo-cell { background-color: #ffe6ea; }
+        .combo-row.checked .combo-check-visual { background-color: #e85b4a; border-color: #e85b4a; color: #ffffff; }
+    </style>
+</head>
+<body>
+    <h1>WIN5 本命あり買い目計算ツール</h1>
+    <div class="toggle-container">背景選択 <div id="modeToggle" class="switch"></div></div>
+
+    <table id="raceTable">
+        <thead><tr><th>WIN1</th><th>WIN2</th><th>WIN3</th><th>WIN4</th><th>WIN5</th></tr></thead>
+        <tbody id="raceBody"></tbody>
+        <tfoot><tr><td><button class="clear-btn" onclick="clearColumn(1)">クリア</button></td><td><button class="clear-btn" onclick="clearColumn(2)">クリア</button></td><td><button class="clear-btn" onclick="clearColumn(3)">クリア</button></td><td><button class="clear-btn" onclick="clearColumn(4)">クリア</button></td><td><button class="clear-btn" onclick="clearColumn(5)">クリア</button></td></tr></tfoot>
+    </table>
+
+    <div style="margin-top:18px;">本命
+        <select id="minFav" style="font-size:18px;">
+            <option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+        </select> 勝以上
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:6px;"><button class="calc-btn" onclick="calc()">計算する</button></div>
+
+    <div id="result"></div>
+    <div id="loading" style="display:none;margin-top:10px;font-size:18px;">計算中...</div>
+    <div id="combos"></div>
+
+    <script>
+    const TOTAL_RACES = 5, HORSE_MAX = 18, MARKS = ["", "✔", "◎"], CIRCLES = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'], MERGE_LIMIT = 200000;
+    let backgroundMode = false;
+    const modeBtn = document.getElementById("modeToggle");
+    function updateSwitch() { backgroundMode ? modeBtn.classList.add("on") : modeBtn.classList.remove("on"); }
+    modeBtn.addEventListener("click", () => { backgroundMode = !backgroundMode; updateSwitch(); });
+    updateSwitch();
+
+    function toCircleNumber(num){return CIRCLES[num-1]||String(num);}
+    function createCustomSelect(raceNum,horseNum){const wrapper=document.createElement("div");wrapper.className="custom-select";wrapper.dataset.race=raceNum;wrapper.dataset.horse=horseNum;const selected=document.createElement("div");selected.className="selected";selected.textContent="";selected.dataset.bg="none";selected.addEventListener("click",(e)=>{const cur=MARKS.indexOf(selected.textContent);selected.textContent=MARKS[(cur+1)%MARKS.length];saveState();});const label=document.createElement("span");label.className="horse-label";label.textContent=toCircleNumber(horseNum);wrapper.appendChild(label);wrapper.appendChild(selected);return wrapper;}
+    function createTable(){const tbody=document.getElementById('raceBody');for(let i=1;i<=HORSE_MAX;i++){const tr=document.createElement('tr');for(let r=1;r<=TOTAL_RACES;r++){const td=document.createElement('td');td.appendChild(createCustomSelect(r,i));tr.appendChild(td);}tbody.appendChild(tr);}}
+    function clearColumn(colNum){document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel=>{const d=sel.querySelector(".selected");d.textContent="";d.dataset.bg="none";d.style.backgroundColor="";});saveState();}
+    function getRaceData(r){const favs=[],himo=[],colorMap={};document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel=>{const v=sel.querySelector('.selected').textContent;const num=Number(sel.dataset.horse);colorMap[num]="none";if(v==="◎")favs.push(num);if(v==="✔")himo.push(num);});return{fav:favs,horse:[...new Set([...favs,...himo])],colorMap};}
+    function combinations(arr,k){const res=[];(function h(s,c){if(c.length===k){res.push([...c]);return;}for(let i=s;i<arr.length;i++){c.push(arr[i]);h(i+1,c);c.pop();}})(0,[]);return res;}
+    function attachComboEvents(){document.querySelectorAll('#combos .combo-check').forEach(chk=>{chk.addEventListener('change',()=>{const row=chk.closest('.combo-row');if(!row)return;if(chk.checked)row.classList.add('checked');else row.classList.remove('checked');});});}
+    
+    let workerPool=[],workerBusy=[];
+    function initWorkerPool(size){if(workerPool.length)return;const n=Math.min((navigator.hardwareConcurrency||4),size||8);for(let i=0;i<n;i++){const w=new Worker('worker.js');workerPool.push(w);workerBusy.push(false);}}
+    function chunkArray(arr,chunkSize){const out=[];for(let i=0;i<arr.length;i+=chunkSize)out.push(arr.slice(i,i+chunkSize));return out;}
+
+    async function calc(){
+        const loading=document.getElementById('loading');loading.style.display='block';
+        await new Promise(r=>setTimeout(r,10));
+        const races=[],favs=[],colorArray=[];
+        for(let i=1;i<=TOTAL_RACES;i++){const d=getRaceData(i);races.push(d.horse);favs.push(d.fav);const colors=new Array(HORSE_MAX+1);for(let h=1;h<=HORSE_MAX;h++)colors[h]="none";colorArray.push(colors);}
+        const minFav=Number(document.getElementById('minFav').value);
+        const favMaskList=favs.map(a=>a.map(x=>1<<(x-1)));
+        const nonFavMaskList=races.map((a,idx)=>{const favSet=new Set(favs[idx]);return a.filter(x=>!favSet.has(x)).map(x=>1<<(x-1));});
+        initWorkerPool(8);
+        const masksCache={};
+        function getMasks(k){if(!masksCache[k])masksCache[k]=combinations([...Array(TOTAL_RACES).keys()],k);return masksCache[k];}
+        let total=0;const comboList=[];
+        for(let k=TOTAL_RACES;k>=minFav;k--){
+            const masks=getMasks(k);const chunks=chunkArray(masks,64);
+            let count=0;let allBlocks=[];let overLimit=false;
+            function runChunk(chunkMasks){return new Promise(resolve=>{const acquire=()=>{const idx=workerBusy.findIndex(b=>b===false);if(idx!==-1){workerBusy[idx]=true;const w=workerPool[idx];const onMsg=(e)=>{w.removeEventListener('message',onMsg);workerBusy[idx]=false;resolve(e.data);};w.addEventListener('message',onMsg);w.postMessage({type:'run',chunkMasks,favMaskList,nonFavMaskList,colorArray,mergeLimit:MERGE_LIMIT});}else setTimeout(acquire,0);};acquire();});}
+            const results=await Promise.all(chunks.map(c=>runChunk(c)));
+            for(const res of results){count+=res.count;if(!overLimit){if(res.overLimit||count>MERGE_LIMIT){overLimit=true;allBlocks=[];}else allBlocks.push(...res.blocks);}}
+            comboList.push(`<b>─── 本命${k}勝：${count.toLocaleString()}通り ───</b>`);
+            if(overLimit)comboList.push('<div>※20万通り以上のため買い目は省略。</div>');
+            else comboList.push('<div class="combo-grid">'+allBlocks.map(b=>blockToLineBit(b)).join('')+'</div>');
+            total+=count;await new Promise(r=>setTimeout(r,0));
+        }
+        document.getElementById('result').innerHTML=`総買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 通り`;
+        document.getElementById('combos').innerHTML=comboList.join('');
+        attachComboEvents();loading.style.display='none';
+    }
+
+    function blockToLineBit(block){
+        const parts=block.map(mask=>{
+            const nums=[];for(let i=0;i<HORSE_MAX;i++){if(mask&(1<<i))nums.push(toCircleNumber(i+1));}
+            return nums.join('');
+        });
+        const cells=parts.map(p=>`<span class="combo-cell">${p}</span>`).join('');
+        return `<div class="combo-row"><label class="combo-check-wrap"><input type="checkbox" class="combo-check"><span class="combo-check-visual">✓</span></label>${cells}</div>`;
+    }
+
+    createTable();
+    </script>
+</body>
+</html>
