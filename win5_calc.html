@@ -544,16 +544,21 @@
 
 			function countCombosDFS(candidates, limit, allowStore) {
 				const n = candidates.length;
-				const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => candidates[a].length - candidates[b].length);
+				const order = Array.from({ length: n }, (_, i) => i)
+					.sort((a, b) => candidates[a].length - candidates[b].length);
 				const revOrder = new Int8Array(n);
 				for (let i = 0; i < n; i++) revOrder[order[i]] = i;
+
+				const colorIdOf = (raceIdx, singleBitMask) => {
+					const idx = Math.log2(singleBitMask) | 0;
+					return colorIdTable[raceIdx][idx];
+				};
 
 				let count = 0;
 				const blocks = [];
 				const path = new Int32Array(n);
 
 				const dfs = (depth, usedColorMask) => {
-					if (count > limit) return true;
 					if (depth === n) {
 						count++;
 						if (allowStore && count <= limit) {
@@ -561,7 +566,7 @@
 							for (let i = 0; i < n; i++) combo[i] = path[revOrder[i]];
 							blocks.push(combo);
 						}
-						return false;
+						return;
 					}
 					const raceIdx = order[depth];
 					const arr = candidates[raceIdx];
@@ -571,11 +576,10 @@
 						if (colorId >= 0 && (usedColorMask & (1 << colorId))) continue;
 
 						path[depth] = m;
-						const abort = dfs(depth + 1, colorId >= 0 ? (usedColorMask | (1 << colorId)) : usedColorMask);
-						if (abort) return true;
+						dfs(depth + 1, colorId >= 0 ? (usedColorMask | (1 << colorId)) : usedColorMask);
 					}
-					return false;
 				};
+
 				dfs(0, 0);
 				return { count, blocks };
 			}
@@ -604,8 +608,12 @@
 
 					const res = countCombosDFS(candidates, MERGE_LIMIT, !stop);
 					count += res.count;
-					if (res.count > MERGE_LIMIT) { stop = true; blocks = []; break; }
-					if (!stop) blocks.push(...res.blocks);
+					if (!stop && res.count > MERGE_LIMIT) {
+						stop = true;
+						blocks = [];
+					} else if (!stop) {
+						blocks.push(...res.blocks);
+					}
 				}
 
 				comboList.push(`<b>─── 本命${k}勝：${count.toLocaleString()}通り ───</b>`);
