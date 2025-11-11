@@ -657,30 +657,47 @@
 				const used = new Uint8Array(blocks.length);
 				const next = [];
 
+				const map = new Map();
+				for (let i = 0; i < blocks.length; i++) {
+					const b = blocks[i];
+					for (let d = 0; d < 5; d++) {
+						const key = b.map((v, k) => (k === d ? 0 : v)).join(",");
+						let arr = map.get(key);
+						if (!arr) map.set(key, (arr = []));
+						arr.push(i);
+					}
+				}
+
 				for (let i = 0; i < blocks.length; i++) {
 					if (used[i]) continue;
 					let base = blocks[i];
 
-					for (let j = i + 1; j < blocks.length; j++) {
+					const candidates = new Set();
+					for (let d = 0; d < 5; d++) {
+						const key = base.map((v, k) => (k === d ? 0 : v)).join(",");
+						const arr = map.get(key);
+						if (arr) for (const j of arr) if (j !== i) candidates.add(j);
+					}
+
+					for (const j of candidates) {
 						if (used[j]) continue;
 						const b = blocks[j];
 
 						let diffCount = 0;
 						let diff = -1;
 
-						if (base[0] !== b[0]) { diffCount++; diff = 0; }
-						if (base[1] !== b[1]) { if (++diffCount > 1) continue; diff = 1; }
-						if (base[2] !== b[2]) { if (++diffCount > 1) continue; diff = 2; }
-						if (base[3] !== b[3]) { if (++diffCount > 1) continue; diff = 3; }
-						if (base[4] !== b[4]) { if (++diffCount > 1) continue; diff = 4; }
-
+						for (let k = 0; k < 5; k++) {
+							if (base[k] !== b[k]) {
+								if (++diffCount > 1) break;
+								diff = k;
+							}
+						}
 						if (diffCount !== 1) continue;
 						if ((base[diff] & b[diff]) !== 0) continue;
 
 						const mergedRow = base.slice();
 						mergedRow[diff] = base[diff] | b[diff];
 						base = mergedRow;
-
 						used[j] = 1;
 						merged = true;
 					}
