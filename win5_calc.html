@@ -262,7 +262,7 @@
 		const HORSE_MAX = 18;
 		const MARKS = ["", "✔", "◎"];
 		const CIRCLES = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
-		const MERGE_LIMIT = 200000;
+		const MERGE_LIMIT = 500000;
 		let backgroundMode = false;
 		const modeBtn = document.getElementById("modeToggle");
 
@@ -502,6 +502,8 @@
 			loading.style.display = 'block';
 			await new Promise(r => setTimeout(r, 10));
 
+			const t0 = performance.now();
+
 			const races = [], favs = [], colorArray = [];
 			for (let i = 1; i <= TOTAL_RACES; i++) {
 				const d = getRaceData(i);
@@ -628,6 +630,10 @@
 				total += count;
 				if (k % 2 === 0) await new Promise(r => setTimeout(r, 0));
 			}
+
+            const t1 = performance.now();
+            const elapsedMs = t1 - t0;
+            console.log(`計算速度: ${elapsedMs.toFixed(2)} ms`);
 
 			document.getElementById('result').innerHTML =
 				`総買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 通り`;
