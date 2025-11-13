@@ -254,7 +254,6 @@
     </div>
 
     <div id="result"></div>
-    <div id="loading" style="display:none; margin-top:10px; font-size:18px;">計算中...</div>
     <div id="combos"></div>
 
 	<script>
@@ -496,11 +495,7 @@
 			});
 		}
 
-		async function calc() {
-			const loading = document.getElementById('loading');
-			loading.style.display = 'block';
-			await new Promise(r => setTimeout(r, 10));
-
+		function calc() {
 			const t0 = performance.now();
 
 			const races = [], favs = [], colorArray = [];
@@ -519,19 +514,28 @@
 				return a.filter(x => !favSet.has(x)).map(x => 1 << (x - 1));
 			});
 
-			const colorIdTable = Array.from({ length: TOTAL_RACES }, () => new Int16Array(HORSE_MAX).fill(-1));
-			const colorIdMap = new Map();
-			let nextColorId = 0;
-			for (let i = 0; i < TOTAL_RACES; i++) {
-				const usedHorses = new Set([...races[i]]);
-				for (const h of usedHorses) {
-					const c = colorArray[i][h];
-					if (c && c !== "none") {
-						if (!colorIdMap.has(c)) colorIdMap.set(c, nextColorId++);
-						colorIdTable[i][h - 1] = colorIdMap.get(c);
-					}
-				}
-			}
+            const colorIdTable = Array.from(
+                { length: TOTAL_RACES },
+                () => new Int16Array(HORSE_MAX).fill(-1)
+            );
+            const colorIdMap = new Map();
+            let nextColorId = 0;
+            for (let i = 0; i < TOTAL_RACES; i++) {
+                const usedHorses = races[i];
+                for (let idx = 0; idx < usedHorses.length; idx++) {
+                    const h = usedHorses[idx];
+                    const c = colorArray[i][h];
+                    if (c && c !== "none") {
+                        let id = colorIdMap.get(c);
+                        if (id === undefined) {
+                            id = nextColorId++;
+                            colorIdMap.set(c, id);
+                        }
+                        colorIdTable[i][h - 1] = id;
+                    }
+                }
+            }
+
 			const colorIdOf = (raceIdx, singleBitMask) => {
 				const idx = Math.log2(singleBitMask) | 0;
 				return colorIdTable[raceIdx][idx];
@@ -545,15 +549,24 @@
 
             function countCombosDFS(candidates) {
                 const n = candidates.length;
+
                 const order = Array.from({ length: n }, (_, i) => i)
                     .sort((a, b) => candidates[a].length - candidates[b].length);
+
                 const revOrder = new Int8Array(n);
                 for (let i = 0; i < n; i++) revOrder[order[i]] = i;
 
-                const colorIdOf = (raceIdx, singleBitMask) => {
-                    const idx = Math.log2(singleBitMask) | 0;
-                    return colorIdTable[raceIdx][idx];
-                };
+                const candColorIds = new Array(n);
+                for (let r = 0; r < n; r++) {
+                    const arr = candidates[r];
+                    const ids = new Int16Array(arr.length);
+                    for (let i = 0; i < arr.length; i++) {
+                        const bit = arr[i];
+                        const idx = Math.log2(bit) | 0;
+                        ids[i] = colorIdTable[r][idx];
+                    }
+                    candColorIds[r] = ids;
+                }
 
                 let count = 0;
                 const blocks = [];
@@ -567,15 +580,20 @@
                         blocks.push(combo);
                         return;
                     }
+
                     const raceIdx = order[depth];
                     const arr = candidates[raceIdx];
+                    const colorIds = candColorIds[raceIdx];
+
                     for (let k = 0; k < arr.length; k++) {
                         const m = arr[k];
-                        const colorId = colorIdOf(raceIdx, m);
+                        const colorId = colorIds[k];
+
                         if (colorId >= 0 && (usedColorMask & (1 << colorId))) continue;
 
                         path[depth] = m;
-                        dfs(depth + 1, colorId >= 0 ? (usedColorMask | (1 << colorId)) : usedColorMask);
+                        const nextMask = (colorId >= 0) ? (usedColorMask | (1 << colorId)) : usedColorMask;
+                        dfs(depth + 1, nextMask);
                     }
                 };
 
@@ -618,7 +636,6 @@
             comboList.push('</div>');
 
             total = count;
-            await new Promise(r => setTimeout(r, 0));
 
             const t1 = performance.now();
             const elapsedMs = t1 - t0;
@@ -633,70 +650,79 @@
 			document.getElementById('combos').replaceChildren(fragment);
 			attachComboEvents();
 			saveState();
-			loading.style.display = 'none';
 		}
 
-		function fullyMergeBlocksStableBit(blocks) {
-			if (blocks.length <= 1) return blocks;
-			const total = TOTAL_RACES | 0;
+        function fullyMergeBlocksStableBit(blocks) {
+            const n = TOTAL_RACES | 0;
+            if (blocks.length <= 1) return blocks;
 
-			let merged = true;
-			while (merged) {
-				merged = false;
-				const used = new Uint8Array(blocks.length);
-				const next = [];
+            let changed = true;
+            while (changed) {
+                changed = false;
 
-				const map = new Map();
-				for (let i = 0; i < blocks.length; i++) {
-					const b = blocks[i];
-					for (let d = 0; d < 5; d++) {
-						const key = b.map((v, k) => (k === d ? 0 : v)).join(",");
-						let arr = map.get(key);
-						if (!arr) map.set(key, (arr = []));
-						arr.push(i);
-					}
-				}
+                for (let d = 0; d < n; d++) {
+                    const len = blocks.length;
+                    if (len <= 1) break;
 
-				for (let i = 0; i < blocks.length; i++) {
-					if (used[i]) continue;
-					let base = blocks[i];
+                    const map = new Map();
+                    for (let i = 0; i < len; i++) {
+                        const b = blocks[i];
+                        let key = "";
+                        for (let k = 0; k < n; k++) {
+                            if (k === d) continue;
+                            key += b[k] + ",";
+                        }
+                        let arr = map.get(key);
+                        if (!arr) {
+                            arr = [];
+                            map.set(key, arr);
+                        }
+                        arr.push(i);
+                    }
 
-					const candidates = new Set();
-					for (let d = 0; d < 5; d++) {
-						const key = base.map((v, k) => (k === d ? 0 : v)).join(",");
-						const arr = map.get(key);
-						if (arr) for (const j of arr) if (j !== i) candidates.add(j);
-					}
+                    const used = new Uint8Array(len);
+                    const next = [];
 
-					for (const j of candidates) {
-						if (used[j]) continue;
-						const b = blocks[j];
+                    for (let i = 0; i < len; i++) {
+                        if (used[i]) continue;
 
-						let diffCount = 0;
-						let diff = -1;
+                        const baseRow = blocks[i];
+                        let key = "";
+                        for (let k = 0; k < n; k++) {
+                            if (k === d) continue;
+                            key += baseRow[k] + ",";
+                        }
+                        const group = map.get(key);
 
-						for (let k = 0; k < 5; k++) {
-							if (base[k] !== b[k]) {
-								if (++diffCount > 1) break;
-								diff = k;
-							}
-						}
-						if (diffCount !== 1) continue;
-						if ((base[diff] & b[diff]) !== 0) continue;
+                        if (!group || group.length === 1) {
+                            next.push(baseRow);
+                            used[i] = 1;
+                            continue;
+                        }
 
-						const mergedRow = base.slice();
-						mergedRow[diff] = base[diff] | b[diff];
-						base = mergedRow;
-						used[j] = 1;
-						merged = true;
-					}
-					next.push(base);
-				}
-				if (!merged) break;
-				blocks = next;
-			}
-			return blocks;
-		}
+                        let mergedRow = baseRow.slice();
+                        used[i] = 1;
+
+                        for (let gi = 0; gi < group.length; gi++) {
+                            const j = group[gi];
+                            if (j === i || used[j]) continue;
+
+                            const row = blocks[j];
+                            if ((mergedRow[d] & row[d]) === 0) {
+                                mergedRow[d] |= row[d];
+                                used[j] = 1;
+                                changed = true;
+                            }
+                        }
+
+                        next.push(mergedRow);
+                    }
+
+                    blocks = next;
+                }
+            }
+            return blocks;
+        }
 
 		function blockToLineBit(block) {
 			const parts = block.map(mask => {
