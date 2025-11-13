@@ -45,12 +45,12 @@
         #result {
             margin-top: 20px;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 20px;
         }
         #combos {
             margin-top: 10px;
             font-family: monospace;
-            font-size: 18px;
+            font-size: 20px;
             white-space: normal;
             word-break: keep-all;
             overflow-x: auto;
@@ -246,7 +246,7 @@
             <option value="3">3</option>
             <option value="4">4</option>
             <option value="5">5</option>
-        </select> 勝以上
+        </select> 勝
     </div>
 
     <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
@@ -262,7 +262,6 @@
 		const HORSE_MAX = 18;
 		const MARKS = ["", "✔", "◎"];
 		const CIRCLES = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
-		const MERGE_LIMIT = 100000;
 		let backgroundMode = false;
 		const modeBtn = document.getElementById("modeToggle");
 
@@ -544,99 +543,89 @@
 				return masksCache[k];
 			}
 
-			function countCombosDFS(candidates, limit, allowStore) {
-				const n = candidates.length;
-				const order = Array.from({ length: n }, (_, i) => i)
-					.sort((a, b) => candidates[a].length - candidates[b].length);
-				const revOrder = new Int8Array(n);
-				for (let i = 0; i < n; i++) revOrder[order[i]] = i;
+            function countCombosDFS(candidates) {
+                const n = candidates.length;
+                const order = Array.from({ length: n }, (_, i) => i)
+                    .sort((a, b) => candidates[a].length - candidates[b].length);
+                const revOrder = new Int8Array(n);
+                for (let i = 0; i < n; i++) revOrder[order[i]] = i;
 
-				const colorIdOf = (raceIdx, singleBitMask) => {
-					const idx = Math.log2(singleBitMask) | 0;
-					return colorIdTable[raceIdx][idx];
-				};
+                const colorIdOf = (raceIdx, singleBitMask) => {
+                    const idx = Math.log2(singleBitMask) | 0;
+                    return colorIdTable[raceIdx][idx];
+                };
 
-				let count = 0;
-				const blocks = [];
-				const path = new Int32Array(n);
+                let count = 0;
+                const blocks = [];
+                const path = new Int32Array(n);
 
-				const dfs = (depth, usedColorMask) => {
-					if (depth === n) {
-						count++;
-						if (allowStore && count <= limit) {
-							const combo = new Array(n);
-							for (let i = 0; i < n; i++) combo[i] = path[revOrder[i]];
-							blocks.push(combo);
-						}
-						return;
-					}
-					const raceIdx = order[depth];
-					const arr = candidates[raceIdx];
-					for (let k = 0; k < arr.length; k++) {
-						const m = arr[k];
-						const colorId = colorIdOf(raceIdx, m);
-						if (colorId >= 0 && (usedColorMask & (1 << colorId))) continue;
+                const dfs = (depth, usedColorMask) => {
+                    if (depth === n) {
+                        count++;
+                        const combo = new Array(n);
+                        for (let i = 0; i < n; i++) combo[i] = path[revOrder[i]];
+                        blocks.push(combo);
+                        return;
+                    }
+                    const raceIdx = order[depth];
+                    const arr = candidates[raceIdx];
+                    for (let k = 0; k < arr.length; k++) {
+                        const m = arr[k];
+                        const colorId = colorIdOf(raceIdx, m);
+                        if (colorId >= 0 && (usedColorMask & (1 << colorId))) continue;
 
-						path[depth] = m;
-						dfs(depth + 1, colorId >= 0 ? (usedColorMask | (1 << colorId)) : usedColorMask);
-					}
-				};
+                        path[depth] = m;
+                        dfs(depth + 1, colorId >= 0 ? (usedColorMask | (1 << colorId)) : usedColorMask);
+                    }
+                };
 
-				dfs(0, 0);
-				return { count, blocks };
-			}
+                dfs(0, 0);
+                return { count, blocks };
+            }
 
-			const minFav = Number(document.getElementById('minFav').value);
-			let total = 0;
-			const comboList = [];
+            const minFav = Number(document.getElementById('minFav').value);
+            let total = 0;
+            const comboList = [];
 
-			for (let k = TOTAL_RACES; k >= minFav; k--) {
-				const masks = getMasks(k);
-				let count = 0;
-				let blocks = [];
-				let stop = false;
+            const k = minFav;
+            const masks = getMasks(k);
+            let count = 0;
+            let blocks = [];
 
-				for (let m = 0; m < masks.length; m++) {
-					const maskArr = masks[m];
-					const maskSet = new Set(maskArr);
-					const candidates = new Array(TOTAL_RACES);
-					let valid = true;
+            for (let m = 0; m < masks.length; m++) {
+                const maskArr = masks[m];
+                const maskSet = new Set(maskArr);
+                const candidates = new Array(TOTAL_RACES);
+                let valid = true;
 
-					for (let i = 0; i < TOTAL_RACES; i++) {
-						candidates[i] = maskSet.has(i) ? favMaskList[i] : nonFavMaskList[i];
-						if (candidates[i].length === 0) { valid = false; break; }
-					}
-					if (!valid) continue;
+                for (let i = 0; i < TOTAL_RACES; i++) {
+                    candidates[i] = maskSet.has(i) ? favMaskList[i] : nonFavMaskList[i];
+                    if (candidates[i].length === 0) { valid = false; break; }
+                }
+                if (!valid) continue;
 
-					const res = countCombosDFS(candidates, MERGE_LIMIT, !stop);
-					count += res.count;
-					if (!stop && res.count > MERGE_LIMIT) {
-						stop = true;
-						blocks = [];
-					} else if (!stop) {
-						blocks.push(...res.blocks);
-					}
-				}
+                const res = countCombosDFS(candidates);
+                count += res.count;
 
-				comboList.push(`<b>─── 本命${k}勝：${count.toLocaleString()}通り ───</b>`);
-				if (count > MERGE_LIMIT) {
-					comboList.push('<div>※組合せが多いため省略。</div>');
-				} else {
-					const displayBlocks = fullyMergeBlocksStableBit(blocks);
-					comboList.push('<div class="combo-grid">');
-					for (const b of displayBlocks) comboList.push(blockToLineBit(b));
-					comboList.push('</div>');
-				}
-				total += count;
-				if (k % 2 === 0) await new Promise(r => setTimeout(r, 0));
-			}
+                for (let i = 0; i < res.blocks.length; i++) {
+                    blocks.push(res.blocks[i]);
+                }
+            }
+
+            const displayBlocks = fullyMergeBlocksStableBit(blocks);
+            comboList.push('<div class="combo-grid">');
+            for (const b of displayBlocks) comboList.push(blockToLineBit(b));
+            comboList.push('</div>');
+
+            total = count;
+            await new Promise(r => setTimeout(r, 0));
 
             const t1 = performance.now();
             const elapsedMs = t1 - t0;
             console.log(`計算速度: ${elapsedMs.toFixed()} ms`);
 
 			document.getElementById('result').innerHTML =
-				`総買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 通り`;
+				`組合せ：<span style="color:#0078d4;">${total.toLocaleString()}</span> 通り`;
 			const fragment = document.createDocumentFragment();
 			const container = document.createElement('div');
 			container.innerHTML = comboList.join('');
