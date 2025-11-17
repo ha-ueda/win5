@@ -214,13 +214,24 @@
         }
         .top-bar {
             display: flex;
-            justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
         }
         .top-bar-right {
             display: flex;
             gap: 8px;
+            margin-left: auto;
+        }
+        .button-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 6px;
+            width: 100%;
+        }
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
         }
     </style>
 </head>
@@ -236,31 +247,33 @@
 
         <div class="top-bar-right">
             <button class="calc-btn" onclick="loadWin5Data()">データ取得</button>
-            <button class="calc-btn" onclick="clearAllHorseNames()">クリア</button>
+            <button class="calc-btn" onclick="clearAllHorseNames()">馬名クリア</button>
         </div>
     </div>
 
-    <table id="raceTable">
-        <thead>
-            <tr>
-                <th>WIN1</th>
-                <th>WIN2</th>
-                <th>WIN3</th>
-                <th>WIN4</th>
-                <th>WIN5</th>
-            </tr>
-        </thead>
-        <tbody id="raceBody"></tbody>
-        <tfoot>
-            <tr>
-                <td><button class="clear-btn" onclick="clearColumn(1)">クリア</button></td>
-                <td><button class="clear-btn" onclick="clearColumn(2)">クリア</button></td>
-                <td><button class="clear-btn" onclick="clearColumn(3)">クリア</button></td>
-                <td><button class="clear-btn" onclick="clearColumn(4)">クリア</button></td>
-                <td><button class="clear-btn" onclick="clearColumn(5)">クリア</button></td>
-            </tr>
-        </tfoot>
-    </table>
+    <div class="table-wrapper">
+        <table id="raceTable">
+            <thead>
+                <tr>
+                    <th>WIN1</th>
+                    <th>WIN2</th>
+                    <th>WIN3</th>
+                    <th>WIN4</th>
+                    <th>WIN5</th>
+                </tr>
+            </thead>
+            <tbody id="raceBody"></tbody>
+            <tfoot>
+                <tr>
+                    <td><button class="clear-btn" onclick="clearColumn(1)">クリア</button></td>
+                    <td><button class="clear-btn" onclick="clearColumn(2)">クリア</button></td>
+                    <td><button class="clear-btn" onclick="clearColumn(3)">クリア</button></td>
+                    <td><button class="clear-btn" onclick="clearColumn(4)">クリア</button></td>
+                    <td><button class="clear-btn" onclick="clearColumn(5)">クリア</button></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 
     <div style="margin-top:18px; font-size: 20px;">
         本命
@@ -273,7 +286,7 @@
         </select> 勝
     </div>
 
-    <div style="display: flex; justify-content: flex-end; margin-top: 6px; gap: 8px;">
+    <div class="button-row">
         <button class="calc-btn" onclick="calc()">計算する</button>
     </div>
 
