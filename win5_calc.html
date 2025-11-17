@@ -901,30 +901,6 @@
             }
         }
 
-		let lastTouchEnd = 0;
-		const tableWrapper = document.querySelector('.table-wrapper');
-
-		if (tableWrapper) {
-			tableWrapper.addEventListener('touchend', function (event) {
-				const target = event.target;
-
-				if (
-					target.closest('input[type="checkbox"]') ||
-					target.closest('.combo-check-wrap') ||
-					target.closest('.combo-check-visual')
-				) {
-					lastTouchEnd = 0;
-					return;
-				}
-
-				const now = Date.now();
-				if (now - lastTouchEnd <= 300) {
-					event.preventDefault();
-				}
-				lastTouchEnd = now;
-			}, { passive: false });
-		}
-
 		createTable();
 		restoreState();
 	</script>
