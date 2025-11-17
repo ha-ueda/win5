@@ -17,10 +17,12 @@
             text-align: center;
         }
         table {
+            touch-action: manipulation;
             border-collapse: collapse;
             width: 100%;
         }
         th, td {
+            touch-action: manipulation;
             border: 1px solid #d9d8ce;
             padding: 4px;
             text-align: center;
@@ -73,7 +75,6 @@
             box-sizing: border-box;
         }
         .custom-select {
-            touch-action: manipulation;
             display: flex;
             align-items: center;
             gap: 4px;
@@ -83,12 +84,10 @@
             position: relative;
         }
         .custom-select.has-name {
-            touch-action: manipulation;
             margin-left: 0;
             margin-right: auto;
         }
         .selected {
-            touch-action: manipulation;
             background-color: white;
             border: 1px solid #aaa;
             border-radius: 4px;
@@ -102,7 +101,6 @@
             font-weight: bold;
         }
         .custom-select .horse-label {
-            touch-action: manipulation;
             display: inline-flex;
             align-items: center;
             justify-content: flex-start;
