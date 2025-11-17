@@ -12,8 +12,9 @@
             color: #333;
         }
         h1 {
-            font-size: 22px;
+            font-size: 30px;
             margin-bottom: 15px;
+            text-align: center;
         }
         table {
             border-collapse: collapse;
@@ -77,6 +78,10 @@
             margin: 0 auto;
             position: relative;
         }
+        .custom-select.has-name {
+            margin-left: 0;
+            margin-right: auto;
+        }
         .selected {
             touch-action: manipulation;
             background-color: white;
@@ -92,22 +97,24 @@
             font-weight: bold;
         }
         .custom-select .horse-label {
-            display: flex;
-            width: 32px;
-            height: 32px;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
+            height: 32px;
+            padding: 0 4px;
             font-size: 18px !important;
             font-weight: bold;
             color: #555;
             user-select: none;
+            white-space: nowrap;
+            overflow: visible;
         }
         .toggle-container {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-bottom: 10px;
-            font-size: 16px;
+            font-size: 20px;
         }
         .switch {
             position: relative;
@@ -205,15 +212,32 @@
             border-color: #e85b4a;
             color: #ffffff;
         }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .top-bar-right {
+            display: flex;
+            gap: 8px;
+        }
     </style>
 </head>
 <body>
 
     <h1>WIN5 本命あり買い目計算ツール</h1>
 
-    <div class="toggle-container">
-        背景選択
-        <div id="modeToggle" class="switch"></div>
+    <div class="top-bar">
+        <div class="toggle-container">
+            背景選択
+            <div id="modeToggle" class="switch"></div>
+        </div>
+
+        <div class="top-bar-right">
+            <button class="calc-btn" onclick="loadWin5Data()">データ取得</button>
+            <button class="calc-btn" onclick="clearAllHorseNames()">クリア</button>
+        </div>
     </div>
 
     <table id="raceTable">
@@ -249,7 +273,7 @@
         </select> 勝
     </div>
 
-    <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+    <div style="display: flex; justify-content: flex-end; margin-top: 6px; gap: 8px;">
         <button class="calc-btn" onclick="calc()">計算する</button>
     </div>
 
@@ -364,8 +388,8 @@
 			const label = document.createElement("span");
 			label.className = "horse-label";
 			label.textContent = toCircleNumber(horseNum);
-			wrapper.appendChild(label);
 			wrapper.appendChild(selected);
+			wrapper.appendChild(label);
 			return wrapper;
 		}
 
@@ -383,46 +407,97 @@
 		}
 
 		let lastState = '';
-		function saveState() {
-			const state = { races: {}, minFav: document.getElementById('minFav').value };
-			for (let r = 1; r <= TOTAL_RACES; r++) {
-				state.races[`r${r}`] = {};
-				document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
-					const d = sel.querySelector('.selected');
-					state.races[`r${r}`][sel.dataset.horse] = {
-						mark: d.textContent,
-						bg: d.dataset.bg || "none"
-					};
-				});
-			}
-			const str = JSON.stringify(state);
-			if (str !== lastState) {
-				localStorage.setItem('win5_state_v7', str);
-				lastState = str;
-			}
-		}
+        function saveState() {
+            const state = { races: {}, minFav: document.getElementById('minFav').value };
 
-		function restoreState() {
-			const data = localStorage.getItem('win5_state_v7');
-			if (!data) return;
-			try {
-				const state = JSON.parse(data);
-				document.getElementById('minFav').value = state.minFav;
-				for (let r = 1; r <= TOTAL_RACES; r++) {
-					const race = state.races[`r${r}`];
-					if (!race) continue;
-					document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
-						const val = race[sel.dataset.horse];
-						if (val) {
-							const d = sel.querySelector('.selected');
-							d.textContent = val.mark;
-							d.dataset.bg = val.bg;
-							d.style.backgroundColor = (val.bg && val.bg !== "none") ? val.bg : "";
-						}
-					});
-				}
-			} catch (e) {}
-		}
+            for (let r = 1; r <= TOTAL_RACES; r++) {
+                state.races[`r${r}`] = {};
+                document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
+                    const d = sel.querySelector('.selected');
+                    const label = sel.querySelector('.horse-label');
+                    const horseNum = Number(sel.dataset.horse);
+                    const circle = toCircleNumber(horseNum);
+
+                    let name = null;
+
+                    if (label) {
+                        const txt = label.textContent || "";
+                        if (txt) {
+                            if (txt.startsWith(circle)) {
+                                name = txt.slice(circle.length).trim();
+                            } else {
+                                name = txt.trim();
+                            }
+                        }
+                    }
+
+                    state.races[`r${r}`][sel.dataset.horse] = {
+                        mark: d.textContent,
+                        bg: d.dataset.bg || "none",
+                        name: name
+                    };
+                });
+            }
+
+            const str = JSON.stringify(state);
+            if (str !== lastState) {
+                localStorage.setItem('win5_state_v7', str);
+                lastState = str;
+            }
+        }
+
+        function restoreState() {
+            const data = localStorage.getItem('win5_state_v7');
+            if (!data) return;
+            try {
+                const state = JSON.parse(data);
+                if (state.minFav) {
+                    document.getElementById('minFav').value = state.minFav;
+                }
+
+                for (let r = 1; r <= TOTAL_RACES; r++) {
+                    const race = state.races[`r${r}`];
+                    if (!race) continue;
+
+                    document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
+                        const val = race[sel.dataset.horse];
+                        if (!val) return;
+
+                        const d = sel.querySelector('.selected');
+                        d.textContent = val.mark || "";
+                        d.dataset.bg = val.bg || "none";
+                        d.style.backgroundColor =
+                            (val.bg && val.bg !== "none") ? val.bg : "";
+
+                        const label = sel.querySelector('.horse-label');
+                        const horseNum = Number(sel.dataset.horse);
+                        const circle = toCircleNumber(horseNum);
+
+                        if (label) {
+                            const n = val.name;
+
+                            if (n === null) {
+                                label.textContent = "";
+                                sel.classList.remove('has-name');
+                                sel.style.visibility = 'hidden';
+
+                                d.textContent = "";
+                                d.dataset.bg = "none";
+                                d.style.backgroundColor = "";
+                            } else if (typeof n === "string" && n.length > 0) {
+                                label.textContent = circle + " " + n;
+                                sel.classList.add('has-name');
+                                sel.style.visibility = 'visible';
+                            } else {
+                                label.textContent = circle;
+                                sel.classList.remove('has-name');
+                                sel.style.visibility = 'visible';
+                            }
+                        }
+                    });
+                }
+            } catch (e) {}
+        }
 
 		function clearColumn(colNum) {
 			document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel => {
@@ -433,6 +508,22 @@
 			});
 			saveState();
 		}
+
+        function clearAllHorseNames() {
+            document.querySelectorAll('.custom-select').forEach(sel => {
+                const label = sel.querySelector('.horse-label');
+                if (!label) return;
+
+                const horseNum = Number(sel.dataset.horse);
+                const circle = toCircleNumber(horseNum);
+
+                label.textContent = circle;
+                sel.classList.remove('has-name');
+                sel.style.visibility = 'visible';
+            });
+
+            saveState();
+        }
 
 		function getRaceData(r) {
 			const favs = [], himo = [], colorMap = {};
@@ -743,6 +834,55 @@
 				'</div>'
 			);
 		}
+
+        async function loadWin5Data() {
+            const api = "https://win5-proxy.cooopew.workers.dev/";
+
+            try {
+                const res = await fetch(api);
+                const json = await res.json();
+                if (!json.ok) return;
+
+                const races = json.races || [];
+
+                for (let r = 0; r < TOTAL_RACES; r++) {
+                    const horses = (races[r] && races[r].horses) ? races[r].horses : [];
+
+                    for (let i = 1; i <= HORSE_MAX; i++) {
+                        const raceNum  = r + 1;
+                        const horseNum = i;
+                        const name     = horses[i - 1] || "";
+
+                        const sel = document.querySelector(
+                            `.custom-select[data-race="${raceNum}"][data-horse="${horseNum}"]`
+                        );
+                        if (!sel) continue;
+
+                        const label   = sel.querySelector(".horse-label");
+                        const selected = sel.querySelector(".selected");
+                        if (!label || !selected) continue;
+
+                        if (name) {
+                            label.textContent = toCircleNumber(horseNum) + " " + name;
+                            sel.classList.add("has-name");
+                            sel.style.visibility = "visible";
+                        } else {
+                            label.textContent = "";
+                            sel.classList.remove("has-name");
+                            sel.style.visibility = "hidden";
+                            selected.textContent = "";
+                            selected.dataset.bg = "none";
+                            selected.style.backgroundColor = "";
+                        }
+                    }
+                }
+
+                saveState();
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
 
 		createTable();
 		restoreState();
