@@ -1020,8 +1020,13 @@
 
             tabs.forEach((t, i) => {
                 const op = document.createElement("option");
+
+                let label = t.label || "";
+                label = label.replace(/(\d{1,2})月(\d{1,2})日/, (_, m, d) => `${m}/${d}`);
+
                 op.value = i;
-                op.textContent = t.label;
+                op.textContent = label;
+
                 if (i === current) op.selected = true;
                 select.appendChild(op);
             });
