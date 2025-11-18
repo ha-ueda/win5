@@ -151,9 +151,6 @@
         table thead th {
             background: #f4f2ec !important;
         }
-        #raceBody tr:nth-child(even) td {
-            background: #fbfbfb !important;
-        }
         * {
             -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
         }
@@ -404,11 +401,14 @@
 						}
 					};
 					setTimeout(() => document.addEventListener("click", closePalette), 0);
-				} else {
-					const cur = MARKS.indexOf(selected.textContent);
-					selected.textContent = MARKS[(cur + 1) % MARKS.length];
-					saveState();
-				}
+                } else {
+                    const cur = MARKS.indexOf(selected.textContent);
+                    selected.textContent = MARKS[(cur + 1) % MARKS.length];
+                    const mark = selected.textContent;
+                    selected.style.opacity = "1";
+                    applyMarkBackground(wrapper, mark !== "");
+                    saveState();
+                }
 			});
 
             const label = document.createElement("span");
@@ -441,7 +441,7 @@
 
         let lastState = '';
         function saveState() {
-            const state = { races: {}, minFav: document.getElementById('minFav').value };
+            const state = { races: {}, minFav: document.getElementById('minFav').value, raceInfo: window.raceInfo || ["", "", "", "", ""] };
 
             for (let r = 1; r <= TOTAL_RACES; r++) {
                 state.races[`r${r}`] = {};
@@ -494,6 +494,10 @@
             if (!data) return;
             try {
                 const state = JSON.parse(data);
+                if (state.raceInfo) {
+                    window.raceInfo = state.raceInfo;
+                    updateRaceHeaders(state.raceInfo);
+                }
                 if (state.minFav) {
                     document.getElementById('minFav').value = state.minFav;
                 }
@@ -513,6 +517,8 @@
                         const circle   = toCircleNumber(horseNum);
 
                         d.textContent = val.mark || "";
+                        d.style.opacity = "1";
+                        applyMarkBackground(sel, !!val.mark);
                         d.dataset.bg  = val.bg || "none";
                         d.style.backgroundColor =
                             (val.bg && val.bg !== "none") ? val.bg : "";
@@ -547,15 +553,18 @@
             } catch (e) {}
         }
 
-		function clearColumn(colNum) {
-			document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel => {
-				const d = sel.querySelector(".selected");
-				d.textContent = "";
-				d.dataset.bg = "none";
-				d.style.backgroundColor = "";
-			});
-			saveState();
-		}
+        function clearColumn(colNum) {
+            document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel => {
+                const selected = sel.querySelector(".selected");
+
+                selected.textContent = "";
+                selected.dataset.bg = "none";
+                selected.style.backgroundColor = "white";
+
+                applyMarkBackground(sel, false);
+            });
+            saveState();
+        }
 
         function clearAllHorseNames() {
             document.querySelectorAll('.custom-select').forEach(sel => {
@@ -575,6 +584,9 @@
                 sel.classList.remove('has-name');
                 sel.style.visibility = 'visible';
             });
+
+            window.raceInfo = ["", "", "", "", ""];
+            updateRaceHeaders(window.raceInfo);
 
             saveState();
         }
@@ -920,6 +932,11 @@
         }
 
         function applyWin5Data(json) {
+
+            window.raceInfo = json.raceInfo || [];
+
+            updateRaceHeaders(window.raceInfo);
+
             const races = json.races || [];
 
             for (let r = 0; r < TOTAL_RACES; r++) {
@@ -946,7 +963,6 @@
                         const circle = toCircleNumber(horseNum);
                         label.textContent = circle + " " + name;
                         jockeyLabel.textContent = jockey || "";
-
                         sel.classList.add("has-name");
                         sel.style.visibility = "visible";
                     } else {
@@ -963,6 +979,18 @@
             }
 
             saveState();
+        }
+
+        function updateRaceHeaders(raceInfo) {
+            const thRow = document.querySelector("#raceTable thead tr");
+            thRow.innerHTML = "";
+
+            for (let i = 0; i < 5; i++) {
+                const th = document.createElement("th");
+                const label = `WIN${i + 1}` + (raceInfo[i] ? ` ${raceInfo[i]}` : "");
+                th.textContent = label;
+                thRow.appendChild(th);
+            }
         }
 
         async function loadWin5Data() {
@@ -1034,6 +1062,13 @@
                 ? `${horseName}（${jockeyName}）`
                 : horseName;
             renderHorseLabel(label, horseNum, textForState);
+        }
+
+        function applyMarkBackground(sel, hasMark) {
+            const td = sel.parentElement;
+            if (!td) return;
+
+            td.style.backgroundColor = hasMark ? "#FDECEC" : "";
         }
 
 		createTable();
