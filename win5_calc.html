@@ -222,15 +222,11 @@
             border-color: #e85b4a;
             color: #ffffff;
         }
-        .top-bar {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
         .top-bar-right {
             display: flex;
             gap: 8px;
-            margin-left: auto;
+            justify-content: flex-end;
+            margin-bottom: 12px;
         }
         .button-row {
             display: flex;
@@ -263,17 +259,15 @@
 </head>
 <body>
 
-    <div class="top-bar">
-        <div class="toggle-container">
-            背景選択
-            <div id="modeToggle" class="switch"></div>
-        </div>
+    <div class="toggle-container">
+        背景選択
+        <div id="modeToggle" class="switch"></div>
+    </div>
 
-        <div class="top-bar-right">
-            <select id="win5TabSelect"></select>
-            <button class="calc-btn" onclick="loadWin5Data()">データ取得</button>
-            <button class="calc-btn" onclick="clearAllHorseNames()">クリア</button>
-        </div>
+    <div class="top-bar-right">
+        <select id="win5TabSelect"></select>
+        <button class="calc-btn" onclick="loadWin5Data()">データ取得</button>
+        <button class="calc-btn" onclick="clearAllHorseNames()">クリア</button>
     </div>
 
     <div class="table-wrapper">
