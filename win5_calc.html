@@ -241,6 +241,70 @@
             padding: 6px 12px;
             font-size: 20px;
         }
+        /* --- スマホ向けレイアウト調整（横幅600px以下）--- */
+        @media (max-width: 600px) {
+
+            /* 全体のフォント縮小 */
+            body {
+                font-size: 14px;
+            }
+
+            table th, table td {
+                padding: 2px;
+                font-size: 14px;
+                white-space: nowrap;   /* 改行しない */
+            }
+
+            /* セレクトボックス領域縮小 */
+            .selected {
+                width: 24px;
+                height: 24px;
+                line-height: 24px;
+                font-size: 14px;
+            }
+
+            /* 馬名の文字を少し小さく */
+            .horse-label {
+                font-size: 14px !important;
+            }
+
+            .jockey-label {
+                font-size: 12px !important;
+            }
+
+            /* テーブル枠の縮小 */
+            .table-wrapper {
+                overflow-x: auto;
+            }
+
+            /* WIN5 のプルダウンも縮小 */
+            #win5TabSelect {
+                font-size: 16px;
+                max-width: 120px;
+            }
+
+            .calc-btn {
+                font-size: 16px;
+                padding: 4px 8px;
+            }
+
+            .clear-btn {
+                font-size: 14px;
+                padding: 2px 4px;
+            }
+
+            /* コンボ表示部分の圧縮 */
+            .combo-cell {
+                padding: 0 6px;
+                font-size: 14px;
+            }
+
+            .combo-check-visual {
+                width: 18px;
+                height: 18px;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
