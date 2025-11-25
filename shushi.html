@@ -125,7 +125,30 @@
         }
 
         td.num input[type="text"]{
-            width: 120px;
+            width: 130px;
+        }
+
+        .delete-btn {
+            background: transparent;
+            color: white;
+            border: none;
+            padding: 4px 0;
+            width: 34px;
+            height: 34px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
     </style>
 </head>
@@ -134,7 +157,6 @@
 
     <div id="toast"></div>
 
-    <!-- ▼▼ ナビメニュー ▼▼ -->
     <style>
         .menu-container {
             position: relative;
@@ -204,31 +226,21 @@
             }
         });
     </script>
-    <!-- ▲▲ ナビメニュー ▲▲ -->
 
     <div class="container">
-
-        <h2>収支入力</h2>
-
-        <table id="mainTable">
-            <thead>
-                <tr>
-                    <th>日付</th>
-                    <th>購入</th>
-                    <th>払戻</th>
-                    <th>購入者</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-        </table>
-
-        <button class="btn" onclick="addRow()">追加</button>
-        <button class="btn" onclick="saveData()">保存</button>
 
         <h2>集計</h2>
 
         <table class="summary-table">
+            <tr>
+                <th>収支</th>
+                <th id="profit">¥0</th>
+            </tr>
+
+            <tr>
+                <td colspan="2" style="height:12px; background:#ffffff; border:none;"></td>
+            </tr>
+
             <tr>
                 <td>上田</td>
                 <td id="sumUeda">¥0</td>
@@ -245,14 +257,27 @@
                 <td>払戻</td>
                 <td id="sumPayout">¥0</td>
             </tr>
-            <tr>
-                <td colspan="2" style="height:12px; background:#ffffff; border:none;"></td>
-            </tr>
-            <tr>
-                <th>収支</th>
-                <th id="profit">¥0</th>
-            </tr>
         </table>
+
+        <h2>収支入力</h2>
+
+        <div class="table-wrapper">
+            <table id="mainTable">
+                <thead>
+                    <tr>
+                        <th>日付</th>
+                        <th>購入</th>
+                        <th>払戻</th>
+                        <th>購入者</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+
+        <button class="btn" onclick="addRow()">追加</button>
+        <button class="btn" onclick="saveData()">保存</button>
 
     </div>
 
@@ -299,7 +324,7 @@
                 </td>
 
                 <td>
-                    <button class="btn" onclick="this.parentNode.parentNode.remove(); calc();">削除</button>
+                    <button class="delete-btn" onclick="this.parentNode.parentNode.remove(); calc();">🗑</button>
                 </td>
             `;
             tbody.appendChild(tr);
