@@ -34,6 +34,7 @@
 
         td.num input {
             text-align: right;
+            width: 70px;
         }
 
         th {
@@ -83,48 +84,6 @@
         .container {
             max-width: 950px;
             margin: auto;
-        }
-
-        /* ▼ テーブルをデバイス幅にフィットさせる（レスポンシブ） ▼ */
-        .table-wrapper {
-            width: 100%;
-            overflow-x: auto;            /* スマホだけ横スクロール */
-            -webkit-overflow-scrolling: touch;
-        }
-
-        #mainTable {
-            width: 100%;
-            min-width: 600px;            /* これ以下に縮まないようにする */
-        }
-
-        /* 各列の推奨幅（スマホで潰れないように） */
-        #mainTable th:nth-child(1),
-        #mainTable td:nth-child(1) {
-            width: 110px;                /* 日付 */
-        }
-
-        #mainTable th:nth-child(2),
-        #mainTable td:nth-child(2),
-        #mainTable th:nth-child(3),
-        #mainTable td:nth-child(3) {
-            width: 90px;                 /* 金額・払戻 */
-        }
-
-        #mainTable th:nth-child(4),
-        #mainTable td:nth-child(4) {
-            width: 90px;                 /* 購入者 */
-        }
-
-        #mainTable th:nth-child(5),
-        #mainTable td:nth-child(5) {
-            width: 70px;                 /* 削除ボタン */
-        }
-
-        /* スマホ幅では列幅を可変に */
-        @media (max-width: 480px) {
-            #mainTable {
-                min-width: 520px;
-            }
         }
     </style>
 </head>
