@@ -5,7 +5,7 @@
 <title>収支計算</title>
 
 <style>
-  body { font-family: "Segoe UI", sans-serif; margin: 20px; }
+  body { font-family: "メイリオ", Meiryo, Hiragino Sans, Hiragino Kaku Gothic ProN, 'ヒラギノ角ゴ ProN W3', 'ヒラギノ角ゴ Pro W3', Helvetica Neue, Helvetica, sans-serif; margin: 20px; }
   h2 { margin-top: 32px; }
 
   table {
@@ -20,6 +20,10 @@
     padding: 6px 10px;
     text-align: center;
     white-space: nowrap;
+  }
+
+  td.num input {
+    text-align: right;
   }
 
   th {
@@ -37,21 +41,29 @@
     margin-right: 6px;
   }
 
-  .btn:hover {
-    opacity: 0.85;
-  }
+  .btn:hover { opacity: 0.85; }
 
   .summary-table td, .summary-table th {
     background: #f9fafb;
   }
 
+  .summary-table td:nth-child(2),
+  .summary-table th:nth-child(2) {
+    text-align: center;
+  }
+
+  .summary-table td:nth-child(2) span,
+  .summary-table th:nth-child(2) span {
+    display: inline-block;
+    width: 80px;
+    text-align: right;
+    font-feature-settings: "tnum";
+  }
+
   .profit { color: #0070f3; font-weight: bold; }
   .loss { color: #d40000; font-weight: bold; }
 
-  .container {
-    max-width: 950px;
-    margin: auto;
-  }
+  .container { max-width: 950px; margin: auto; }
 </style>
 </head>
 
@@ -84,10 +96,8 @@
 <tr><td>合計</td><td id="sumTotal">¥0</td></tr>
 <tr><td>払戻</td><td id="sumPayout">¥0</td></tr>
 
-<!-- ★ スペース行を追加 -->
 <tr><td colspan="2" style="height:12px; background:#ffffff; border:none;"></td></tr>
 
-<!-- ★ 収支（払戻 - 合計） -->
 <tr><th>収支</th><th id="profit">¥0</th></tr>
 </table>
 
@@ -95,33 +105,63 @@
 
 <script>
 // --------------------------------------------------
-// ★ GAS URL を貼る
+// Cloudflare Workers API
 // --------------------------------------------------
 const API_URL = "https://shushi.cooopew.workers.dev/";
 
 const tbody = document.getElementById("tbody");
 
+// --------------------------------------------------
+// ★ 数値 → "¥1,234" に整形
+// --------------------------------------------------
+function formatYen(n) {
+  if (n === "" || n === null || isNaN(n)) return "";
+  return "¥" + Number(n).toLocaleString();
+}
+
+// --------------------------------------------------
+// ★ "¥1,234" → 1234 に戻す
+// --------------------------------------------------
+function parseYen(str) {
+  if (!str) return 0;
+  return Number(str.replace(/[¥,]/g, "")) || 0;
+}
+
+// --------------------------------------------------
 // 行追加
+// --------------------------------------------------
 function addRow(data = {}) {
   const tr = document.createElement("tr");
   tr.innerHTML = `
     <td><input type="date" value="${data.date || ""}"></td>
-    <td><input type="number" value="${data.amount || ""}" step="1" oninput="calc()"></td>
-    <td><input type="number" value="${data.payout || ""}" step="1" oninput="calc()"></td>
+
+  <td class="num">
+    <input type="text" 
+      value="${formatYen(data.amount ?? "")}"
+      oninput="this.value = formatYen(parseYen(this.value)); calc();">
+  </td>
+
+  <td class="num">
+    <input type="text" 
+      value="${formatYen(data.payout ?? "")}"
+      oninput="this.value = formatYen(parseYen(this.value)); calc();">
+  </td>
+
     <td>
       <select onchange="calc()">
         <option value="上田" ${data.buyer === "上田" ? "selected" : ""}>上田</option>
         <option value="千葉" ${data.buyer === "千葉" ? "selected" : ""}>千葉</option>
       </select>
     </td>
+
     <td><button class="btn" onclick="this.parentNode.parentNode.remove(); calc();">削除</button></td>
   `;
   tbody.appendChild(tr);
 }
 
-// ----------------------------------------------
-// ★ Google Sheets から読み込み
-// ----------------------------------------------
+// --------------------------------------------------
+// Cloudflare Workers から読み込み
+// --------------------------------------------------
 async function loadData() {
   try {
     const res = await fetch(API_URL);
@@ -138,18 +178,18 @@ async function loadData() {
     calc();
   } catch(e) {
     console.error(e);
-    alert("データの読み込みに失敗しました");
+    alert("読み込みに失敗しました");
   }
 }
 
-// ----------------------------------------------
-// ★ Google Sheets に保存
-// ----------------------------------------------
+// --------------------------------------------------
+// Cloudflare Workers に保存
+// --------------------------------------------------
 async function saveData() {
   const rows = [...tbody.children].map(tr => ({
     date: tr.children[0].children[0].value,
-    amount: Number(tr.children[1].children[0].value || 0),
-    payout: Number(tr.children[2].children[0].value || 0),
+    amount: parseYen(tr.children[1].children[0].value),
+    payout: parseYen(tr.children[2].children[0].value),
     buyer: tr.children[3].children[0].value
   }));
 
@@ -167,13 +207,13 @@ async function saveData() {
   }
 }
 
-// ----------------------------------------------
-// ★ 集計（収支計算含む）
-// ----------------------------------------------
+// --------------------------------------------------
+// 集計
+// --------------------------------------------------
 function calc() {
   const rows = [...tbody.children].map(tr => ({
-    amount: Number(tr.children[1].children[0].value || 0),
-    payout: Number(tr.children[2].children[0].value || 0),
+    amount: parseYen(tr.children[1].children[0].value),
+    payout: parseYen(tr.children[2].children[0].value),
     buyer: tr.children[3].children[0].value
   }));
 
@@ -190,25 +230,24 @@ function calc() {
   const sumTotal = sumUeda + sumChiba;
   const profit = sumPayout - sumTotal;
 
-  document.getElementById("sumUeda").textContent = "¥" + sumUeda.toLocaleString();
-  document.getElementById("sumChiba").textContent = "¥" + sumChiba.toLocaleString();
-  document.getElementById("sumTotal").textContent = "¥" + sumTotal.toLocaleString();
-  document.getElementById("sumPayout").textContent = "¥" + sumPayout.toLocaleString();
-
-  // ★ 収支の表示（色付き）
+  document.getElementById("sumUeda").innerHTML = `<span>${formatYen(sumUeda)}</span>`;
+  document.getElementById("sumChiba").innerHTML = `<span>${formatYen(sumChiba)}</span>`;
+  document.getElementById("sumTotal").innerHTML = `<span>${formatYen(sumTotal)}</span>`;
+  document.getElementById("sumPayout").innerHTML = `<span>${formatYen(sumPayout)}</span>`;
   const profitElem = document.getElementById("profit");
+
   if (profit > 0) {
-    profitElem.innerHTML = `<span class="profit">+¥${profit.toLocaleString()}</span>`;
+    profitElem.innerHTML = `<span class="profit">${formatYen(profit)}</span>`;
   } else if (profit < 0) {
-    profitElem.innerHTML = `<span class="loss">-¥${Math.abs(profit).toLocaleString()}</span>`;
+    profitElem.innerHTML = `<span class="loss">${formatYen(profit)}</span>`;
   } else {
-    profitElem.innerHTML = "¥0";
+    profitElem.innerHTML = `<span>¥0</span>`;
   }
 }
 
-// ----------------------------------------------
+// --------------------------------------------------
 // 初期読み込み
-// ----------------------------------------------
+// --------------------------------------------------
 loadData();
 </script>
 
