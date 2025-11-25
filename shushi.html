@@ -90,6 +90,80 @@
 </head>
 
 <body>
+
+    <!-- ▼▼ ナビメニュー ▼▼ -->
+    <style>
+        .menu-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .menu-button {
+            background: #0078d4;
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-block;
+            user-select: none;
+        }
+
+        .menu-list {
+            display: none;
+            position: absolute;
+            top: 45px;
+            left: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            min-width: 140px;
+            z-index: 999;
+        }
+
+        .menu-list a {
+            display: block;
+            padding: 10px 14px;
+            text-decoration: none;
+            color: #333;
+            border-bottom: 1px solid #eee;
+        }
+
+        .menu-list a:hover {
+            background: #f0f7ff;
+        }
+
+        .menu-list a:last-child {
+            border-bottom: none;
+        }
+    </style>
+
+    <div class="menu-container">
+        <div class="menu-button" onclick="toggleMenu()">☰</div>
+        <div class="menu-list" id="globalMenu">
+            <a href="./win5_calc.html">買い目計算</a>
+            <a href="./shushi.html">収支計算</a>
+        </div>
+    </div>
+
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById("globalMenu");
+            menu.style.display = (menu.style.display === "block") ? "none" : "block";
+        }
+
+        // メニュー外クリックで閉じる
+        document.addEventListener("click", function(e) {
+            const menu = document.getElementById("globalMenu");
+            const btn = document.querySelector(".menu-button");
+
+            if (!menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.style.display = "none";
+            }
+        });
+    </script>
+    <!-- ▲▲ ナビメニュー ▲▲ -->
+
   <div class="container">
 
     <h2>収支入力</h2>
