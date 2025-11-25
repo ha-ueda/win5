@@ -2,91 +2,92 @@
 <html lang="ja">
 
 <head>
-  <meta charset="UTF-8">
-  <title>収支計算</title>
+    <meta charset="UTF-8">
+    <title>収支計算</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <style>
-    body {
-      font-family: "メイリオ", Meiryo, Hiragino Sans, Hiragino Kaku Gothic ProN,
-        'ヒラギノ角ゴ ProN W3', 'ヒラギノ角ゴ Pro W3', Helvetica Neue, Helvetica, sans-serif;
-      margin: 20px;
-    }
+    <style>
+        body {
+            font-family: "メイリオ", Meiryo, Hiragino Sans, Hiragino Kaku Gothic ProN,
+                'ヒラギノ角ゴ ProN W3', 'ヒラギノ角ゴ Pro W3', Helvetica Neue, Helvetica, sans-serif;
+            margin: 20px;
+        }
 
-    h2 {
-      margin-top: 32px;
-    }
+        h2 {
+            margin-top: 32px;
+        }
 
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-bottom: 20px;
-      font-size: 15px;
-    }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
 
-    th,
-    td {
-      border: 1px solid #ccc;
-      padding: 6px 10px;
-      text-align: center;
-      white-space: nowrap;
-    }
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 6px 10px;
+            text-align: center;
+            white-space: nowrap;
+        }
 
-    td.num input {
-      text-align: right;
-    }
+        td.num input {
+            text-align: right;
+        }
 
-    th {
-      background: #e0f0ff;
-      font-weight: bold;
-    }
+        th {
+            background: #e0f0ff;
+            font-weight: bold;
+        }
 
-    .btn {
-      padding: 6px 12px;
-      background: #0078d4;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 4px;
-      margin-right: 6px;
-    }
+        .btn {
+            padding: 6px 12px;
+            background: #0078d4;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-right: 6px;
+        }
 
-    .btn:hover {
-      opacity: 0.85;
-    }
+        .btn:hover {
+            opacity: 0.85;
+        }
 
-    .summary-table td,
-    .summary-table th {
-      background: #f9fafb;
-    }
+        .summary-table td,
+        .summary-table th {
+            background: #f9fafb;
+        }
 
-    .summary-table td:nth-child(2),
-    .summary-table th:nth-child(2) {
-      text-align: center;
-    }
+        .summary-table td:nth-child(2),
+        .summary-table th:nth-child(2) {
+            text-align: center;
+        }
 
-    .summary-table td:nth-child(2) span,
-    .summary-table th:nth-child(2) span {
-      display: inline-block;
-      width: 80px;
-      text-align: right;
-      font-feature-settings: "tnum";
-    }
+        .summary-table td:nth-child(2) span,
+        .summary-table th:nth-child(2) span {
+            display: inline-block;
+            width: 80px;
+            text-align: right;
+            font-feature-settings: "tnum";
+        }
 
-    .profit {
-      color: #0070f3;
-      font-weight: bold;
-    }
+        .profit {
+            color: #0070f3;
+            font-weight: bold;
+        }
 
-    .loss {
-      color: #d40000;
-      font-weight: bold;
-    }
+        .loss {
+            color: #d40000;
+            font-weight: bold;
+        }
 
-    .container {
-      max-width: 950px;
-      margin: auto;
-    }
-  </style>
+        .container {
+            max-width: 950px;
+            margin: auto;
+        }
+    </style>
 </head>
 
 <body>
@@ -116,7 +117,7 @@
             background: white;
             border: 1px solid #ccc;
             border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             min-width: 140px;
             z-index: 999;
         }
@@ -152,8 +153,7 @@
             menu.style.display = (menu.style.display === "block") ? "none" : "block";
         }
 
-        // メニュー外クリックで閉じる
-        document.addEventListener("click", function(e) {
+        document.addEventListener("click", function (e) {
             const menu = document.getElementById("globalMenu");
             const btn = document.querySelector(".menu-button");
 
@@ -164,88 +164,73 @@
     </script>
     <!-- ▲▲ ナビメニュー ▲▲ -->
 
-  <div class="container">
+    <div class="container">
 
-    <h2>収支入力</h2>
+        <h2>収支入力</h2>
 
-    <table id="mainTable">
-      <thead>
-        <tr>
-          <th>日付</th>
-          <th>金額</th>
-          <th>払戻</th>
-          <th>購入者</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
+        <table id="mainTable">
+            <thead>
+                <tr>
+                    <th>日付</th>
+                    <th>金額</th>
+                    <th>払戻</th>
+                    <th>購入者</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
 
-    <button class="btn" onclick="addRow()">行を追加</button>
-    <button class="btn" onclick="saveData()">保存</button>
+        <button class="btn" onclick="addRow()">行を追加</button>
+        <button class="btn" onclick="saveData()">保存</button>
 
-    <h2>集計</h2>
+        <h2>集計</h2>
 
-    <table class="summary-table">
-      <tr>
-        <td>上田</td>
-        <td id="sumUeda">¥0</td>
-      </tr>
-      <tr>
-        <td>千葉</td>
-        <td id="sumChiba">¥0</td>
-      </tr>
-      <tr>
-        <td>合計</td>
-        <td id="sumTotal">¥0</td>
-      </tr>
-      <tr>
-        <td>払戻</td>
-        <td id="sumPayout">¥0</td>
-      </tr>
+        <table class="summary-table">
+            <tr>
+                <td>上田</td>
+                <td id="sumUeda">¥0</td>
+            </tr>
+            <tr>
+                <td>千葉</td>
+                <td id="sumChiba">¥0</td>
+            </tr>
+            <tr>
+                <td>合計</td>
+                <td id="sumTotal">¥0</td>
+            </tr>
+            <tr>
+                <td>払戻</td>
+                <td id="sumPayout">¥0</td>
+            </tr>
+            <tr>
+                <td colspan="2" style="height:12px; background:#ffffff; border:none;"></td>
+            </tr>
+            <tr>
+                <th>収支</th>
+                <th id="profit">¥0</th>
+            </tr>
+        </table>
 
-      <tr>
-        <td colspan="2" style="height:12px; background:#ffffff; border:none;"></td>
-      </tr>
+    </div>
 
-      <tr>
-        <th>収支</th>
-        <th id="profit">¥0</th>
-      </tr>
-    </table>
+    <script>
+        const API_URL = "https://shushi.cooopew.workers.dev/";
+        const tbody = document.getElementById("tbody");
 
-  </div>
+        function formatYen(n) {
+            if (n === "" || n === null || isNaN(n)) return "";
+            return "¥" + Number(n).toLocaleString();
+        }
 
-  <script>
-    // --------------------------------------------------
-    // Cloudflare Workers API
-    // --------------------------------------------------
-    const API_URL = "https://shushi.cooopew.workers.dev/";
+        function parseYen(str) {
+            if (!str) return 0;
+            return Number(str.replace(/[¥,]/g, "")) || 0;
+        }
 
-    const tbody = document.getElementById("tbody");
-
-    // --------------------------------------------------
-    // ★ 数値 → "¥1,234" に整形
-    // --------------------------------------------------
-    function formatYen(n) {
-      if (n === "" || n === null || isNaN(n)) return "";
-      return "¥" + Number(n).toLocaleString();
-    }
-
-    // --------------------------------------------------
-    // ★ "¥1,234" → 1234 に戻す
-    // --------------------------------------------------
-    function parseYen(str) {
-      if (!str) return 0;
-      return Number(str.replace(/[¥,]/g, "")) || 0;
-    }
-
-    // --------------------------------------------------
-    // 行追加
-    // --------------------------------------------------
-    function addRow(data = {}) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
+        function addRow(data = {}) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
                 <td><input type="date" value="${data.date || ""}"></td>
 
                 <td class="num">
@@ -267,105 +252,95 @@
                     </select>
                 </td>
 
-                <td><button class="btn" onclick="this.parentNode.parentNode.remove(); calc();">削除</button></td>
+                <td>
+                    <button class="btn" onclick="this.parentNode.parentNode.remove(); calc();">削除</button>
+                </td>
             `;
-      tbody.appendChild(tr);
-    }
+            tbody.appendChild(tr);
+        }
 
-    // --------------------------------------------------
-    // Cloudflare Workers から読み込み
-    // --------------------------------------------------
-    async function loadData() {
-      try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
+        async function loadData() {
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
 
-        tbody.innerHTML = "";
-        data.forEach(r =>
-          addRow({
-            date: r.date,
-            amount: r.amount,
-            payout: r.payout,
-            buyer: r.buyer
-          })
-        );
+                tbody.innerHTML = "";
+                data.forEach(r =>
+                    addRow({
+                        date: r.date,
+                        amount: r.amount,
+                        payout: r.payout,
+                        buyer: r.buyer
+                    })
+                );
 
-        calc();
-      } catch (e) {
-        console.error(e);
-        alert("読み込みに失敗しました");
-      }
-    }
+                calc();
+            } catch (e) {
+                console.error(e);
+                alert("読み込みに失敗しました");
+            }
+        }
 
-    // --------------------------------------------------
-    // Cloudflare Workers に保存
-    // --------------------------------------------------
-    async function saveData() {
-      const rows = [...tbody.children].map(tr => ({
-        date: tr.children[0].children[0].value,
-        amount: parseYen(tr.children[1].children[0].value),
-        payout: parseYen(tr.children[2].children[0].value),
-        buyer: tr.children[3].children[0].value
-      }));
+        async function saveData() {
+            const rows = [...tbody.children].map(tr => ({
+                date: tr.children[0].children[0].value,
+                amount: parseYen(tr.children[1].children[0].value),
+                payout: parseYen(tr.children[2].children[0].value),
+                buyer: tr.children[3].children[0].value
+            }));
 
-      try {
-        await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(rows)
-        });
+            try {
+                await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(rows)
+                });
 
-        alert("保存しました");
-      } catch (e) {
-        console.error(e);
-        alert("保存に失敗しました");
-      }
-    }
+                alert("保存しました");
+            } catch (e) {
+                console.error(e);
+                alert("保存に失敗しました");
+            }
+        }
 
-    // --------------------------------------------------
-    // 集計
-    // --------------------------------------------------
-    function calc() {
-      const rows = [...tbody.children].map(tr => ({
-        amount: parseYen(tr.children[1].children[0].value),
-        payout: parseYen(tr.children[2].children[0].value),
-        buyer: tr.children[3].children[0].value
-      }));
+        function calc() {
+            const rows = [...tbody.children].map(tr => ({
+                amount: parseYen(tr.children[1].children[0].value),
+                payout: parseYen(tr.children[2].children[0].value),
+                buyer: tr.children[3].children[0].value
+            }));
 
-      let sumUeda = 0;
-      let sumChiba = 0;
-      let sumPayout = 0;
+            let sumUeda = 0;
+            let sumChiba = 0;
+            let sumPayout = 0;
 
-      for (let r of rows) {
-        if (r.buyer === "上田") sumUeda += r.amount;
-        if (r.buyer === "千葉") sumChiba += r.amount;
-        sumPayout += r.payout;
-      }
+            for (let r of rows) {
+                if (r.buyer === "上田") sumUeda += r.amount;
+                if (r.buyer === "千葉") sumChiba += r.amount;
+                sumPayout += r.payout;
+            }
 
-      const sumTotal = sumUeda + sumChiba;
-      const profit = sumPayout - sumTotal;
+            const sumTotal = sumUeda + sumChiba;
+            const profit = sumPayout - sumTotal;
 
-      document.getElementById("sumUeda").innerHTML = `<span>${formatYen(sumUeda)}</span>`;
-      document.getElementById("sumChiba").innerHTML = `<span>${formatYen(sumChiba)}</span>`;
-      document.getElementById("sumTotal").innerHTML = `<span>${formatYen(sumTotal)}</span>`;
-      document.getElementById("sumPayout").innerHTML = `<span>${formatYen(sumPayout)}</span>`;
+            document.getElementById("sumUeda").innerHTML = `<span>${formatYen(sumUeda)}</span>`;
+            document.getElementById("sumChiba").innerHTML = `<span>${formatYen(sumChiba)}</span>`;
+            document.getElementById("sumTotal").innerHTML = `<span>${formatYen(sumTotal)}</span>`;
+            document.getElementById("sumPayout").innerHTML = `<span>${formatYen(sumPayout)}</span>`;
 
-      const profitElem = document.getElementById("profit");
+            const profitElem = document.getElementById("profit");
 
-      if (profit > 0) {
-        profitElem.innerHTML = `<span class="profit">${formatYen(profit)}</span>`;
-      } else if (profit < 0) {
-        profitElem.innerHTML = `<span class="loss">${formatYen(profit)}</span>`;
-      } else {
-        profitElem.innerHTML = `<span>¥0</span>`;
-      }
-    }
+            if (profit > 0) {
+                profitElem.innerHTML = `<span class="profit">${formatYen(profit)}</span>`;
+            } else if (profit < 0) {
+                profitElem.innerHTML = `<span class="loss">${formatYen(profit)}</span>`;
+            } else {
+                profitElem.innerHTML = `<span>¥0</span>`;
+            }
+        }
 
-    // --------------------------------------------------
-    // 初期読み込み
-    // --------------------------------------------------
-    loadData();
-  </script>
+        loadData();
+    </script>
 
 </body>
 
