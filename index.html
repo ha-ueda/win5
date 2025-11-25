@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>収支計算</title>
+
+<style>
+  body { font-family: "Segoe UI", sans-serif; margin: 20px; }
+  h2 { margin-top: 32px; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 20px;
+    font-size: 15px;
+  }
+
+  th, td {
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  th {
+    background: #e0f0ff;
+    font-weight: bold;
+  }
+
+  .btn {
+    padding: 6px 12px;
+    background: #0078d4;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-right: 6px;
+  }
+
+  .btn:hover {
+    opacity: 0.85;
+  }
+
+  .summary-table td, .summary-table th {
+    background: #f9fafb;
+  }
+
+  .profit { color: #0070f3; font-weight: bold; }
+  .loss { color: #d40000; font-weight: bold; }
+
+  .container {
+    max-width: 950px;
+    margin: auto;
+  }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h2>収支入力</h2>
+
+<table id="mainTable">
+<thead>
+<tr>
+  <th>日付</th>
+  <th>金額</th>
+  <th>払戻</th>
+  <th>購入者</th>
+  <th></th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<button class="btn" onclick="addRow()">行を追加</button>
+<button class="btn" onclick="saveData()">保存</button>
+
+<h2>集計</h2>
+
+<table class="summary-table">
+<tr><td>上田</td><td id="sumUeda">¥0</td></tr>
+<tr><td>千葉</td><td id="sumChiba">¥0</td></tr>
+<tr><td>合計</td><td id="sumTotal">¥0</td></tr>
+<tr><td>払戻</td><td id="sumPayout">¥0</td></tr>
+
+<!-- ★ スペース行を追加 -->
+<tr><td colspan="2" style="height:12px; background:#ffffff; border:none;"></td></tr>
+
+<!-- ★ 収支（払戻 - 合計） -->
+<tr><th>収支</th><th id="profit">¥0</th></tr>
+</table>
+
+</div>
+
+<script>
+// --------------------------------------------------
+// ★ GAS URL を貼る
+// --------------------------------------------------
+const API_URL = "https://script.google.com/macros/s/AKfycbymTqkNtMqgRofcKde_YY1-SWgXpGLwGIJJiinYjp9ro8W7u1rmmyqhcVByxgyk7rRV/exec";
+
+const tbody = document.getElementById("tbody");
+
+// 行追加
+function addRow(data = {}) {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input type="date" value="${data.date || ""}"></td>
+    <td><input type="number" value="${data.amount || ""}" step="1" oninput="calc()"></td>
+    <td><input type="number" value="${data.payout || ""}" step="1" oninput="calc()"></td>
+    <td>
+      <select onchange="calc()">
+        <option value="上田" ${data.buyer === "上田" ? "selected" : ""}>上田</option>
+        <option value="千葉" ${data.buyer === "千葉" ? "selected" : ""}>千葉</option>
+      </select>
+    </td>
+    <td><button class="btn" onclick="this.parentNode.parentNode.remove(); calc();">削除</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+// ----------------------------------------------
+// ★ Google Sheets から読み込み
+// ----------------------------------------------
+async function loadData() {
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+
+    tbody.innerHTML = "";
+    data.forEach(r => addRow({
+      date: r.date,
+      amount: r.amount,
+      payout: r.payout,
+      buyer: r.buyer
+    }));
+
+    calc();
+  } catch(e) {
+    console.error(e);
+    alert("データの読み込みに失敗しました");
+  }
+}
+
+// ----------------------------------------------
+// ★ Google Sheets に保存
+// ----------------------------------------------
+async function saveData() {
+  const rows = [...tbody.children].map(tr => ({
+    date: tr.children[0].children[0].value,
+    amount: Number(tr.children[1].children[0].value || 0),
+    payout: Number(tr.children[2].children[0].value || 0),
+    buyer: tr.children[3].children[0].value
+  }));
+
+  try {
+    await fetch(API_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(rows)
+    });
+
+    alert("保存しました");
+  } catch(e) {
+    console.error(e);
+    alert("保存に失敗しました");
+  }
+}
+
+// ----------------------------------------------
+// ★ 集計（収支計算含む）
+// ----------------------------------------------
+function calc() {
+  const rows = [...tbody.children].map(tr => ({
+    amount: Number(tr.children[1].children[0].value || 0),
+    payout: Number(tr.children[2].children[0].value || 0),
+    buyer: tr.children[3].children[0].value
+  }));
+
+  let sumUeda = 0;
+  let sumChiba = 0;
+  let sumPayout = 0;
+
+  for (let r of rows) {
+    if (r.buyer === "上田") sumUeda += r.amount;
+    if (r.buyer === "千葉") sumChiba += r.amount;
+    sumPayout += r.payout;
+  }
+
+  const sumTotal = sumUeda + sumChiba;
+  const profit = sumPayout - sumTotal;
+
+  document.getElementById("sumUeda").textContent = "¥" + sumUeda.toLocaleString();
+  document.getElementById("sumChiba").textContent = "¥" + sumChiba.toLocaleString();
+  document.getElementById("sumTotal").textContent = "¥" + sumTotal.toLocaleString();
+  document.getElementById("sumPayout").textContent = "¥" + sumPayout.toLocaleString();
+
+  // ★ 収支の表示（色付き）
+  const profitElem = document.getElementById("profit");
+  if (profit > 0) {
+    profitElem.innerHTML = `<span class="profit">+¥${profit.toLocaleString()}</span>`;
+  } else if (profit < 0) {
+    profitElem.innerHTML = `<span class="loss">-¥${Math.abs(profit).toLocaleString()}</span>`;
+  } else {
+    profitElem.innerHTML = "¥0";
+  }
+}
+
+// ----------------------------------------------
+// 初期読み込み
+// ----------------------------------------------
+loadData();
+</script>
+
+</body>
+</html>
