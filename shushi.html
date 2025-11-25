@@ -24,8 +24,11 @@
             font-size: 15px;
         }
 
-        th,
-        td {
+        #mainTable {
+            width: 100%;
+        }
+
+        th, td {
             border: 1px solid #ccc;
             padding: 6px 10px;
             text-align: center;
@@ -54,8 +57,9 @@
         }
 
         td button.btn {
-            display: block;
             margin: 0 auto;
+            width: 100%;
+            padding: 6px 8px;
         }
 
         .summary-table td,
@@ -112,6 +116,16 @@
         #toast.show {
             visibility: visible;
             opacity: 1;
+        }
+
+        input[type="date"], select {
+            padding: 6px 10px;
+            font-size: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background-color: #fff;
+            color: #333;
+            box-sizing: border-box;
         }
     </style>
 </head>
@@ -196,20 +210,18 @@
 
         <h2>収支入力</h2>
 
-        <div class="table-wrapper"></div>
-            <table id="mainTable">
-                <thead>
-                    <tr>
-                        <th>日付</th>
-                        <th>購入</th>
-                        <th>払戻</th>
-                        <th>購入者</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="tbody"></tbody>
-            </table>
-        </div>
+        <table id="mainTable">
+            <thead>
+                <tr>
+                    <th>日付</th>
+                    <th>購入</th>
+                    <th>払戻</th>
+                    <th>購入者</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
 
         <button class="btn" onclick="addRow()">追加</button>
         <button class="btn" onclick="saveData()">保存</button>
