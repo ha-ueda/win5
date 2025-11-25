@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <title>WIN5 本命あり買い目計算ツール</title>
@@ -14,22 +15,27 @@
             -webkit-user-select: none !important;
             -ms-user-select: none !important;
         }
+
         table {
             touch-action: manipulation;
             border-collapse: collapse;
             width: 100%;
         }
-        th, td {
+
+        th,
+        td {
             touch-action: manipulation;
             border: 1px solid #d9d8ce;
             padding: 4px;
             text-align: center;
             font-size: 18px;
         }
+
         th {
             background-color: #e0f0ff;
             font-weight: bold;
         }
+
         button.calc-btn {
             padding: 6px 12px;
             margin-top: 10px;
@@ -40,11 +46,13 @@
             border-radius: 6px;
             cursor: pointer;
         }
+
         #result {
             margin-top: 20px;
             font-weight: bold;
             font-size: 20px;
         }
+
         #combos {
             margin-top: 10px;
             font-size: 20px;
@@ -53,6 +61,7 @@
             overflow-x: auto;
             display: block;
         }
+
         .clear-btn {
             padding: 4px 6px;
             font-size: 18px;
@@ -64,6 +73,7 @@
             width: 100%;
             box-sizing: border-box;
         }
+
         .custom-select {
             display: flex;
             align-items: center;
@@ -73,11 +83,13 @@
             margin: 0 auto;
             position: relative;
         }
+
         .custom-select.has-name {
             width: 100%;
             margin-left: 0;
             margin-right: 0;
         }
+
         .selected {
             background-color: white;
             border: 1px solid #888;
@@ -91,6 +103,7 @@
             font-size: 18px;
             font-weight: bold;
         }
+
         .custom-select .horse-label {
             display: inline-flex;
             align-items: center;
@@ -105,6 +118,7 @@
             overflow: visible;
             flex: 1;
         }
+
         .jockey-label {
             font-size: 14px;
             color: #555;
@@ -114,6 +128,7 @@
             min-width: 3em;
             pointer-events: none;
         }
+
         .toggle-container {
             display: flex;
             align-items: center;
@@ -121,6 +136,7 @@
             margin-bottom: 10px;
             font-size: 20px;
         }
+
         .switch {
             position: relative;
             width: 46px;
@@ -130,6 +146,7 @@
             cursor: pointer;
             transition: background 0.2s;
         }
+
         .switch::after {
             content: "";
             top: 2px;
@@ -141,25 +158,33 @@
             border-radius: 50%;
             transition: left 0.2s;
         }
+
         .switch.on {
             background: #2196F3;
         }
+
         .switch.on::after {
             left: 24px;
         }
+
         table thead th {
             background: #f4f2ec !important;
         }
+
         * {
             -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
         }
-        .custom-select, .custom-select * {
+
+        .custom-select,
+        .custom-select * {
             -webkit-user-select: none;
             user-select: none;
         }
+
         .selected:focus {
             outline: none;
         }
+
         .combo-grid {
             display: grid;
             grid-template-columns: 32px repeat(5, max-content);
@@ -167,30 +192,36 @@
             row-gap: 2px;
             padding: 4px 0;
         }
+
         .combo-row {
             display: contents;
         }
+
         .combo-check-wrap,
         .combo-cell {
             min-height: 32px;
             display: flex;
             align-items: center;
         }
+
         .combo-cell {
             white-space: nowrap;
             padding: 0 12px;
             border-radius: 0;
         }
+
         .combo-check-wrap {
             justify-content: center;
             padding: 0 4px;
             cursor: pointer;
         }
+
         .combo-check {
             position: absolute;
             opacity: 0;
             pointer-events: none;
         }
+
         .combo-check-visual {
             width: 24px;
             height: 24px;
@@ -204,21 +235,25 @@
             font-weight: bold;
             color: #c5c5c5;
         }
+
         .combo-row.checked .combo-check-wrap,
         .combo-row.checked .combo-cell {
             background-color: #ffe6ea;
         }
+
         .combo-row.checked .combo-check-visual {
             background-color: #e85b4a;
             border-color: #e85b4a;
             color: #ffffff;
         }
+
         .top-bar-right {
             display: flex;
             gap: 8px;
             justify-content: flex-end;
             margin-bottom: 12px;
         }
+
         .button-row {
             display: flex;
             justify-content: flex-end;
@@ -226,17 +261,21 @@
             margin-top: 6px;
             width: 100%;
         }
+
         .table-wrapper {
             width: 100%;
             overflow-x: auto;
         }
+
         .custom-select:not(.has-name) .horse-label {
             flex: 0;
             padding: 0 4px;
         }
+
         .custom-select:not(.has-name) .jockey-label {
             display: none;
         }
+
         #win5TabSelect {
             margin-top: 10px;
             padding: 6px 12px;
@@ -244,6 +283,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="top-bar-right">
@@ -301,26 +341,26 @@
     <div id="result"></div>
     <div id="combos"></div>
 
-	<script>
-		const TOTAL_RACES = 5;
-		const HORSE_MAX = 18;
-		const MARKS = ["", "✔", "◎"];
-		const CIRCLES = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱'];
-		let backgroundMode = false;
-		const modeBtn = document.getElementById("modeToggle");
+    <script>
+        const TOTAL_RACES = 5;
+        const HORSE_MAX = 18;
+        const MARKS = ["", "✔", "◎"];
+        const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱'];
+        let backgroundMode = false;
+        const modeBtn = document.getElementById("modeToggle");
 
-		function updateSwitch() {
-			backgroundMode ? modeBtn.classList.add("on") : modeBtn.classList.remove("on");
-		}
-		modeBtn.addEventListener("click", () => {
-			backgroundMode = !backgroundMode;
-			updateSwitch();
-		});
-		updateSwitch();
+        function updateSwitch() {
+            backgroundMode ? modeBtn.classList.add("on") : modeBtn.classList.remove("on");
+        }
+        modeBtn.addEventListener("click", () => {
+            backgroundMode = !backgroundMode;
+            updateSwitch();
+        });
+        updateSwitch();
 
-		function toCircleNumber(num) {
-			return CIRCLES[num - 1] || String(num);
-		}
+        function toCircleNumber(num) {
+            return CIRCLES[num - 1] || String(num);
+        }
 
         function createCustomSelect(raceNum, horseNum) {
             const wrapper = document.createElement("div");
@@ -333,72 +373,72 @@
             selected.textContent = "";
             selected.dataset.bg = "none";
 
-			selected.addEventListener("click", (e) => {
-				if (backgroundMode) {
-					const palette = document.createElement("div");
-					palette.style.position = "absolute";
-					palette.style.zIndex = 9999;
-					palette.style.display = "flex";
-					palette.style.gap = "10px";
-					palette.style.background = "#fff";
-					palette.style.border = "1px solid #999";
-					palette.style.padding = "10px";
-					palette.style.borderRadius = "10px";
-					palette.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
+            selected.addEventListener("click", (e) => {
+                if (backgroundMode) {
+                    const palette = document.createElement("div");
+                    palette.style.position = "absolute";
+                    palette.style.zIndex = 9999;
+                    palette.style.display = "flex";
+                    palette.style.gap = "10px";
+                    palette.style.background = "#fff";
+                    palette.style.border = "1px solid #999";
+                    palette.style.padding = "10px";
+                    palette.style.borderRadius = "10px";
+                    palette.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
 
-					const colors = ["#b3d1ff", "#fff3b3", "#b3ffb3", "#e0b3ff", "#b3fff0"];
-					colors.forEach(c => {
-						const btn = document.createElement("div");
-						btn.style.width = "36px";
-						btn.style.height = "36px";
-						btn.style.backgroundColor = c;
-						btn.style.border = "1px solid #777";
-						btn.style.borderRadius = "6px";
-						btn.style.cursor = "pointer";
-						btn.addEventListener("click", () => {
-							selected.dataset.bg = c;
-							selected.style.backgroundColor = c;
-							palette.remove();
-							saveState();
-						});
-						palette.appendChild(btn);
-					});
+                    const colors = ["#b3d1ff", "#fff3b3", "#b3ffb3", "#e0b3ff", "#b3fff0"];
+                    colors.forEach(c => {
+                        const btn = document.createElement("div");
+                        btn.style.width = "36px";
+                        btn.style.height = "36px";
+                        btn.style.backgroundColor = c;
+                        btn.style.border = "1px solid #777";
+                        btn.style.borderRadius = "6px";
+                        btn.style.cursor = "pointer";
+                        btn.addEventListener("click", () => {
+                            selected.dataset.bg = c;
+                            selected.style.backgroundColor = c;
+                            palette.remove();
+                            saveState();
+                        });
+                        palette.appendChild(btn);
+                    });
 
-					const noneBtn = document.createElement("div");
-					noneBtn.style.width = "36px";
-					noneBtn.style.height = "36px";
-					noneBtn.style.background = "#fff";
-					noneBtn.style.border = "1px solid #777";
-					noneBtn.style.borderRadius = "6px";
-					noneBtn.style.cursor = "pointer";
-					noneBtn.addEventListener("click", () => {
-						selected.dataset.bg = "none";
-						selected.style.backgroundColor = "";
-						palette.remove();
-						saveState();
-					});
-					palette.appendChild(noneBtn);
+                    const noneBtn = document.createElement("div");
+                    noneBtn.style.width = "36px";
+                    noneBtn.style.height = "36px";
+                    noneBtn.style.background = "#fff";
+                    noneBtn.style.border = "1px solid #777";
+                    noneBtn.style.borderRadius = "6px";
+                    noneBtn.style.cursor = "pointer";
+                    noneBtn.addEventListener("click", () => {
+                        selected.dataset.bg = "none";
+                        selected.style.backgroundColor = "";
+                        palette.remove();
+                        saveState();
+                    });
+                    palette.appendChild(noneBtn);
 
-					document.body.appendChild(palette);
-					const rect = palette.getBoundingClientRect();
-					const pw = rect.width;
-					const ph = rect.height;
-					const vw = window.innerWidth;
-					const vh = window.innerHeight;
-					let left = e.pageX;
-					let top = e.pageY;
-					if (left + pw > vw - 10) left = vw - pw - 10;
-					if (top + ph > vh - 10) top = vh - ph - 10;
-					palette.style.left = left + "px";
-					palette.style.top = top + "px";
+                    document.body.appendChild(palette);
+                    const rect = palette.getBoundingClientRect();
+                    const pw = rect.width;
+                    const ph = rect.height;
+                    const vw = window.innerWidth;
+                    const vh = window.innerHeight;
+                    let left = e.pageX;
+                    let top = e.pageY;
+                    if (left + pw > vw - 10) left = vw - pw - 10;
+                    if (top + ph > vh - 10) top = vh - ph - 10;
+                    palette.style.left = left + "px";
+                    palette.style.top = top + "px";
 
-					const closePalette = (ev) => {
-						if (!palette.contains(ev.target)) {
-							palette.remove();
-							document.removeEventListener("click", closePalette);
-						}
-					};
-					setTimeout(() => document.addEventListener("click", closePalette), 0);
+                    const closePalette = (ev) => {
+                        if (!palette.contains(ev.target)) {
+                            palette.remove();
+                            document.removeEventListener("click", closePalette);
+                        }
+                    };
+                    setTimeout(() => document.addEventListener("click", closePalette), 0);
                 } else {
                     const cur = MARKS.indexOf(selected.textContent);
                     selected.textContent = MARKS[(cur + 1) % MARKS.length];
@@ -407,7 +447,7 @@
                     applyMarkBackground(wrapper, mark !== "");
                     saveState();
                 }
-			});
+            });
 
             const label = document.createElement("span");
             label.className = "horse-label";
@@ -424,18 +464,18 @@
             return wrapper;
         }
 
-		function createTable() {
-			const tbody = document.getElementById('raceBody');
-			for (let i = 1; i <= HORSE_MAX; i++) {
-				const tr = document.createElement('tr');
-				for (let r = 1; r <= TOTAL_RACES; r++) {
-					const td = document.createElement('td');
-					td.appendChild(createCustomSelect(r, i));
-					tr.appendChild(td);
-				}
-				tbody.appendChild(tr);
-			}
-		}
+        function createTable() {
+            const tbody = document.getElementById('raceBody');
+            for (let i = 1; i <= HORSE_MAX; i++) {
+                const tr = document.createElement('tr');
+                for (let r = 1; r <= TOTAL_RACES; r++) {
+                    const td = document.createElement('td');
+                    td.appendChild(createCustomSelect(r, i));
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
+            }
+        }
 
         let lastState = '';
         function saveState() {
@@ -444,13 +484,13 @@
             for (let r = 1; r <= TOTAL_RACES; r++) {
                 state.races[`r${r}`] = {};
                 document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
-                    const d      = sel.querySelector('.selected');
-                    const label  = sel.querySelector('.horse-label');
+                    const d = sel.querySelector('.selected');
+                    const label = sel.querySelector('.horse-label');
                     const jLabel = sel.querySelector('.jockey-label');
                     const horseNum = Number(sel.dataset.horse);
-                    const circle   = toCircleNumber(horseNum);
+                    const circle = toCircleNumber(horseNum);
 
-                    let name   = null;
+                    let name = null;
                     let jockey = null;
 
                     if (label) {
@@ -508,16 +548,16 @@
                         const val = race[sel.dataset.horse];
                         if (!val) return;
 
-                        const d      = sel.querySelector('.selected');
-                        const label  = sel.querySelector('.horse-label');
+                        const d = sel.querySelector('.selected');
+                        const label = sel.querySelector('.horse-label');
                         const jLabel = sel.querySelector('.jockey-label');
                         const horseNum = Number(sel.dataset.horse);
-                        const circle   = toCircleNumber(horseNum);
+                        const circle = toCircleNumber(horseNum);
 
                         d.textContent = val.mark || "";
                         d.style.opacity = "1";
                         applyMarkBackground(sel, !!val.mark);
-                        d.dataset.bg  = val.bg || "none";
+                        d.dataset.bg = val.bg || "none";
                         d.style.backgroundColor =
                             (val.bg && val.bg !== "none") ? val.bg : "";
 
@@ -548,7 +588,7 @@
                         }
                     });
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
 
         function clearColumn(colNum) {
@@ -566,12 +606,12 @@
 
         function clearAllHorseNames() {
             document.querySelectorAll('.custom-select').forEach(sel => {
-                const label       = sel.querySelector('.horse-label');
+                const label = sel.querySelector('.horse-label');
                 const jockeyLabel = sel.querySelector('.jockey-label');
                 if (!label) return;
 
                 const horseNum = Number(sel.dataset.horse);
-                const circle   = toCircleNumber(horseNum);
+                const circle = toCircleNumber(horseNum);
 
                 label.textContent = circle;
 
@@ -589,85 +629,85 @@
             saveState();
         }
 
-		function getRaceData(r) {
-			const favs = [], himo = [], colorMap = {};
-			document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
-				const v = sel.querySelector('.selected').textContent;
-				const bg = sel.querySelector('.selected').dataset.bg;
-				const num = Number(sel.dataset.horse);
-				colorMap[num] = bg;
-				if (v === "◎") favs.push(num);
-				if (v === "✔") himo.push(num);
-			});
-			const all = [...new Set([...favs, ...himo])];
-			return { fav: favs, horse: all, colorMap };
-		}
+        function getRaceData(r) {
+            const favs = [], himo = [], colorMap = {};
+            document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
+                const v = sel.querySelector('.selected').textContent;
+                const bg = sel.querySelector('.selected').dataset.bg;
+                const num = Number(sel.dataset.horse);
+                colorMap[num] = bg;
+                if (v === "◎") favs.push(num);
+                if (v === "✔") himo.push(num);
+            });
+            const all = [...new Set([...favs, ...himo])];
+            return { fav: favs, horse: all, colorMap };
+        }
 
-		function combinations(arr, k) {
-			const res = [];
-			(function h(s, c) {
-				if (c.length === k) {
-					res.push([...c]);
-					return;
-				}
-				for (let i = s; i < arr.length; i++) {
-					c.push(arr[i]);
-					h(i + 1, c);
-					c.pop();
-				}
-			})(0, []);
-			return res;
-		}
+        function combinations(arr, k) {
+            const res = [];
+            (function h(s, c) {
+                if (c.length === k) {
+                    res.push([...c]);
+                    return;
+                }
+                for (let i = s; i < arr.length; i++) {
+                    c.push(arr[i]);
+                    h(i + 1, c);
+                    c.pop();
+                }
+            })(0, []);
+            return res;
+        }
 
-		function setEq(a, b) {
-			if (a.size !== b.size) return false;
-			for (const x of a) if (!b.has(x)) return false;
-			return true;
-		}
+        function setEq(a, b) {
+            if (a.size !== b.size) return false;
+            for (const x of a) if (!b.has(x)) return false;
+            return true;
+        }
 
-		function setUnion(a, b) {
-			const s = new Set(a);
-			for (const x of b) s.add(x);
-			return s;
-		}
+        function setUnion(a, b) {
+            const s = new Set(a);
+            for (const x of b) s.add(x);
+            return s;
+        }
 
-		function setInterEmpty(a, b) {
-			for (const x of a) if (b.has(x)) return false;
-			return true;
-		}
+        function setInterEmpty(a, b) {
+            for (const x of a) if (b.has(x)) return false;
+            return true;
+        }
 
-		function attachComboEvents() {
-			document.querySelectorAll('#combos .combo-check').forEach(chk => {
-				chk.addEventListener('change', () => {
-					const row = chk.closest('.combo-row');
-					if (!row) return;
-					if (chk.checked) {
-						row.classList.add('checked');
-					} else {
-						row.classList.remove('checked');
-					}
-				});
-			});
-		}
+        function attachComboEvents() {
+            document.querySelectorAll('#combos .combo-check').forEach(chk => {
+                chk.addEventListener('change', () => {
+                    const row = chk.closest('.combo-row');
+                    if (!row) return;
+                    if (chk.checked) {
+                        row.classList.add('checked');
+                    } else {
+                        row.classList.remove('checked');
+                    }
+                });
+            });
+        }
 
-		function calc() {
-			const t0 = performance.now();
+        function calc() {
+            const t0 = performance.now();
 
-			const races = [], favs = [], colorArray = [];
-			for (let i = 1; i <= TOTAL_RACES; i++) {
-				const d = getRaceData(i);
-				races.push(d.horse);
-				favs.push(d.fav);
-				const colors = new Array(HORSE_MAX + 1);
-				for (let h = 1; h <= HORSE_MAX; h++) colors[h] = d.colorMap[h] || "none";
-				colorArray.push(colors);
-			}
+            const races = [], favs = [], colorArray = [];
+            for (let i = 1; i <= TOTAL_RACES; i++) {
+                const d = getRaceData(i);
+                races.push(d.horse);
+                favs.push(d.fav);
+                const colors = new Array(HORSE_MAX + 1);
+                for (let h = 1; h <= HORSE_MAX; h++) colors[h] = d.colorMap[h] || "none";
+                colorArray.push(colors);
+            }
 
-			const favMaskList = favs.map(a => a.map(x => 1 << (x - 1)));
-			const nonFavMaskList = races.map((a, idx) => {
-				const favSet = new Set(favs[idx]);
-				return a.filter(x => !favSet.has(x)).map(x => 1 << (x - 1));
-			});
+            const favMaskList = favs.map(a => a.map(x => 1 << (x - 1)));
+            const nonFavMaskList = races.map((a, idx) => {
+                const favSet = new Set(favs[idx]);
+                return a.filter(x => !favSet.has(x)).map(x => 1 << (x - 1));
+            });
 
             const colorIdTable = Array.from(
                 { length: TOTAL_RACES },
@@ -691,16 +731,16 @@
                 }
             }
 
-			const colorIdOf = (raceIdx, singleBitMask) => {
-				const idx = Math.log2(singleBitMask) | 0;
-				return colorIdTable[raceIdx][idx];
-			};
+            const colorIdOf = (raceIdx, singleBitMask) => {
+                const idx = Math.log2(singleBitMask) | 0;
+                return colorIdTable[raceIdx][idx];
+            };
 
-			const masksCache = {};
-			function getMasks(k) {
-				if (!masksCache[k]) masksCache[k] = combinations([...Array(TOTAL_RACES).keys()], k);
-				return masksCache[k];
-			}
+            const masksCache = {};
+            function getMasks(k) {
+                if (!masksCache[k]) masksCache[k] = combinations([...Array(TOTAL_RACES).keys()], k);
+                return masksCache[k];
+            }
 
             function countCombosDFS(candidates) {
                 const n = candidates.length;
@@ -796,16 +836,16 @@
             const elapsedMs = t1 - t0;
             console.log(`計算速度: ${elapsedMs.toFixed()} ms`);
 
-			document.getElementById('result').innerHTML =
-				`組合せ：<span style="color:#0078d4;">${total.toLocaleString()}</span> 通り`;
-			const fragment = document.createDocumentFragment();
-			const container = document.createElement('div');
-			container.innerHTML = comboList.join('');
-			fragment.appendChild(container);
-			document.getElementById('combos').replaceChildren(fragment);
-			attachComboEvents();
-			saveState();
-		}
+            document.getElementById('result').innerHTML =
+                `組合せ：<span style="color:#0078d4;">${total.toLocaleString()}</span> 通り`;
+            const fragment = document.createDocumentFragment();
+            const container = document.createElement('div');
+            container.innerHTML = comboList.join('');
+            fragment.appendChild(container);
+            document.getElementById('combos').replaceChildren(fragment);
+            attachComboEvents();
+            saveState();
+        }
 
         function fullyMergeBlocksStableBit(blocks) {
             const n = TOTAL_RACES | 0;
@@ -879,25 +919,25 @@
             return blocks;
         }
 
-		function blockToLineBit(block) {
-			const parts = block.map(mask => {
-				const nums = [];
-				for (let i = 0; i < HORSE_MAX; i++) {
-					if (mask & (1 << i)) nums.push(toCircleNumber(i + 1));
-				}
-				return nums.join('');
-			});
-			const cells = parts.map(p => `<span class="combo-cell">${p}</span>`).join('');
-			return (
-				'<div class="combo-row">' +
-					'<label class="combo-check-wrap">' +
-						'<input type="checkbox" class="combo-check">' +
-						'<span class="combo-check-visual">✓</span>' +
-					'</label>' +
-					cells +
-				'</div>'
-			);
-		}
+        function blockToLineBit(block) {
+            const parts = block.map(mask => {
+                const nums = [];
+                for (let i = 0; i < HORSE_MAX; i++) {
+                    if (mask & (1 << i)) nums.push(toCircleNumber(i + 1));
+                }
+                return nums.join('');
+            });
+            const cells = parts.map(p => `<span class="combo-cell">${p}</span>`).join('');
+            return (
+                '<div class="combo-row">' +
+                '<label class="combo-check-wrap">' +
+                '<input type="checkbox" class="combo-check">' +
+                '<span class="combo-check-visual">✓</span>' +
+                '</label>' +
+                cells +
+                '</div>'
+            );
+        }
 
         const WIN5_API = "https://win5-proxy.cooopew.workers.dev/";
 
@@ -938,22 +978,22 @@
             const races = json.races || [];
 
             for (let r = 0; r < TOTAL_RACES; r++) {
-                const horses  = (races[r] && races[r].horses)  ? races[r].horses  : [];
+                const horses = (races[r] && races[r].horses) ? races[r].horses : [];
                 const jockeys = (races[r] && races[r].jockeys) ? races[r].jockeys : [];
 
                 for (let i = 1; i <= HORSE_MAX; i++) {
-                    const raceNum  = r + 1;
+                    const raceNum = r + 1;
                     const horseNum = i;
-                    const name     = horses[i - 1]  || "";
-                    const jockey   = jockeys[i - 1] || "";
+                    const name = horses[i - 1] || "";
+                    const jockey = jockeys[i - 1] || "";
 
                     const sel = document.querySelector(
                         `.custom-select[data-race="${raceNum}"][data-horse="${horseNum}"]`
                     );
                     if (!sel) continue;
 
-                    const label       = sel.querySelector(".horse-label");
-                    const selected    = sel.querySelector(".selected");
+                    const label = sel.querySelector(".horse-label");
+                    const selected = sel.querySelector(".selected");
                     const jockeyLabel = sel.querySelector(".jockey-label");
                     if (!label || !selected || !jockeyLabel) continue;
 
@@ -995,7 +1035,7 @@
             const idx = document.getElementById("win5TabSelect").value;
             const api = "https://win5-proxy.cooopew.workers.dev/?tab=" + idx;
 
-            const res  = await fetch(api);
+            const res = await fetch(api);
             const json = await res.json();
 
             if (!json.ok) return;
@@ -1006,7 +1046,7 @@
         async function loadWin5Tabs() {
             const api = "https://win5-proxy.cooopew.workers.dev/";
 
-            const res  = await fetch(api);
+            const res = await fetch(api);
             const json = await res.json();
 
             if (!json.ok) return;
@@ -1035,11 +1075,11 @@
             let jockeyName = "";
 
             const start = horseName.lastIndexOf("（");
-            const end   = horseName.endsWith("）") ? horseName.length - 1 : -1;
+            const end = horseName.endsWith("）") ? horseName.length - 1 : -1;
 
             if (start !== -1 && end > start) {
                 jockeyName = horseName.slice(start + 1, end).trim();
-                horseName  = horseName.slice(0, start).trim();
+                horseName = horseName.slice(0, start).trim();
             } else {
                 horseName = horseName.trim();
             }
@@ -1069,10 +1109,11 @@
             td.style.backgroundColor = hasMark ? "#ffc8c8" : "";
         }
 
-		createTable();
-		restoreState();
+        createTable();
+        restoreState();
         loadWin5Tabs();
-	</script>
+    </script>
 
 </body>
+
 </html>
