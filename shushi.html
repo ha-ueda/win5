@@ -46,9 +46,33 @@
             cursor: pointer;
         }
 
+        input,
+        select {
+            padding: 6px 10px;
+            font-size: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            background: #fff;
+            color: #333;
+        }
+
+        td input[type="date"] {
+            min-width: 137px;
+            width: 100%;
+            text-align: center;
+        }
+
         td.num input[type="text"] {
-            width: 120px;
+            min-width: 120px;
+            width: 100%;
             text-align: right;
+        }
+
+        td select {
+            min-width: 72px;
+            width: 100%;
+            text-align: center;
         }
 
         .summary-table td:nth-child(2),
@@ -104,21 +128,10 @@
             opacity: 1;
         }
 
-        input,
-        select {
-            padding: 6px 10px;
-            font-size: 15px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            box-sizing: border-box;
-            background: #fff;
-            color: #333;
-        }
-
         .delete-btn {
             background: transparent;
             border: none;
-            width: 32px;
+            width: 12px;
             height: 32px;
             font-size: 20px;
             cursor: pointer;
