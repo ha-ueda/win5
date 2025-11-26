@@ -315,7 +315,12 @@
             cursor: pointer;
             user-select: none;
             display: inline-block;
-            font-size: 20px;
+        }
+
+        .menu-icon {
+            font-size: 28px;
+            line-height: 1;
+            display: inline-block;
         }
 
         .menu-list {
@@ -349,7 +354,9 @@
     </style>
 
     <div class="menu-container">
-        <div class="menu-button" onclick="toggleMenu()">☰</div>
+        <div class="menu-button" onclick="toggleMenu()">
+            <span class="menu-icon">☰</span>
+        </div>
         <div class="menu-list" id="globalMenu">
             <a href="./calc.html">買い目計算</a>
             <a href="./shushi.html">収支計算</a>
