@@ -7,13 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
-        /* --------------------------------------
-        1. 全体共通
-        -------------------------------------- */
         body {
-            font-family: "メイリオ", Meiryo, Hiragino Sans, Hiragino Kaku Gothic ProN,
-                'ヒラギノ角ゴ ProN W3', 'ヒラギノ角ゴ Pro W3',
-                Helvetica Neue, Helvetica, sans-serif;
+            font-family: "メイリオ", Meiryo, Hiragino Sans, Hiragino Kaku Gothic ProN, 'ヒラギノ角ゴ ProN W3', 'ヒラギノ角ゴ Pro W3', Helvetica Neue, Helvetica, sans-serif;
             margin: 20px;
         }
 
@@ -21,12 +16,9 @@
             margin-top: 32px;
         }
 
-        /* --------------------------------------
-        2. テーブル全体
-        -------------------------------------- */
         table {
-            width: 100%;
             border-collapse: collapse;
+            width: 100%;
             margin-bottom: 20px;
             font-size: 15px;
         }
@@ -44,15 +36,16 @@
             font-weight: bold;
         }
 
-        .table-wrapper {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+        .btn {
+            padding: 6px 12px;
+            font-size: 20px;
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
         }
 
-        /* --------------------------------------
-        3. 入力系（input / select）
-        -------------------------------------- */
         input,
         select {
             padding: 6px 10px;
@@ -62,38 +55,26 @@
             box-sizing: border-box;
             background: #fff;
             color: #333;
-            width: 100%;
         }
 
-        /* 日付 input */
-        td input[type="date"] {
-            text-align: center;
-        }
-
-        /* 金額 input */
         td.num input[type="text"] {
             min-width: 120px;
+            width: 100%;
             text-align: right;
         }
 
-        /* 購入者 select */
         td select {
             min-width: 72px;
+            width: 100%;
             text-align: center;
         }
 
-        /* --------------------------------------
-        4. サマリー（上部の合計表）
-        -------------------------------------- */
         .summary-table td:nth-child(2),
         .summary-table td:nth-child(3) {
             text-align: right;
             padding-right: 10px;
         }
 
-        /* --------------------------------------
-        5. 収支表示エリア
-        -------------------------------------- */
         .profit-box {
             font-size: 30px;
             margin-bottom: 16px;
@@ -114,20 +95,33 @@
             font-weight: bold;
         }
 
-        /* --------------------------------------
-        6. ボタン
-        -------------------------------------- */
-        .btn {
-            padding: 6px 12px;
-            font-size: 20px;
-            background-color: #0078d4;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
+        .container {
+            max-width: 950px;
+            margin: auto;
         }
 
-        /* 行削除ボタン */
+        #toast {
+            visibility: hidden;
+            min-width: 160px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            text-align: center;
+            padding: 10px 16px;
+            border-radius: 6px;
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
         .delete-btn {
             background: transparent;
             border: none;
@@ -140,31 +134,10 @@
             justify-content: center;
         }
 
-        /* --------------------------------------
-        7. トースト通知
-        -------------------------------------- */
-        #toast {
-            visibility: hidden;
-            min-width: 160px;
-            padding: 10px 16px;
-            background: rgba(0, 0, 0, 0.8);
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-
-            position: fixed;
-            left: 50%;
-            bottom: 30px;
-            transform: translateX(-50%);
-
-            opacity: 0;
-            transition: opacity 0.5s;
-            z-index: 9999;
-        }
-
-        #toast.show {
-            visibility: visible;
-            opacity: 1;
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
     </style>
 </head>
