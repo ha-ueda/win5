@@ -47,13 +47,16 @@
             font-size: 15px;
         }
 
-        /* 購入列（2列目）と払戻列（3列目）の中の数字をそろえる */
+        td.num input[type="text"] {
+            width: 120px;
+        }
+
         .summary-table td:nth-child(2) span,
         .summary-table th:nth-child(2) span,
         .summary-table td:nth-child(3) span,
         .summary-table th:nth-child(3) span {
             display: inline-block;
-            width: 110px;     /* ← 大事：幅を統一。必要なら 100〜130 に調整可能 */
+            width: 110px;
             text-align: right;
             font-feature-settings: "tnum";
         }
@@ -87,7 +90,6 @@
             margin: auto;
         }
 
-        /* トースト */
         #toast {
             visibility: hidden;
             min-width: 160px;
@@ -119,7 +121,6 @@
             color: #333;
         }
 
-        /* 削除ボタン（色変更なし） */
         .delete-btn {
             background: transparent;
             border: none;
@@ -132,7 +133,6 @@
             justify-content: center;
         }
 
-        /* テーブルだけ横スクロール */
         .table-wrapper {
             width: 100%;
             overflow-x: auto;
@@ -297,6 +297,7 @@
 
                 <td class="num">
                     <input type="text"
+                        inputmode="numeric"
                         value="${amount !== "" ? formatYen(amount) : ""}"
                         oninput="calc()"
                         onblur="this.value = this.value ? formatYen(parseYen(this.value)) : '';">
@@ -304,6 +305,7 @@
 
                 <td class="num">
                     <input type="text"
+                        inputmode="numeric"
                         value="${payout !== "" ? formatYen(payout) : ""}"
                         oninput="calc()"
                         onblur="this.value = this.value ? formatYen(parseYen(this.value)) : '';">
