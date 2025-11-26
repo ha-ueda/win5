@@ -23,17 +23,12 @@
             margin-bottom: 20px;
             font-size: 15px;
         }
-
+        
         th, td {
             border: 1px solid #ccc;
             padding: 6px 10px;
             text-align: center;
             white-space: nowrap;
-        }
-
-        td.num input {
-            text-align: right;
-            width: 85px;
         }
 
         th {
@@ -52,28 +47,29 @@
             font-size: 15px;
         }
 
-        td button.btn {
-            margin: 0 auto;
-            width: 100%;
-            padding: 6px 8px;
+        /* 購入列（2列目）と払戻列（3列目）の中の数字をそろえる */
+        .summary-table td:nth-child(2) span,
+        .summary-table th:nth-child(2) span,
+        .summary-table td:nth-child(3) span,
+        .summary-table th:nth-child(3) span {
+            display: inline-block;
+            width: 110px;     /* ← 大事：幅を統一。必要なら 100〜130 に調整可能 */
+            text-align: right;
+            font-feature-settings: "tnum";
         }
 
-        .summary-table td,
-        .summary-table th {
-            background: #f9fafb;
-        }
-
-        .summary-table td:nth-child(2),
-        .summary-table th:nth-child(2) {
+        .profit-box {
+            font-size: 40px;
+            margin-bottom: 16px;
             text-align: center;
         }
 
-        .summary-table td:nth-child(2) span,
-        .summary-table th:nth-child(2) span {
-            display: inline-block;
-            width: 80px;
+        .profit-label {
+            font-weight: bold;
+        }
+
+        td.num input {
             text-align: right;
-            font-feature-settings: "tnum";
         }
 
         .profit {
@@ -91,11 +87,11 @@
             margin: auto;
         }
 
+        /* トースト */
         #toast {
             visibility: hidden;
             min-width: 160px;
             background: rgba(0, 0, 0, 0.8);
-            transform: translateX(-50%);
             color: #fff;
             text-align: center;
             padding: 10px 16px;
@@ -105,7 +101,6 @@
             left: 50%;
             transform: translateX(-50%);
             z-index: 9999;
-            font-size: 16px;
             opacity: 0;
             transition: opacity 0.5s;
         }
@@ -119,32 +114,25 @@
             font-size: 15px;
             border: 1px solid #ccc;
             border-radius: 6px;
-            background-color: #fff;
-            color: #333;
             box-sizing: border-box;
+            background: #fff;
+            color: #333;
         }
 
-        td.num input[type="text"]{
-            width: 130px;
-        }
-
+        /* 削除ボタン（色変更なし） */
         .delete-btn {
             background: transparent;
-            color: white;
             border: none;
-            padding: 4px 0;
-            width: 34px;
-            height: 34px;
-            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            font-size: 20px;
             cursor: pointer;
-            font-size: 18px;
-            line-height: 1;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto;
         }
 
+        /* テーブルだけ横スクロール */
         .table-wrapper {
             width: 100%;
             overflow-x: auto;
@@ -157,6 +145,7 @@
 
     <div id="toast"></div>
 
+    <!-- ▼▼ ナビメニュー ▼▼ -->
     <style>
         .menu-container {
             position: relative;
@@ -169,8 +158,8 @@
             padding: 10px 16px;
             border-radius: 6px;
             cursor: pointer;
-            display: inline-block;
             user-select: none;
+            display: inline-block;
         }
 
         .menu-list {
@@ -181,7 +170,6 @@
             background: white;
             border: 1px solid #ccc;
             border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             min-width: 140px;
             z-index: 999;
         }
@@ -189,15 +177,13 @@
         .menu-list a {
             display: block;
             padding: 10px 14px;
-            text-decoration: none;
             color: #333;
             border-bottom: 1px solid #eee;
+            text-decoration: none;
         }
-
         .menu-list a:hover {
             background: #f0f7ff;
         }
-
         .menu-list a:last-child {
             border-bottom: none;
         }
@@ -213,53 +199,51 @@
 
     <script>
         function toggleMenu() {
-            const menu = document.getElementById("globalMenu");
-            menu.style.display = (menu.style.display === "block") ? "none" : "block";
+            const m = document.getElementById("globalMenu");
+            m.style.display = m.style.display === "block" ? "none" : "block";
         }
-
-        document.addEventListener("click", function (e) {
+        document.addEventListener("click", e => {
             const menu = document.getElementById("globalMenu");
             const btn = document.querySelector(".menu-button");
-
-            if (!menu.contains(e.target) && !btn.contains(e.target)) {
-                menu.style.display = "none";
-            }
+            if (!menu.contains(e.target) && !btn.contains(e.target)) menu.style.display = "none";
         });
     </script>
+    <!-- ▲▲ ナビメニュー ▲▲ -->
 
     <div class="container">
 
-        <h2>集計</h2>
+        <div class="profit-box">
+            <span class="profit-label">収支：</span>
+            <span id="profit">¥0</span>
+        </div>
 
         <table class="summary-table">
             <tr>
-                <th>収支</th>
-                <th id="profit">¥0</th>
-            </tr>
-
-            <tr>
-                <td colspan="2" style="height:12px; background:#ffffff; border:none;"></td>
+                <th></th>
+                <th>購入</th>
+                <th>払戻</th>
             </tr>
 
             <tr>
                 <td>上田</td>
-                <td id="sumUeda">¥0</td>
+                <td id="sumUeda"><span>¥0</span></td>
+                <td id="payUeda"><span>¥0</span></td>
             </tr>
+
             <tr>
                 <td>千葉</td>
-                <td id="sumChiba">¥0</td>
+                <td id="sumChiba"><span>¥0</span></td>
+                <td id="payChiba"><span>¥0</span></td>
             </tr>
+
             <tr>
                 <td>合計</td>
-                <td id="sumTotal">¥0</td>
-            </tr>
-            <tr>
-                <td>払戻</td>
-                <td id="sumPayout">¥0</td>
+                <td id="sumTotal"><span>¥0</span></td>
+                <td id="sumPayout"><span>¥0</span></td>
             </tr>
         </table>
 
-        <h2>収支入力</h2>
+        <br>
 
         <div class="table-wrapper">
             <table id="mainTable">
@@ -286,40 +270,50 @@
         const tbody = document.getElementById("tbody");
 
         function formatYen(n) {
-            if (n === "" || n === null || isNaN(n)) return "";
+            if (!n || isNaN(n)) return "¥0";
             return "¥" + Number(n).toLocaleString();
         }
 
-        function parseYen(str) {
-            if (!str) return 0;
-            return Number(str.replace(/[¥,]/g, "")) || 0;
+        function parseYen(s) {
+            return Number(s.replace(/[¥,]/g, "")) || 0;
         }
 
         function addRow(data = {}) {
+
+            // 今日の日付（YYYY-MM-DD）
+            const today = new Date().toISOString().split("T")[0];
+
+            // data に undefined が入っている場合は「追加時」と判断
+            const isNewRow = Object.keys(data).length === 0;
+
+            const date   = isNewRow ? today : (data.date   ?? "");
+            const amount = isNewRow ? ""    : (data.amount ?? "");
+            const payout = isNewRow ? ""    : (data.payout ?? "");
+            const buyer  = isNewRow ? ""    : (data.buyer  ?? "");
+
             const tr = document.createElement("tr");
             tr.innerHTML = `
-                <td><input type="date" value="${data.date || ""}"></td>
+                <td><input type="date" value="${date}"></td>
 
                 <td class="num">
                     <input type="text"
-                        class="yen-input"
-                        value="${formatYen(data.amount ?? "")}"
+                        value="${amount !== "" ? formatYen(amount) : ""}"
                         oninput="calc()"
-                        onblur="this.value = formatYen(parseYen(this.value));">
+                        onblur="this.value = this.value ? formatYen(parseYen(this.value)) : '';">
                 </td>
 
                 <td class="num">
                     <input type="text"
-                        class="yen-input"
-                        value="${formatYen(data.payout ?? "")}"
+                        value="${payout !== "" ? formatYen(payout) : ""}"
                         oninput="calc()"
-                        onblur="this.value = formatYen(parseYen(this.value));">
+                        onblur="this.value = this.value ? formatYen(parseYen(this.value)) : '';">
                 </td>
 
                 <td>
                     <select onchange="calc()">
-                        <option value="上田" ${data.buyer === "上田" ? "selected" : ""}>上田</option>
-                        <option value="千葉" ${data.buyer === "千葉" ? "selected" : ""}>千葉</option>
+                        <option value="" ${buyer === "" ? "selected" : ""}></option>
+                        <option value="上田" ${buyer === "上田" ? "selected" : ""}>上田</option>
+                        <option value="千葉" ${buyer === "千葉" ? "selected" : ""}>千葉</option>
                     </select>
                 </td>
 
@@ -336,18 +330,9 @@
                 const data = await res.json();
 
                 tbody.innerHTML = "";
-                data.forEach(r =>
-                    addRow({
-                        date: r.date,
-                        amount: r.amount,
-                        payout: r.payout,
-                        buyer: r.buyer
-                    })
-                );
-
+                data.forEach(r => addRow(r));
                 calc();
             } catch (e) {
-                console.error(e);
                 showToast("読み込みに失敗しました");
             }
         }
@@ -366,36 +351,40 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(rows)
                 });
-
                 showToast("保存しました");
-            } catch (e) {
-                console.error(e);
+            } catch {
                 showToast("保存に失敗しました");
             }
         }
 
         function calc() {
-            const rows = [...tbody.children].map(tr => ({
-                amount: parseYen(tr.children[1].children[0].value),
-                payout: parseYen(tr.children[2].children[0].value),
-                buyer: tr.children[3].children[0].value
-            }));
+            let sumUeda = 0, sumChiba = 0;
+            let payUeda = 0, payChiba = 0;
 
-            let sumUeda = 0;
-            let sumChiba = 0;
-            let sumPayout = 0;
+            [...tbody.children].forEach(tr => {
+                const amount = parseYen(tr.children[1].children[0].value);
+                const payout = parseYen(tr.children[2].children[0].value);
+                const buyer = tr.children[3].children[0].value;
 
-            for (let r of rows) {
-                if (r.buyer === "上田") sumUeda += r.amount;
-                if (r.buyer === "千葉") sumChiba += r.amount;
-                sumPayout += r.payout;
-            }
+                if (buyer === "上田") {
+                    sumUeda += amount;
+                    payUeda += payout;
+                } else {
+                    sumChiba += amount;
+                    payChiba += payout;
+                }
+            });
 
             const sumTotal = sumUeda + sumChiba;
+            const sumPayout = payUeda + payChiba;
             const profit = sumPayout - sumTotal;
 
             document.getElementById("sumUeda").innerHTML = `<span>${formatYen(sumUeda)}</span>`;
+            document.getElementById("payUeda").innerHTML = `<span>${formatYen(payUeda)}</span>`;
+
             document.getElementById("sumChiba").innerHTML = `<span>${formatYen(sumChiba)}</span>`;
+            document.getElementById("payChiba").innerHTML = `<span>${formatYen(payChiba)}</span>`;
+
             document.getElementById("sumTotal").innerHTML = `<span>${formatYen(sumTotal)}</span>`;
             document.getElementById("sumPayout").innerHTML = `<span>${formatYen(sumPayout)}</span>`;
 
@@ -410,19 +399,15 @@
             }
         }
 
-        function showToast(message) {
-            const toast = document.getElementById("toast");
-            toast.innerText = message;
-            toast.className = "show";
-
-            setTimeout(() => {
-                toast.className = toast.className.replace("show", "");
-            }, 2000);
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.innerText = msg;
+            t.className = "show";
+            setTimeout(() => (t.className = t.className.replace("show", "")), 2000);
         }
 
         loadData();
     </script>
 
 </body>
-
 </html>
