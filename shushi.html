@@ -8,8 +8,7 @@
 
     <style>
         body {
-            font-family: "メイリオ", Meiryo, Hiragino Sans, Hiragino Kaku Gothic ProN,
-                'ヒラギノ角ゴ ProN W3', 'ヒラギノ角ゴ Pro W3', Helvetica Neue, Helvetica, sans-serif;
+            font-family: "メイリオ", Meiryo, Hiragino Sans, Hiragino Kaku Gothic ProN, 'ヒラギノ角ゴ ProN W3', 'ヒラギノ角ゴ Pro W3', Helvetica Neue, Helvetica, sans-serif;
             margin: 20px;
         }
 
@@ -23,8 +22,9 @@
             margin-bottom: 20px;
             font-size: 15px;
         }
-        
-        th, td {
+
+        th,
+        td {
             border: 1px solid #ccc;
             padding: 6px 10px;
             text-align: center;
@@ -99,12 +99,14 @@
             opacity: 0;
             transition: opacity 0.5s;
         }
+
         #toast.show {
             visibility: visible;
             opacity: 1;
         }
 
-        input, select {
+        input,
+        select {
             padding: 6px 10px;
             font-size: 15px;
             border: 1px solid #ccc;
@@ -138,7 +140,6 @@
 
     <div id="toast"></div>
 
-    <!-- ▼▼ ナビメニュー ▼▼ -->
     <style>
         .menu-container {
             position: relative;
@@ -148,11 +149,12 @@
         .menu-button {
             background: #0078d4;
             color: #fff;
-            padding: 10px 16px;
+            padding: 6px 12px;
             border-radius: 6px;
             cursor: pointer;
             user-select: none;
             display: inline-block;
+            font-size: 20px;
         }
 
         .menu-list {
@@ -174,9 +176,11 @@
             border-bottom: 1px solid #eee;
             text-decoration: none;
         }
+
         .menu-list a:hover {
             background: #f0f7ff;
         }
+
         .menu-list a:last-child {
             border-bottom: none;
         }
@@ -201,7 +205,6 @@
             if (!menu.contains(e.target) && !btn.contains(e.target)) menu.style.display = "none";
         });
     </script>
-    <!-- ▲▲ ナビメニュー ▲▲ -->
 
     <div class="container">
 
@@ -272,17 +275,12 @@
         }
 
         function addRow(data = {}) {
-
-            // 今日の日付（YYYY-MM-DD）
             const today = new Date().toISOString().split("T")[0];
-
-            // data に undefined が入っている場合は「追加時」と判断
             const isNewRow = Object.keys(data).length === 0;
-
-            const date   = isNewRow ? today : (data.date   ?? "");
-            const amount = isNewRow ? ""    : (data.amount ?? "");
-            const payout = isNewRow ? ""    : (data.payout ?? "");
-            const buyer  = isNewRow ? ""    : (data.buyer  ?? "");
+            const date = isNewRow ? today : (data.date ?? "");
+            const amount = isNewRow ? "" : (data.amount ?? "");
+            const payout = isNewRow ? "" : (data.payout ?? "");
+            const buyer = isNewRow ? "" : (data.buyer ?? "");
 
             const tr = document.createElement("tr");
             tr.innerHTML = `
@@ -306,7 +304,6 @@
 
                 <td>
                     <select onchange="calc()">
-                        <option value="" ${buyer === "" ? "selected" : ""}></option>
                         <option value="上田" ${buyer === "上田" ? "selected" : ""}>上田</option>
                         <option value="千葉" ${buyer === "千葉" ? "selected" : ""}>千葉</option>
                     </select>
@@ -405,4 +402,5 @@
     </script>
 
 </body>
+
 </html>

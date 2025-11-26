@@ -276,7 +276,7 @@
             display: none;
         }
 
-        #win5TabSelect{
+        #win5TabSelect {
             margin-top: 10px;
             padding: 6px 12px;
             font-size: 20px;
@@ -310,11 +310,12 @@
         .menu-button {
             background: #0078d4;
             color: #fff;
-            padding: 10px 16px;
+            padding: 6px 12px;
             border-radius: 6px;
             cursor: pointer;
-            display: inline-block;
             user-select: none;
+            display: inline-block;
+            font-size: 20px;
         }
 
         .menu-list {
@@ -325,7 +326,7 @@
             background: white;
             border: 1px solid #ccc;
             border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             min-width: 140px;
             z-index: 999;
         }
@@ -361,7 +362,7 @@
             menu.style.display = (menu.style.display === "block") ? "none" : "block";
         }
 
-        document.addEventListener("click", function(e) {
+        document.addEventListener("click", function (e) {
             const menu = document.getElementById("globalMenu");
             const btn = document.querySelector(".menu-button");
 
