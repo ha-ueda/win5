@@ -144,6 +144,30 @@
             width: 100%;
             text-align: center;
         }
+
+        /* まずテーブルセルを縦中央揃えに */
+        th, td {
+        vertical-align: middle;
+        }
+
+        /* iOS Safari向けの補正（iPhone/iPadで効きやすい） */
+        @supports (-webkit-touch-callout: none) {
+        /* iOSの自動ズーム回避（ズレ/ガタつきの原因になる） */
+        input, select {
+            font-size: 16px;
+        }
+
+        /* date入力をブロック化してベースラインズレを消す */
+        td input[type="date"] {
+            display: block;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            height: 40px;            /* 他のinput/selectと高さを合わせる */
+            padding: 6px 10px;
+            line-height: normal;
+        }
+        }
     </style>
 </head>
 
