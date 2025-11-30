@@ -101,6 +101,13 @@
             line-height: 32px;
             font-size: 18px;
             font-weight: bold;
+            color: #333;
+        }
+
+        .selected.is-marked {
+            background-color: #ec5754 !important;
+            color: #fff !important;
+            border-color: #ec5754 !important;
         }
 
         .custom-select .horse-label {
@@ -116,6 +123,20 @@
             white-space: nowrap;
             overflow: visible;
             flex: 1;
+        }
+
+        .horse-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 32px;
+            padding: 0 6px;
+            border-radius: 8px;
+            line-height: 32px;
+        }
+
+        .horse-name {
+            margin-left: 6px;
         }
 
         .jockey-label {
@@ -237,12 +258,12 @@
 
         .combo-row.checked .combo-check-wrap,
         .combo-row.checked .combo-cell {
-            background-color: #ffe6ea;
+            background-color: #fff0f0;
         }
 
         .combo-row.checked .combo-check-visual {
-            background-color: #e85b4a;
-            border-color: #e85b4a;
+            background-color: #ec5754;
+            border-color: #ec5754;
             color: #ffffff;
         }
 
@@ -435,7 +456,7 @@
     <script>
         const TOTAL_RACES = 5;
         const HORSE_MAX = 18;
-        const MARKS = ["", "✔", "◎"];
+        const MARKS = ["", "✓", "◎"];
         const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱'];
         let backgroundMode = false;
         const modeBtn = document.getElementById("modeToggle");
@@ -464,6 +485,20 @@
             selected.textContent = "";
             selected.dataset.bg = "none";
 
+            const label = document.createElement("span");
+            label.className = "horse-label";
+
+            const numSpan = document.createElement("span");
+            numSpan.className = "horse-num";
+            numSpan.textContent = toCircleNumber(horseNum);
+
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "horse-name";
+            nameSpan.textContent = "";
+
+            label.appendChild(numSpan);
+            label.appendChild(nameSpan);
+
             selected.addEventListener("click", (e) => {
                 if (backgroundMode) {
                     const palette = document.createElement("div");
@@ -477,7 +512,7 @@
                     palette.style.borderRadius = "10px";
                     palette.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
 
-                    const colors = ["#b3d1ff", "#fff3b3", "#b3ffb3", "#e0b3ff", "#b3fff0", "#c8ad9d"];
+                    const colors = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4"];
                     colors.forEach(c => {
                         const btn = document.createElement("div");
                         btn.style.width = "36px";
@@ -488,7 +523,7 @@
                         btn.style.cursor = "pointer";
                         btn.addEventListener("click", () => {
                             selected.dataset.bg = c;
-                            selected.style.backgroundColor = c;
+                            numSpan.style.backgroundColor = c;
                             palette.remove();
                             saveState();
                         });
@@ -504,7 +539,7 @@
                     noneBtn.style.cursor = "pointer";
                     noneBtn.addEventListener("click", () => {
                         selected.dataset.bg = "none";
-                        selected.style.backgroundColor = "";
+                        numSpan.style.backgroundColor = "";
                         palette.remove();
                         saveState();
                     });
@@ -540,10 +575,6 @@
                 }
             });
 
-            const label = document.createElement("span");
-            label.className = "horse-label";
-            label.textContent = toCircleNumber(horseNum);
-
             const jockeyLabel = document.createElement("span");
             jockeyLabel.className = "jockey-label";
             jockeyLabel.textContent = "";
@@ -578,20 +609,20 @@
                     const d = sel.querySelector('.selected');
                     const label = sel.querySelector('.horse-label');
                     const jLabel = sel.querySelector('.jockey-label');
-                    const horseNum = Number(sel.dataset.horse);
-                    const circle = toCircleNumber(horseNum);
 
                     let name = null;
                     let jockey = null;
 
                     if (label) {
-                        const txt = label.textContent || "";
-                        if (txt) {
-                            if (txt.startsWith(circle)) {
-                                name = txt.slice(circle.length).trim();
-                            } else {
-                                name = txt.trim();
-                            }
+                        const numSpan = label.querySelector(".horse-num");
+                        const nameSpan = label.querySelector(".horse-name");
+                        const numTxt = (numSpan?.textContent || "").trim();
+                        const nmTxt = (nameSpan?.textContent || "").trim();
+
+                        if (!numTxt && !nmTxt) {
+                            name = null;
+                        } else {
+                            name = nmTxt;
                         }
                     }
 
@@ -642,37 +673,46 @@
                         const d = sel.querySelector('.selected');
                         const label = sel.querySelector('.horse-label');
                         const jLabel = sel.querySelector('.jockey-label');
-                        const horseNum = Number(sel.dataset.horse);
-                        const circle = toCircleNumber(horseNum);
 
                         d.textContent = val.mark || "";
                         d.style.opacity = "1";
                         applyMarkBackground(sel, !!val.mark);
+
                         d.dataset.bg = val.bg || "none";
-                        d.style.backgroundColor =
-                            (val.bg && val.bg !== "none") ? val.bg : "";
+                        const numSpan = sel.querySelector(".horse-num");
+                        if (numSpan) {
+                            numSpan.style.backgroundColor = (val.bg && val.bg !== "none") ? val.bg : "";
+                        }
 
                         if (!label) return;
 
                         const n = val.name;
                         const j = (val.jockey || "").trim();
 
+                        const nNum = label.querySelector(".horse-num");
+                        const nName = label.querySelector(".horse-name");
+                        const circle = toCircleNumber(Number(sel.dataset.horse));
+
                         if (n === null) {
-                            label.textContent = "";
+                            if (nNum) nNum.textContent = "";
+                            if (nName) nName.textContent = "";
                             if (jLabel) jLabel.textContent = "";
                             sel.classList.remove('has-name');
                             sel.style.visibility = 'hidden';
 
                             d.textContent = "";
                             d.dataset.bg = "none";
-                            d.style.backgroundColor = "";
+                            if (numSpan) numSpan.style.backgroundColor = "";
+                            applyMarkBackground(sel, false);
                         } else if (typeof n === "string" && n.length > 0) {
-                            label.textContent = circle + " " + n;
+                            if (nNum) nNum.textContent = circle;
+                            if (nName) nName.textContent = " " + n;
                             if (jLabel) jLabel.textContent = j;
                             sel.classList.add('has-name');
                             sel.style.visibility = 'visible';
                         } else {
-                            label.textContent = circle;
+                            if (nNum) nNum.textContent = circle;
+                            if (nName) nName.textContent = "";
                             if (jLabel) jLabel.textContent = j;
                             sel.classList.remove('has-name');
                             sel.style.visibility = 'visible';
@@ -685,10 +725,11 @@
         function clearColumn(colNum) {
             document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel => {
                 const selected = sel.querySelector(".selected");
+                const numSpan = sel.querySelector(".horse-num");
 
                 selected.textContent = "";
                 selected.dataset.bg = "none";
-                selected.style.backgroundColor = "white";
+                if (numSpan) numSpan.style.backgroundColor = "";
 
                 applyMarkBackground(sel, false);
             });
@@ -704,7 +745,10 @@
                 const horseNum = Number(sel.dataset.horse);
                 const circle = toCircleNumber(horseNum);
 
-                label.textContent = circle;
+                const numSpan = label.querySelector(".horse-num");
+                const nameSpan = label.querySelector(".horse-name");
+                if (numSpan) numSpan.textContent = circle;
+                if (nameSpan) nameSpan.textContent = "";
 
                 if (jockeyLabel) {
                     jockeyLabel.textContent = "";
@@ -728,7 +772,7 @@
                 const num = Number(sel.dataset.horse);
                 colorMap[num] = bg;
                 if (v === "◎") favs.push(num);
-                if (v === "✔") himo.push(num);
+                if (v === "✓") himo.push(num);
             });
             const all = [...new Set([...favs, ...himo])];
             return { fav: favs, horse: all, colorMap };
@@ -748,23 +792,6 @@
                 }
             })(0, []);
             return res;
-        }
-
-        function setEq(a, b) {
-            if (a.size !== b.size) return false;
-            for (const x of a) if (!b.has(x)) return false;
-            return true;
-        }
-
-        function setUnion(a, b) {
-            const s = new Set(a);
-            for (const x of b) s.add(x);
-            return s;
-        }
-
-        function setInterEmpty(a, b) {
-            for (const x of a) if (b.has(x)) return false;
-            return true;
         }
 
         function attachComboEvents() {
@@ -821,11 +848,6 @@
                     }
                 }
             }
-
-            const colorIdOf = (raceIdx, singleBitMask) => {
-                const idx = Math.log2(singleBitMask) | 0;
-                return colorIdTable[raceIdx][idx];
-            };
 
             const masksCache = {};
             function getMasks(k) {
@@ -1032,38 +1054,8 @@
 
         const WIN5_API = "https://win5-proxy.cooopew.workers.dev/";
 
-        async function fetchWin5(tabIndex) {
-            let api = WIN5_API;
-            if (typeof tabIndex === "number" && !Number.isNaN(tabIndex)) {
-                api += `?tab=${tabIndex}`;
-            }
-
-            const res = await fetch(api);
-            const json = await res.json();
-            return json;
-        }
-
-        function populateWin5Tabs(tabs, activeTabIndex) {
-            const select = document.getElementById('win5TabSelect');
-            if (!select || !Array.isArray(tabs) || tabs.length === 0) return;
-
-            select.innerHTML = "";
-
-            tabs.forEach((t, i) => {
-                const opt = document.createElement('option');
-                opt.value = String(i);
-                opt.textContent = t.label || `タブ${i + 1}`;
-                if (i === activeTabIndex) {
-                    opt.selected = true;
-                }
-                select.appendChild(opt);
-            });
-        }
-
         function applyWin5Data(json) {
-
             window.raceInfo = json.raceInfo || [];
-
             updateRaceHeaders(window.raceInfo);
 
             const races = json.races || [];
@@ -1088,21 +1080,28 @@
                     const jockeyLabel = sel.querySelector(".jockey-label");
                     if (!label || !selected || !jockeyLabel) continue;
 
+                    const circle = toCircleNumber(horseNum);
+                    const numSpan = label.querySelector(".horse-num");
+                    const nameSpan = label.querySelector(".horse-name");
+
                     if (name) {
-                        const circle = toCircleNumber(horseNum);
-                        label.textContent = circle + " " + name;
+                        if (numSpan) numSpan.textContent = circle;
+                        if (nameSpan) nameSpan.textContent = " " + name;
                         jockeyLabel.textContent = jockey || "";
                         sel.classList.add("has-name");
                         sel.style.visibility = "visible";
                     } else {
-                        label.textContent = "";
+                        if (numSpan) numSpan.textContent = "";
+                        if (nameSpan) nameSpan.textContent = "";
                         jockeyLabel.textContent = "";
                         sel.classList.remove("has-name");
                         sel.style.visibility = "hidden";
 
                         selected.textContent = "";
                         selected.dataset.bg = "none";
-                        selected.style.backgroundColor = "";
+                        const ns = sel.querySelector(".horse-num");
+                        if (ns) ns.style.backgroundColor = "";
+                        applyMarkBackground(sel, false);
                     }
                 }
             }
@@ -1159,45 +1158,18 @@
             });
         }
 
-        function renderHorseLabel(label, horseNum, nameWithOrWithoutJockey) {
-            const circle = toCircleNumber(horseNum);
-
-            let horseName = nameWithOrWithoutJockey || "";
-            let jockeyName = "";
-
-            const start = horseName.lastIndexOf("（");
-            const end = horseName.endsWith("）") ? horseName.length - 1 : -1;
-
-            if (start !== -1 && end > start) {
-                jockeyName = horseName.slice(start + 1, end).trim();
-                horseName = horseName.slice(0, start).trim();
-            } else {
-                horseName = horseName.trim();
-            }
-
-            label.textContent = "";
-            label.append(document.createTextNode(circle + (horseName ? " " + horseName : "")));
-
-            if (jockeyName) {
-                const span = document.createElement("span");
-                span.className = "jockey-name";
-                span.textContent = `（${jockeyName}）`;
-                label.appendChild(span);
-            }
-        }
-
-        function setHorseAndJockey(label, horseNum, horseName, jockeyName) {
-            const textForState = jockeyName
-                ? `${horseName}（${jockeyName}）`
-                : horseName;
-            renderHorseLabel(label, horseNum, textForState);
-        }
-
         function applyMarkBackground(sel, hasMark) {
             const td = sel.parentElement;
-            if (!td) return;
+            if (td) td.style.backgroundColor = hasMark ? "#fff0f0" : "";
 
-            td.style.backgroundColor = hasMark ? "#ffc8c8" : "";
+            const box = sel.querySelector(".selected");
+            if (!box) return;
+
+            if (hasMark) {
+                box.classList.add("is-marked");
+            } else {
+                box.classList.remove("is-marked");
+            }
         }
 
         createTable();
