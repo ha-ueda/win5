@@ -342,6 +342,19 @@
             return Number(s.replace(/[¥,]/g, "")) || 0;
         }
 
+        function sanitizeNumberInput(el) {
+            el.value = el.value.replace(/[^\d]/g, "");
+        }
+
+        function startEdit(el) {
+            el.value = el.value ? String(parseYen(el.value)) : "";
+            el.select();
+        }
+
+        function endEdit(el) {
+            el.value = el.value ? formatYen(parseYen(el.value)) : "";
+        }
+
         function addRow(data = {}) {
             const today = new Date().toISOString().split("T")[0];
             const isNewRow = Object.keys(data).length === 0;
@@ -356,18 +369,20 @@
 
                 <td class="num">
                     <input type="text"
-                        inputmode="numeric"
-                        value="${amount !== "" ? formatYen(amount) : ""}"
-                        oninput="calc()"
-                        onblur="this.value = this.value ? formatYen(parseYen(this.value)) : '';">
+                    inputmode="numeric"
+                    value="${amount !== "" ? formatYen(amount) : ""}"
+                    onfocus="startEdit(this)"
+                    oninput="sanitizeNumberInput(this); calc()"
+                    onblur="endEdit(this); calc()">
                 </td>
 
                 <td class="num">
                     <input type="text"
-                        inputmode="numeric"
-                        value="${payout !== "" ? formatYen(payout) : ""}"
-                        oninput="calc()"
-                        onblur="this.value = this.value ? formatYen(parseYen(this.value)) : '';">
+                    inputmode="numeric"
+                    value="${payout !== "" ? formatYen(payout) : ""}"
+                    onfocus="startEdit(this)"
+                    oninput="sanitizeNumberInput(this); calc()"
+                    onblur="endEdit(this); calc()">
                 </td>
 
                 <td>
