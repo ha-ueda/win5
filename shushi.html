@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>WIN5収支計算</title>
+    <title>WIN5 収支計算</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <style>
@@ -153,6 +153,39 @@
             padding-top: 0;
             padding-bottom: 0;
             line-height: normal;
+        }
+
+        #mainTable input,
+        #mainTable select {
+            border: none;
+            background: transparent;
+            box-shadow: none;
+            outline: none;
+            border-radius: 0;
+            padding: 0 6px;
+        }
+
+        #mainTable td:hover input,
+        #mainTable td:hover select {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        #mainTable input:focus,
+        #mainTable select:focus {
+            background: #fff;
+            outline: 2px solid #0078d4;
+            outline-offset: -2px;
+            border-radius: 4px;
+        }
+
+        #mainTable input[type="date"] {
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        #mainTable select {
+            -webkit-appearance: none;
+            appearance: none;
         }
     </style>
 </head>
