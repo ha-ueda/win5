@@ -140,36 +140,11 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        td input[type="date"] {
-            width: 100%;
-            text-align: center;
-        }
-
-        /* まずテーブルセルを縦中央揃えに */
-        th, td {
-        vertical-align: middle;
-        }
-
-        /* iPhoneで列が潰れて date がはみ出すのを防ぐ */
         #mainTable{
-        width: max-content;   /* 内容幅に合わせて広がる */
-        min-width: 100%;      /* ただし最低でも親幅 */
-        }
-
-        /* 日付列は最低幅を確保 */
-        #mainTable th:nth-child(1),
-        #mainTable td:nth-child(1){
-        min-width: 140px;
-        }
-
-        /* date入力をセル幅にきっちり収める */
-        #mainTable td:nth-child(1) input[type="date"]{
-        display: block;
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-        box-sizing: border-box;
-        margin: 0;
+        width: max-content;
+        min-width: 100%;
+        table-layout: auto;
+        display: inline-table;
         }
     </style>
 </head>
