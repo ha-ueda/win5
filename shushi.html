@@ -150,23 +150,26 @@
         vertical-align: middle;
         }
 
-        /* iOS Safari向けの補正（iPhone/iPadで効きやすい） */
-        @supports (-webkit-touch-callout: none) {
-        /* iOSの自動ズーム回避（ズレ/ガタつきの原因になる） */
-        input, select {
-            font-size: 16px;
+        /* iPhoneで列が潰れて date がはみ出すのを防ぐ */
+        #mainTable{
+        width: max-content;   /* 内容幅に合わせて広がる */
+        min-width: 100%;      /* ただし最低でも親幅 */
         }
 
-        /* date入力をブロック化してベースラインズレを消す */
-        td input[type="date"] {
-            display: block;
-            width: 100%;
-            min-width: 0;
-            box-sizing: border-box;
-            height: 40px;            /* 他のinput/selectと高さを合わせる */
-            padding: 6px 10px;
-            line-height: normal;
+        /* 日付列は最低幅を確保 */
+        #mainTable th:nth-child(1),
+        #mainTable td:nth-child(1){
+        min-width: 140px;
         }
+
+        /* date入力をセル幅にきっちり収める */
+        #mainTable td:nth-child(1) input[type="date"]{
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        margin: 0;
         }
     </style>
 </head>
