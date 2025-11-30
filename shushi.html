@@ -139,6 +139,12 @@
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
         }
+
+        td input[type="date"] {
+            width: 100%;
+            box-sizing: border-box;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -323,7 +329,7 @@
                 </td>
 
                 <td>
-                    <button class="delete-btn" onclick="this.parentNode.parentNode.remove(); calc();">🗑</button>
+                    <button class="delete-btn" onclick="this.parentNode.parentNode.remove(); calc();">❌</button>
                 </td>
             `;
             tbody.appendChild(tr);
