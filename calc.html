@@ -286,7 +286,7 @@
             display: flex;
             justify-content: flex-end;
             gap: 8px;
-            margin-top: 6px;
+            margin-top: 18px;
             width: 100%;
         }
 
@@ -322,6 +322,115 @@
             background-color: #fff;
             color: #333;
             box-sizing: border-box;
+        }
+
+        .race-focus {
+            display: none;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                margin: 10px;
+            }
+
+            .top-bar-right {
+                flex-wrap: wrap;
+                justify-content: flex-start;
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+
+            .top-bar-right>* {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+            #win5TabSelect {
+                width: 100%;
+                font-size: 18px;
+                padding: 10px 10px;
+            }
+
+            button.calc-btn {
+                width: 100%;
+                font-size: 18px;
+                padding: 10px 10px;
+                border-radius: 10px;
+            }
+
+            .toggle-container {
+                font-size: 18px;
+                gap: 10px;
+                margin-bottom: 8px;
+            }
+
+            .race-focus {
+                display: none;
+            }
+
+            @media (max-width: 640px) {
+                .race-focus {
+                    display: flex;
+                    gap: 6px;
+                    flex-wrap: wrap;
+                    margin: 8px 0 10px;
+                    background: rgba(249, 250, 251, 0.95);
+                    padding: 8px 0;
+                    backdrop-filter: blur(6px);
+                }
+
+                .race-focus button {
+                    flex: 1 1 30%;
+                    padding: 10px 8px;
+                    font-size: 16px;
+                    border-radius: 10px;
+                    border: 1px solid #cfd6dd;
+                    background: #fff;
+                    color: #333;
+                    cursor: pointer;
+                }
+
+                .race-focus button.on {
+                    background: #0078d4;
+                    color: #fff;
+                    border-color: #0078d4;
+                    font-weight: bold;
+                }
+            }
+
+            @media (max-width: 640px) {
+
+                body[data-focus-race="1"] #raceTable th:not(:nth-child(1)),
+                body[data-focus-race="1"] #raceTable tbody td:not(:nth-child(1)),
+                body[data-focus-race="1"] #raceTable tfoot td:not(:nth-child(1)) {
+                    display: none;
+                }
+
+                body[data-focus-race="2"] #raceTable th:not(:nth-child(2)),
+                body[data-focus-race="2"] #raceTable tbody td:not(:nth-child(2)),
+                body[data-focus-race="2"] #raceTable tfoot td:not(:nth-child(2)) {
+                    display: none;
+                }
+
+                body[data-focus-race="3"] #raceTable th:not(:nth-child(3)),
+                body[data-focus-race="3"] #raceTable tbody td:not(:nth-child(3)),
+                body[data-focus-race="3"] #raceTable tfoot td:not(:nth-child(3)) {
+                    display: none;
+                }
+
+                body[data-focus-race="4"] #raceTable th:not(:nth-child(4)),
+                body[data-focus-race="4"] #raceTable tbody td:not(:nth-child(4)),
+                body[data-focus-race="4"] #raceTable tfoot td:not(:nth-child(4)) {
+                    display: none;
+                }
+
+                body[data-focus-race="5"] #raceTable th:not(:nth-child(5)),
+                body[data-focus-race="5"] #raceTable tbody td:not(:nth-child(5)),
+                body[data-focus-race="5"] #raceTable tfoot td:not(:nth-child(5)) {
+                    display: none;
+                }
+            }
+
         }
     </style>
 </head>
@@ -418,6 +527,8 @@
         背景選択
         <div id="modeToggle" class="switch"></div>
     </div>
+
+    <div id="raceFocusBar" class="race-focus" aria-label="表示レース切替"></div>
 
     <div class="table-wrapper">
         <table id="raceTable">
@@ -1183,6 +1294,58 @@
         createTable();
         restoreState();
         loadWin5Tabs();
+
+        function isMobileLayout() {
+            return window.matchMedia("(max-width: 640px)").matches;
+        }
+
+        function applyRaceFocus(race) {
+            if (!isMobileLayout()) {
+                document.body.dataset.focusRace = "all";
+                const bar = document.getElementById("raceFocusBar");
+                if (bar) bar.querySelectorAll("button").forEach(b => b.classList.remove("on"));
+                return;
+            }
+
+            document.body.dataset.focusRace = race;
+            const bar = document.getElementById("raceFocusBar");
+            if (!bar) return;
+            bar.querySelectorAll("button").forEach(b => {
+                b.classList.toggle("on", b.dataset.race === race);
+            });
+        }
+
+        function setupMobileRaceFocusBar() {
+            const bar = document.getElementById("raceFocusBar");
+            if (!bar) return;
+
+            bar.innerHTML = "";
+            const labels = [
+                { race: "all", text: "全表示" },
+                { race: "1", text: "WIN1" },
+                { race: "2", text: "WIN2" },
+                { race: "3", text: "WIN3" },
+                { race: "4", text: "WIN4" },
+                { race: "5", text: "WIN5" },
+            ];
+
+            for (const item of labels) {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.dataset.race = item.race;
+                btn.textContent = item.text;
+                btn.addEventListener("click", () => applyRaceFocus(item.race));
+                bar.appendChild(btn);
+            }
+
+            applyRaceFocus("all");
+        }
+
+        window.addEventListener("resize", () => {
+            applyRaceFocus(document.body.dataset.focusRace || "all");
+        });
+
+        setupMobileRaceFocusBar();
     </script>
 
 </body>
