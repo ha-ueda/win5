@@ -64,6 +64,11 @@
             word-break: keep-all;
             overflow-x: auto;
             display: block;
+            padding-bottom: calc(300px + env(safe-area-inset-bottom));
+        }
+
+        #combos:empty {
+            padding-bottom: 0;
         }
 
         .clear-btn {
@@ -145,16 +150,42 @@
         }
 
         .jockey-label {
+            width: 100%;
+            display: block;
             font-size: 13px;
             color: #555;
             text-align: right;
             white-space: nowrap;
-            margin-left: auto;
             min-width: 3em;
             pointer-events: none;
             align-self: flex-end;
             margin-bottom: 2px;
             line-height: 1;
+        }
+
+        .odds-label {
+            font-feature-settings: "tnum" 1;
+            font-variant-numeric: tabular-nums;
+            width: 100%;
+            display: block;
+            text-align: right;
+            white-space: pre; /* padStart( ) の空白を保持 */
+            font-size: 13px;
+            color: #333;
+            align-self: flex-end;
+            margin-bottom: 2px;
+            line-height: 1;
+            pointer-events: none;
+            min-height: 13px;
+        }
+
+        .meta-labels {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+            margin-left: auto;
+            min-width: 4.5em;
         }
 
         .toggle-container {
@@ -593,6 +624,37 @@
             return CIRCLES[num - 1] || String(num);
         }
 
+        function updateOddsLabel(el, ninki, odds) {
+            if (!el) return;
+
+            const oRaw = (odds ?? "").toString().trim();
+            const nRaw = (ninki ?? "").toString().trim();
+
+            // odds: max "999.9" (5 chars)想定で右寄せ（padStart）して桁を揃える
+            const formatOddsFixed = (s) => {
+                const t = (s ?? "").toString().trim();
+                if (!t) return "";
+                if (/^\d{1,3}(?:\.\d)?$/.test(t)) return t.padStart(5, " ");
+                return t;
+            };
+
+            const o = formatOddsFixed(oRaw);
+
+            // ninki: ①〜⑱（"**" は未取得）
+            let nCircle = "";
+            if (nRaw && nRaw !== "**") {
+                const nn = Number(nRaw);
+                if (Number.isFinite(nn) && nn >= 1 && nn <= 18) nCircle = toCircleNumber(nn);
+                else nCircle = nRaw;
+            }
+
+            // 表示: " 10.0 ①"（間はスペース1つ）
+            if (o && nCircle) el.textContent = `${o} ${nCircle}`;
+            else if (o) el.textContent = o;
+            else if (nCircle) el.textContent = nCircle;
+            else el.textContent = "";
+        }
+
         function createCustomSelect(raceNum, horseNum) {
             const wrapper = document.createElement("div");
             wrapper.className = "custom-select";
@@ -694,15 +756,21 @@
                 }
             });
 
-            const jockeyLabel = document.createElement("span");
+            const oddsLabel = document.createElement("span");
+            oddsLabel.className = "odds-label";
+            oddsLabel.textContent = "";const jockeyLabel = document.createElement("span");
             jockeyLabel.className = "jockey-label";
             jockeyLabel.textContent = "";
 
+            const meta = document.createElement("div");
+            meta.className = "meta-labels";
+            meta.appendChild(oddsLabel);
+            meta.appendChild(jockeyLabel);
+
             wrapper.appendChild(selected);
             wrapper.appendChild(label);
-            wrapper.appendChild(jockeyLabel);
-
-            return wrapper;
+            wrapper.appendChild(meta);
+return wrapper;
         }
 
         function createTable() {
@@ -717,6 +785,9 @@
                 tbody.appendChild(tr);
             }
         }
+        const STORAGE_KEY = 'win5_state_v8';
+        const STORAGE_KEY_OLD = 'win5_state_v7';
+
 
         let lastState = '';
         function saveState() {
@@ -728,8 +799,7 @@
                     const d = sel.querySelector('.selected');
                     const label = sel.querySelector('.horse-label');
                     const jLabel = sel.querySelector('.jockey-label');
-
-                    let name = null;
+let name = null;
                     let jockey = null;
 
                     if (label) {
@@ -752,24 +822,29 @@
                         }
                     }
 
+                    const odds = (sel.dataset.odds || "").trim() || null;
+                    const ninki = (sel.dataset.ninki || "").trim() || null;
+
                     state.races[`r${r}`][sel.dataset.horse] = {
                         mark: d.textContent,
                         bg: d.dataset.bg || "none",
                         name: name,
-                        jockey: jockey
+                        jockey: jockey,
+                        odds: odds,
+                        ninki: ninki
                     };
                 });
             }
 
             const str = JSON.stringify(state);
             if (str !== lastState) {
-                localStorage.setItem('win5_state_v7', str);
+                localStorage.setItem(STORAGE_KEY, str);
                 lastState = str;
             }
         }
 
         function restoreState() {
-            const data = localStorage.getItem('win5_state_v7');
+            const data = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY_OLD);
             if (!data) return;
             try {
                 const state = JSON.parse(data);
@@ -793,7 +868,8 @@
                         const label = sel.querySelector('.horse-label');
                         const jLabel = sel.querySelector('.jockey-label');
 
-                        d.textContent = val.mark || "";
+                                                const oLabel = sel.querySelector('.odds-label');
+d.textContent = val.mark || "";
                         d.style.opacity = "1";
                         applyMarkBackground(sel, !!val.mark);
 
@@ -808,6 +884,15 @@
                         const n = val.name;
                         const j = (val.jockey || "").trim();
 
+                        const odds = (val.odds ?? "");
+                        const ninki = (val.ninki ?? "");
+
+                        sel.dataset.odds = (odds === null || odds === undefined) ? "" : String(odds);
+                        sel.dataset.ninki = (ninki === null || ninki === undefined) ? "" : String(ninki);
+
+                        const p = String(sel.dataset.ninki || "").trim();
+                        const o = String(sel.dataset.odds || "").trim();
+                        updateOddsLabel(oLabel, p, o);
                         const nNum = label.querySelector(".horse-num");
                         const nName = label.querySelector(".horse-name");
                         const circle = toCircleNumber(Number(sel.dataset.horse));
@@ -819,7 +904,10 @@
                             sel.classList.remove('has-name');
                             sel.style.visibility = 'hidden';
 
-                            d.textContent = "";
+                                                        sel.dataset.odds = "";
+                            sel.dataset.ninki = "";
+                            updateOddsLabel(oLabel, "", "");
+d.textContent = "";
                             d.dataset.bg = "none";
                             if (numSpan) numSpan.style.backgroundColor = "";
                             applyMarkBackground(sel, false);
@@ -859,6 +947,7 @@
             document.querySelectorAll('.custom-select').forEach(sel => {
                 const label = sel.querySelector('.horse-label');
                 const jockeyLabel = sel.querySelector('.jockey-label');
+                const oLabel = sel.querySelector('.odds-label');
                 if (!label) return;
 
                 const horseNum = Number(sel.dataset.horse);
@@ -872,6 +961,9 @@
                 if (jockeyLabel) {
                     jockeyLabel.textContent = "";
                 }
+                updateOddsLabel(oLabel, "", "");
+                sel.dataset.odds = "";
+                sel.dataset.ninki = "";
 
                 sel.classList.remove('has-name');
                 sel.style.visibility = 'visible';
@@ -1070,14 +1162,18 @@
 
             document.getElementById('result').innerHTML =
                 `買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 通り`;
-            const fragment = document.createDocumentFragment();
-            const container = document.createElement('div');
-            container.innerHTML = comboList.join('');
-            fragment.appendChild(container);
-            document.getElementById('combos').replaceChildren(fragment);
-            attachComboEvents();
+            const combosEl = document.getElementById('combos');
+            const combosHtml = comboList.join('');
+            if (!combosHtml.trim()) {
+                combosEl.replaceChildren(); // empty => padding removed by :empty
+            } else {
+                const container = document.createElement('div');
+                container.innerHTML = combosHtml;
+                combosEl.replaceChildren(container);
+                attachComboEvents();
+            }
             saveState();
-        }
+            }
 
         function fullyMergeBlocksStableBit(blocks) {
             const n = TOTAL_RACES | 0;
@@ -1182,6 +1278,8 @@
             for (let r = 0; r < TOTAL_RACES; r++) {
                 const horses = (races[r] && races[r].horses) ? races[r].horses : [];
                 const jockeys = (races[r] && races[r].jockeys) ? races[r].jockeys : [];
+                const oddsArr = (races[r] && races[r].odds) ? races[r].odds : [];
+                const ninkiArr = (races[r] && races[r].ninki) ? races[r].ninki : [];
 
                 for (let i = 1; i <= HORSE_MAX; i++) {
                     const raceNum = r + 1;
@@ -1196,8 +1294,9 @@
 
                     const label = sel.querySelector(".horse-label");
                     const selected = sel.querySelector(".selected");
+                    const oddsLabel = sel.querySelector(".odds-label");
                     const jockeyLabel = sel.querySelector(".jockey-label");
-                    if (!label || !selected || !jockeyLabel) continue;
+                    if (!label || !selected || !oddsLabel || !jockeyLabel) continue;
 
                     const circle = toCircleNumber(horseNum);
                     const numSpan = label.querySelector(".horse-num");
@@ -1207,12 +1306,24 @@
                         if (numSpan) numSpan.textContent = circle;
                         if (nameSpan) nameSpan.textContent = " " + name;
                         jockeyLabel.textContent = jockey || "";
+                        const odds = oddsArr[i - 1];
+                        const ninki = ninkiArr[i - 1];
+
+                        sel.dataset.odds = (odds === undefined || odds === null) ? "" : String(odds);
+                        sel.dataset.ninki = (ninki === undefined || ninki === null) ? "" : String(ninki);
+
+                        const p = String(sel.dataset.ninki || "").trim();
+                        const o = String(sel.dataset.odds || "").trim();
+                        updateOddsLabel(oddsLabel, p, o);
                         sel.classList.add("has-name");
                         sel.style.visibility = "visible";
                     } else {
                         if (numSpan) numSpan.textContent = "";
                         if (nameSpan) nameSpan.textContent = "";
                         jockeyLabel.textContent = "";
+                        updateOddsLabel(oddsLabel, "", "");
+                        sel.dataset.odds = "";
+                        sel.dataset.ninki = "";
                         sel.classList.remove("has-name");
                         sel.style.visibility = "hidden";
 
