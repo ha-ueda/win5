@@ -170,7 +170,6 @@
             display: block;
             text-align: right;
             white-space: pre;
-            /* padStart( ) の空白を保持 */
             font-size: 13px;
             color: #333;
             align-self: flex-end;
@@ -631,7 +630,6 @@
             const oRaw = (odds ?? "").toString().trim();
             const nRaw = (ninki ?? "").toString().trim();
 
-            // odds: max "999.9" (5 chars)想定で右寄せ（padStart）して桁を揃える
             const formatOddsFixed = (s) => {
                 const t = (s ?? "").toString().trim();
                 if (!t) return "";
@@ -641,7 +639,6 @@
 
             const o = formatOddsFixed(oRaw);
 
-            // ninki: ①〜⑱（"**" は未取得）
             let nCircle = "";
             if (nRaw && nRaw !== "**") {
                 const nn = Number(nRaw);
@@ -649,7 +646,6 @@
                 else nCircle = nRaw;
             }
 
-            // 表示: " 10.0 ①"（間はスペース1つ）
             if (o && nCircle) el.textContent = `${o} ${nCircle}`;
             else if (o) el.textContent = o;
             else if (nCircle) el.textContent = nCircle;
@@ -1166,7 +1162,7 @@
             const combosEl = document.getElementById('combos');
             const combosHtml = comboList.join('');
             if (!combosHtml.trim()) {
-                combosEl.replaceChildren(); // empty => padding removed by :empty
+                combosEl.replaceChildren();
             } else {
                 const container = document.createElement('div');
                 container.innerHTML = combosHtml;
@@ -1357,7 +1353,6 @@
 
             const u = new URL(WIN5_API);
             u.searchParams.set("tab", idx);
-            // cache buster
             u.searchParams.set("_", String(Date.now()));
 
             const res = await fetch(u.toString(), { cache: "no-store" });
@@ -1370,7 +1365,6 @@
 
         async function loadWin5Tabs() {
             const u = new URL(WIN5_API);
-            // cache buster
             u.searchParams.set("_", String(Date.now()));
 
             const res = await fetch(u.toString(), { cache: "no-store" });
