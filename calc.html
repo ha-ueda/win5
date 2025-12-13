@@ -169,7 +169,8 @@
             width: 100%;
             display: block;
             text-align: right;
-            white-space: pre; /* padStart( ) の空白を保持 */
+            white-space: pre;
+            /* padStart( ) の空白を保持 */
             font-size: 13px;
             color: #333;
             align-self: flex-end;
@@ -758,7 +759,7 @@
 
             const oddsLabel = document.createElement("span");
             oddsLabel.className = "odds-label";
-            oddsLabel.textContent = "";const jockeyLabel = document.createElement("span");
+            oddsLabel.textContent = ""; const jockeyLabel = document.createElement("span");
             jockeyLabel.className = "jockey-label";
             jockeyLabel.textContent = "";
 
@@ -770,7 +771,7 @@
             wrapper.appendChild(selected);
             wrapper.appendChild(label);
             wrapper.appendChild(meta);
-return wrapper;
+            return wrapper;
         }
 
         function createTable() {
@@ -799,7 +800,7 @@ return wrapper;
                     const d = sel.querySelector('.selected');
                     const label = sel.querySelector('.horse-label');
                     const jLabel = sel.querySelector('.jockey-label');
-let name = null;
+                    let name = null;
                     let jockey = null;
 
                     if (label) {
@@ -868,8 +869,8 @@ let name = null;
                         const label = sel.querySelector('.horse-label');
                         const jLabel = sel.querySelector('.jockey-label');
 
-                                                const oLabel = sel.querySelector('.odds-label');
-d.textContent = val.mark || "";
+                        const oLabel = sel.querySelector('.odds-label');
+                        d.textContent = val.mark || "";
                         d.style.opacity = "1";
                         applyMarkBackground(sel, !!val.mark);
 
@@ -904,10 +905,10 @@ d.textContent = val.mark || "";
                             sel.classList.remove('has-name');
                             sel.style.visibility = 'hidden';
 
-                                                        sel.dataset.odds = "";
+                            sel.dataset.odds = "";
                             sel.dataset.ninki = "";
                             updateOddsLabel(oLabel, "", "");
-d.textContent = "";
+                            d.textContent = "";
                             d.dataset.bg = "none";
                             if (numSpan) numSpan.style.backgroundColor = "";
                             applyMarkBackground(sel, false);
@@ -1173,7 +1174,7 @@ d.textContent = "";
                 attachComboEvents();
             }
             saveState();
-            }
+        }
 
         function fullyMergeBlocksStableBit(blocks) {
             const n = TOTAL_RACES | 0;
@@ -1353,9 +1354,13 @@ d.textContent = "";
 
         async function loadWin5Data() {
             const idx = document.getElementById("win5TabSelect").value;
-            const api = "https://win5-proxy.cooopew.workers.dev/?tab=" + idx;
 
-            const res = await fetch(api);
+            const u = new URL(WIN5_API);
+            u.searchParams.set("tab", idx);
+            // cache buster
+            u.searchParams.set("_", String(Date.now()));
+
+            const res = await fetch(u.toString(), { cache: "no-store" });
             const json = await res.json();
 
             if (!json.ok) return;
@@ -1364,9 +1369,11 @@ d.textContent = "";
         }
 
         async function loadWin5Tabs() {
-            const api = "https://win5-proxy.cooopew.workers.dev/";
+            const u = new URL(WIN5_API);
+            // cache buster
+            u.searchParams.set("_", String(Date.now()));
 
-            const res = await fetch(api);
+            const res = await fetch(u.toString(), { cache: "no-store" });
             const json = await res.json();
 
             if (!json.ok) return;
