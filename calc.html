@@ -71,6 +71,18 @@
             padding-bottom: 0;
         }
 
+        #combos,
+        .table-wrapper {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        #combos::-webkit-scrollbar,
+        .table-wrapper::-webkit-scrollbar {
+            display: none;
+            height: 0;
+        }
+
         .clear-btn {
             padding: 4px 4px;
             font-size: 18px;
@@ -326,16 +338,29 @@
             overflow-x: auto;
         }
 
+        .custom-select:not(.has-name) {
+            width: 100%;
+            justify-content: center;
+        }
+
         .custom-select:not(.has-name) .horse-label {
-            flex: 0;
+            flex: 0 0 auto;
             padding: 0 4px;
+            justify-content: center;
+        }
+
+        .custom-select:not(.has-name) .meta-labels {
+            display: none;
         }
 
         .custom-select:not(.has-name) .jockey-label {
             display: none;
         }
 
-        #win5TabSelect {
+        .custom-select:not(.has-name) .horse-name {
+            display: none;
+        }
+#win5TabSelect {
             padding: 6px 12px;
             font-size: 20px;
             border: 1px solid #ccc;
