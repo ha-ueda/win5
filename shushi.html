@@ -133,6 +133,26 @@
             justify-content: center;
         }
 
+        .delete-mode-btn {
+            background-color: #555;
+        }
+
+        body.delete-mode .delete-mode-btn {
+            background-color: #d92c2c;
+        }
+
+        #mainTable th:last-child,
+        #mainTable td:last-child {
+            display: none;
+            width: 40px;
+            text-align: center;
+        }
+
+        body.delete-mode #mainTable th:last-child,
+        body.delete-mode #mainTable td:last-child {
+            display: table-cell;
+        }
+
         .table-wrapper {
             width: 100%;
             overflow-x: auto;
@@ -325,7 +345,7 @@
 
         <button class="btn" onclick="addRow()">追加</button>
         <button class="btn" onclick="saveData()">保存</button>
-
+        <button class="btn delete-mode-btn" id="deleteModeBtn" aria-pressed="false" onclick="toggleDeleteMode()">削除</button>
     </div>
 
     <script>
@@ -392,7 +412,7 @@
                 </td>
 
                 <td>
-                    <button class="delete-btn" onclick="this.parentNode.parentNode.remove(); calc();">❌</button>
+                    <button class="delete-btn" onclick="this.parentNode.parentNode.remove(); calc();">×</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -473,6 +493,26 @@
             }
         }
 
+        function setDeleteMode(on) {
+            const btn = document.getElementById("deleteModeBtn");
+            if (!btn) return;
+            if (on) {
+                document.body.classList.add("delete-mode");
+                btn.textContent = "削除";
+                btn.setAttribute("aria-pressed", "true");
+            } else {
+                document.body.classList.remove("delete-mode");
+                btn.textContent = "削除";
+                btn.setAttribute("aria-pressed", "false");
+            }
+        }
+
+        function toggleDeleteMode() {
+            const on = !document.body.classList.contains("delete-mode");
+            setDeleteMode(on);
+            showToast(on ? "削除モードをONにしました" : "削除モードをOFFにしました");
+        }
+
         function showToast(msg) {
             const t = document.getElementById("toast");
             t.innerText = msg;
@@ -480,6 +520,7 @@
             setTimeout(() => (t.className = t.className.replace("show", "")), 2000);
         }
 
+        setDeleteMode(false);
         loadData();
     </script>
 
