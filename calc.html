@@ -242,6 +242,11 @@
             background: #f4f2ec !important;
         }
 
+
+        #raceTable thead th {
+            white-space: pre-line;
+        }
+
         * {
             -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
         }
@@ -427,9 +432,9 @@
 
             @media (max-width: 640px) {
                 .race-focus {
-                    display: flex;
+                    display: grid;
+                    grid-template-columns: repeat(3, minmax(0, 1fr));
                     gap: 6px;
-                    flex-wrap: wrap;
                     margin: 8px 0 10px;
                     background: rgba(249, 250, 251, 0.95);
                     padding: 8px 0;
@@ -437,14 +442,20 @@
                 }
 
                 .race-focus button {
-                    flex: 1 1 30%;
-                    padding: 10px 8px;
+                    width: 100%;
+                    min-width: 0;
+                    min-height: 44px;
+                    padding: 10px 6px;
                     font-size: 16px;
                     border-radius: 10px;
                     border: 1px solid #cfd6dd;
                     background: #fff;
                     color: #333;
                     cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    line-height: 1;
                 }
 
                 .race-focus button.on {
@@ -703,9 +714,9 @@
                 <button class="calc-btn" onclick="closeShare()">閉じる</button>
             </div>
             <div class="modal-help">
-                ・「コピー」したURL/コードを相手に送ってください。<br>
-                ・受け取った側は、この欄に貼り付けて「読み込み」で反映できます。<br>
-                ・共有対象は印/背景色のみで馬名/騎手/オッズは共有しません。
+                ・コピーしたURLを相手に送ってください。<br>
+                ・受け取った側はURLを貼り付けて読み込みで反映できます。<br>
+                ・馬名/騎手/オッズは共有しません。
             </div>
         </div>
     </div>
@@ -896,7 +907,7 @@
 
         let lastState = '';
         function saveState() {
-            const state = { races: {}, minFav: document.getElementById('minFav').value, raceInfo: window.raceInfo || ["", "", "", "", ""] };
+            const state = { races: {}, minFav: document.getElementById('minFav').value, raceInfo: window.raceInfo || ["", "", "", "", ""], raceTimes: window.raceTimes || ["", "", "", "", ""] };
 
             for (let r = 1; r <= TOTAL_RACES; r++) {
                 state.races[`r${r}`] = {};
@@ -955,8 +966,12 @@
                 const state = JSON.parse(data);
                 if (state.raceInfo) {
                     window.raceInfo = state.raceInfo;
-                    updateRaceHeaders(state.raceInfo);
                 }
+                if (state.raceTimes) {
+                    window.raceTimes = state.raceTimes;
+                }
+                updateRaceHeaders(window.raceInfo || ["", "", "", "", ""]);
+
                 if (state.minFav) {
                     document.getElementById('minFav').value = state.minFav;
                 }
@@ -1075,6 +1090,7 @@
             });
 
             window.raceInfo = ["", "", "", "", ""];
+            window.raceTimes = ["", "", "", "", ""];
             updateRaceHeaders(window.raceInfo);
 
             saveState();
@@ -1376,6 +1392,7 @@
 
         function applyWin5Data(json) {
             window.raceInfo = json.raceInfo || [];
+            window.raceTimes = json.raceTimes || ((json.races || []).map(r => (r && r.startTime) ? String(r.startTime) : ""));
             updateRaceHeaders(window.raceInfo);
 
             const races = json.races || [];
@@ -1445,12 +1462,18 @@
         }
 
         function updateRaceHeaders(raceInfo) {
+            const raceTimes = window.raceTimes || [];
             const thRow = document.querySelector("#raceTable thead tr");
             thRow.innerHTML = "";
 
             for (let i = 0; i < 5; i++) {
                 const th = document.createElement("th");
-                const label = `WIN${i + 1}` + (raceInfo[i] ? ` ${raceInfo[i]}` : "");
+                const time = (raceTimes[i] || "").trim();
+                const info = (raceInfo && raceInfo[i]) ? String(raceInfo[i]).trim() : "";
+
+                let label = info ? info : `WIN${i + 1}`;
+                if (time) label += ` ${time}発走`;
+
                 th.textContent = label;
                 thRow.appendChild(th);
             }
@@ -1511,8 +1534,6 @@
             }
         }
 
-
-        // ===== 印共有 =====
         function openShare() {
             const modal = document.getElementById("shareModal");
             const ta = document.getElementById("shareText");
@@ -1528,7 +1549,6 @@
 
             modal.style.display = "flex";
             document.body.style.overflow = "hidden";
-            // 背景クリックで閉じる（カード内クリックは止めている）
             modal.onclick = () => closeShare();
             ta.focus();
             ta.select();
@@ -1549,7 +1569,6 @@
             try {
                 await navigator.clipboard.writeText(txt);
             } catch (e) {
-                // fallback
                 ta.focus();
                 ta.select();
                 document.execCommand("copy");
@@ -1570,7 +1589,6 @@
                 applySharePayload(payload);
                 closeShare();
             } catch (e) {
-                // 失敗時は何もしない
                 console.error("share import failed", e);
             }
         }
@@ -1579,12 +1597,11 @@
             const t = (txt || "").trim();
             const m = t.match(/[?#&]share=([A-Za-z0-9\-_]+)/);
             if (m) return m[1];
-            if (/^[A-Za-z0-9\-_]{20,}$/.test(t)) return t; // token単体
+            if (/^[A-Za-z0-9\-_]{20,}$/.test(t)) return t;
             return null;
         }
 
         function buildSharePayload() {
-            // 印（✓/◎）と背景色だけ共有。馬名/騎手/オッズは共有しない。
             const items = [];
             document.querySelectorAll(".custom-select").forEach(sel => {
                 const r = Number(sel.dataset.race);
@@ -1602,8 +1619,6 @@
 
         function applySharePayload(payload) {
             if (!payload || payload.v !== 1 || !Array.isArray(payload.items)) return;
-
-            // まず全消し（印＋背景色だけ）
             document.querySelectorAll(".custom-select").forEach(sel => {
                 const box = sel.querySelector(".selected");
                 const numSpan = sel.querySelector(".horse-num");
@@ -1616,7 +1631,6 @@
                 applyMarkBackground(sel, false);
             });
 
-            // 共有データを反映
             for (const it of payload.items) {
                 if (!Array.isArray(it) || it.length < 4) continue;
                 const [r, h, mark, bg] = it;
@@ -1644,7 +1658,6 @@
         function encodeSharePayload(obj) {
             const json = JSON.stringify(obj);
             const b64 = btoa(unescape(encodeURIComponent(json)));
-            // base64url
             return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
         }
 
@@ -1663,8 +1676,6 @@
             try {
                 const payload = decodeSharePayload(m[1]);
                 applySharePayload(payload);
-
-                // URLのshareを消す（再読み込みで二重適用しない）
                 const base = location.href.split("#")[0];
                 history.replaceState(null, "", base);
             } catch (e) {
