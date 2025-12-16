@@ -43,7 +43,7 @@
 
         button.calc-btn {
             padding: 6px 12px;
-            font-size: 20px;
+            font-size: 22px;
             background-color: #0078d4;
             color: white;
             border: none;
@@ -360,9 +360,10 @@
         .custom-select:not(.has-name) .horse-name {
             display: none;
         }
-#win5TabSelect {
+
+        #win5TabSelect {
             padding: 6px 12px;
-            font-size: 20px;
+            font-size: 22px;
             border: 1px solid #ccc;
             border-radius: 6px;
             background-color: #fff;
@@ -488,6 +489,68 @@
             }
 
         }
+
+        /* ===== 印共有モーダル ===== */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 20000;
+            padding: 14px;
+        }
+
+        .modal-card {
+            width: min(720px, 100%);
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid #d7d7d7;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+            padding: 14px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .modal-help {
+            font-size: 13px;
+            color: #555;
+            margin-top: 8px;
+            line-height: 1.35;
+            user-select: text !important;
+            -webkit-user-select: text !important;
+        }
+
+        .modal-textarea {
+            width: 100%;
+            min-height: 120px;
+            font-size: 13px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-sizing: border-box;
+            resize: vertical;
+            user-select: text !important;
+            -webkit-user-select: text !important;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .modal-actions .calc-btn {
+            font-size: 18px;
+            padding: 8px 12px;
+        }
     </style>
 </head>
 
@@ -575,6 +638,7 @@
         <select id="win5TabSelect"></select>
         <button class="calc-btn" onclick="loadWin5Data()">データ取得</button>
         <button class="calc-btn" onclick="clearAllHorseNames()">クリア</button>
+        <button class="calc-btn" onclick="openShare()">共有</button>
     </div>
 
     <br>
@@ -627,6 +691,25 @@
 
     <div id="result"></div>
     <div id="combos"></div>
+
+    <!-- 印共有モーダル -->
+    <div id="shareModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="印共有">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-title">印を共有</div>
+            <textarea id="shareText" class="modal-textarea" spellcheck="false"></textarea>
+            <div class="modal-actions">
+                <button class="calc-btn" onclick="copyShareText()">コピー</button>
+                <button class="calc-btn" onclick="importShareText()">読み込み</button>
+                <button class="calc-btn" onclick="closeShare()">閉じる</button>
+            </div>
+            <div class="modal-help">
+                ・「コピー」したURL/コードを相手に送ってください。<br>
+                ・受け取った側は、この欄に貼り付けて「読み込み」で反映できます。<br>
+                ・共有対象：印（✓/◎）＋背景色。馬名/騎手/オッズは共有しません。
+            </div>
+        </div>
+    </div>
+
 
     <script>
         const TOTAL_RACES = 5;
@@ -1428,8 +1511,170 @@
             }
         }
 
+
+        // ===== 印共有 =====
+        function openShare() {
+            const modal = document.getElementById("shareModal");
+            const ta = document.getElementById("shareText");
+            if (!modal || !ta) return;
+
+            const payload = buildSharePayload();
+            const token = encodeSharePayload(payload);
+
+            const base = location.href.split("#")[0];
+            const url = `${base}#share=${token}`;
+
+            ta.value = url;
+
+            modal.style.display = "flex";
+            document.body.style.overflow = "hidden";
+            // 背景クリックで閉じる（カード内クリックは止めている）
+            modal.onclick = () => closeShare();
+            ta.focus();
+            ta.select();
+        }
+
+        function closeShare() {
+            const modal = document.getElementById("shareModal");
+            if (modal) modal.style.display = "none";
+            document.body.style.overflow = "";
+        }
+
+        async function copyShareText() {
+            const ta = document.getElementById("shareText");
+            if (!ta) return;
+            const txt = ta.value || "";
+            if (!txt) return;
+
+            try {
+                await navigator.clipboard.writeText(txt);
+            } catch (e) {
+                // fallback
+                ta.focus();
+                ta.select();
+                document.execCommand("copy");
+            }
+        }
+
+        function importShareText() {
+            const ta = document.getElementById("shareText");
+            if (!ta) return;
+            const raw = (ta.value || "").trim();
+            if (!raw) return;
+
+            const token = extractShareToken(raw);
+            if (!token) return;
+
+            try {
+                const payload = decodeSharePayload(token);
+                applySharePayload(payload);
+                closeShare();
+            } catch (e) {
+                // 失敗時は何もしない
+                console.error("share import failed", e);
+            }
+        }
+
+        function extractShareToken(txt) {
+            const t = (txt || "").trim();
+            const m = t.match(/[?#&]share=([A-Za-z0-9\-_]+)/);
+            if (m) return m[1];
+            if (/^[A-Za-z0-9\-_]{20,}$/.test(t)) return t; // token単体
+            return null;
+        }
+
+        function buildSharePayload() {
+            // 印（✓/◎）と背景色だけ共有。馬名/騎手/オッズは共有しない。
+            const items = [];
+            document.querySelectorAll(".custom-select").forEach(sel => {
+                const r = Number(sel.dataset.race);
+                const h = Number(sel.dataset.horse);
+                const box = sel.querySelector(".selected");
+                const mark = (box?.textContent || "").trim();
+                const bg = (box?.dataset.bg || "none").trim();
+
+                if (mark || (bg && bg !== "none")) {
+                    items.push([r, h, mark, bg]);
+                }
+            });
+            return { v: 1, items };
+        }
+
+        function applySharePayload(payload) {
+            if (!payload || payload.v !== 1 || !Array.isArray(payload.items)) return;
+
+            // まず全消し（印＋背景色だけ）
+            document.querySelectorAll(".custom-select").forEach(sel => {
+                const box = sel.querySelector(".selected");
+                const numSpan = sel.querySelector(".horse-num");
+                if (!box) return;
+
+                box.textContent = "";
+                box.dataset.bg = "none";
+                if (numSpan) numSpan.style.backgroundColor = "";
+
+                applyMarkBackground(sel, false);
+            });
+
+            // 共有データを反映
+            for (const it of payload.items) {
+                if (!Array.isArray(it) || it.length < 4) continue;
+                const [r, h, mark, bg] = it;
+
+                const sel = document.querySelector(`.custom-select[data-race="${r}"][data-horse="${h}"]`);
+                if (!sel) continue;
+
+                const box = sel.querySelector(".selected");
+                const numSpan = sel.querySelector(".horse-num");
+                if (!box) continue;
+
+                const m = (mark || "").toString();
+                const b = (bg || "none").toString();
+
+                box.textContent = m;
+                applyMarkBackground(sel, !!m);
+
+                box.dataset.bg = b;
+                if (numSpan) numSpan.style.backgroundColor = (b && b !== "none") ? b : "";
+            }
+
+            saveState();
+        }
+
+        function encodeSharePayload(obj) {
+            const json = JSON.stringify(obj);
+            const b64 = btoa(unescape(encodeURIComponent(json)));
+            // base64url
+            return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+        }
+
+        function decodeSharePayload(token) {
+            const t = token.replace(/-/g, "+").replace(/_/g, "/");
+            const pad = t.length % 4 ? "=".repeat(4 - (t.length % 4)) : "";
+            const json = decodeURIComponent(escape(atob(t + pad)));
+            return JSON.parse(json);
+        }
+
+        function applyShareFromURL() {
+            const hash = location.hash || "";
+            const m = hash.match(/share=([A-Za-z0-9\-_]+)/);
+            if (!m) return;
+
+            try {
+                const payload = decodeSharePayload(m[1]);
+                applySharePayload(payload);
+
+                // URLのshareを消す（再読み込みで二重適用しない）
+                const base = location.href.split("#")[0];
+                history.replaceState(null, "", base);
+            } catch (e) {
+                console.error("share parse failed", e);
+            }
+        }
+
         createTable();
         restoreState();
+        applyShareFromURL();
         loadWin5Tabs();
 
         function isMobileLayout() {
