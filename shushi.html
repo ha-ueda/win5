@@ -131,6 +131,19 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            color: #333;
+            -webkit-text-fill-color: #333;
+            -webkit-appearance: none;
+            appearance: none;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            padding: 0;
+            outline: none;
+        }
+
+        .delete-btn:focus,
+        .delete-btn:active {
+            color: #333;
+            -webkit-text-fill-color: #333;
         }
 
         .delete-mode-btn {
@@ -510,7 +523,6 @@
         function toggleDeleteMode() {
             const on = !document.body.classList.contains("delete-mode");
             setDeleteMode(on);
-            showToast(on ? "削除モードをONにしました" : "削除モードをOFFにしました");
         }
 
         function showToast(msg) {
