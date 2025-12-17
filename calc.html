@@ -549,6 +549,12 @@
             -webkit-user-select: text !important;
         }
 
+        @media (hover: none) and (pointer: coarse) {
+            .modal-textarea {
+                font-size: 16px;
+            }
+        }
+
         .modal-actions {
             display: flex;
             gap: 8px;
@@ -713,7 +719,7 @@
             </div>
             <div class="modal-help">
                 ・コピーしたURLを相手に送ってください。<br>
-                ・受け取った側はURLを読み込みで反映できます。<br>
+                ・受け取った側は「読み込み」でクリップボード内のURLから反映できます。<br>
                 ・馬名/騎手/オッズは共有しません。
             </div>
         </div>
@@ -1547,8 +1553,11 @@
             modal.style.display = "flex";
             document.body.style.overflow = "hidden";
             modal.onclick = () => closeShare();
-            ta.focus();
-            ta.select();
+            const isCoarse = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+            if (!isCoarse) {
+                ta.focus();
+                ta.select();
+            }
         }
 
         function closeShare() {
@@ -1566,19 +1575,37 @@
             try {
                 await navigator.clipboard.writeText(txt);
             } catch (e) {
-                ta.focus();
-                ta.select();
+                const isCoarse = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+                if (!isCoarse) {
+                    ta.focus();
+                    ta.select();
+                }
                 document.execCommand("copy");
             }
         }
 
-        function importShareText() {
+        async function importShareText() {
             const ta = document.getElementById("shareText");
             if (!ta) return;
-            const raw = (ta.value || "").trim();
-            if (!raw) return;
 
-            const token = extractShareToken(raw);
+            let token = null;
+
+            try {
+                const clip = (await navigator.clipboard.readText()) || "";
+                const t = extractShareToken(clip.trim());
+                if (t) token = t;
+            } catch (e) { }
+
+            const base = location.href.split("#")[0];
+            const currentUrl = `${base}#share=${encodeSharePayload(buildSharePayload())}`;
+
+            if (!token) {
+                const raw = (ta.value || "").trim();
+                if (!raw) return;
+                if (raw === currentUrl) return;
+                token = extractShareToken(raw);
+            }
+
             if (!token) return;
 
             try {
