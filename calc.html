@@ -835,17 +835,19 @@
             else el.classList.remove("is-hot");
         }
 
-        function wakuStyle(n) {
-            const w = Number(n);
+        function wakuStyle(v) {
+            const s = String(v ?? "").trim();
+            const m = s.match(/Waku([1-8])/i);
+            const w = m ? Number(m[1]) : Number(s);
             if (!Number.isFinite(w) || w < 1 || w > 8) return null;
-            if (w === 1) return { bg: "#ffffff", fg: "#111", br: "#bdbdbd" };
-            if (w === 2) return { bg: "#1a1a1a", fg: "#ffffff", br: "#1a1a1a" };
-            if (w === 3) return { bg: "#e53935", fg: "#ffffff", br: "#e53935" };
-            if (w === 4) return { bg: "#1e88e5", fg: "#ffffff", br: "#1e88e5" };
-            if (w === 5) return { bg: "#f6c400", fg: "#ffffff", br: "#f6c400" };
-            if (w === 6) return { bg: "#43a047", fg: "#ffffff", br: "#43a047" };
-            if (w === 7) return { bg: "#fb8c00", fg: "#ffffff", br: "#fb8c00" };
-            return { bg: "#f48fb1", fg: "#ffffff", br: "#f48fb1" };
+            if (w === 1) return { bg: "rgb(255, 255, 255)", fg: "rgb(85, 85, 85)", br: "#bdbdbd" };
+            if (w === 2) return { bg: "rgb(34, 34, 34)", fg: "rgb(255, 255, 255)", br: "rgb(34, 34, 34)" };
+            if (w === 3) return { bg: "rgb(220, 60, 60)", fg: "rgb(255, 255, 255)", br: "rgb(220, 60, 60)" };
+            if (w === 4) return { bg: "rgb(44, 83, 169)", fg: "rgb(255, 255, 255)", br: "rgb(44, 83, 169)" };
+            if (w === 5) return { bg: "rgb(228, 202, 59)", fg: "rgb(255, 255, 255)", br: "rgb(228, 202, 59)" };
+            if (w === 6) return { bg: "rgb(88, 175, 74)", fg: "rgb(255, 255, 255)", br: "rgb(88, 175, 74)" };
+            if (w === 7) return { bg: "rgb(222, 138, 38)", fg: "rgb(255, 255, 255)", br: "rgb(222, 138, 38)" };
+            return { bg: "rgb(220, 97, 121)", fg: "rgb(255, 255, 255)", br: "rgb(220, 97, 121)" };
         }
 
         function setNoBox(el, waku, umaban) {
@@ -1720,6 +1722,7 @@
                 const oddsArr = (races[r] && races[r].odds) ? races[r].odds : [];
                 const ninkiArr = (races[r] && races[r].ninki) ? races[r].ninki : [];
                 const wakubans = (races[r] && races[r].wakubans) ? races[r].wakubans : [];
+                const wakuClasses = (races[r] && races[r].wakuClasses) ? races[r].wakuClasses : [];
                 const umabans = (races[r] && races[r].umabans) ? races[r].umabans : [];
 
                 for (let i = 1; i <= HORSE_MAX; i++) {
@@ -1730,7 +1733,8 @@
                     const jockey = jockeys[i - 1] || "";
                     const odds = oddsArr[i - 1];
                     const ninki = ninkiArr[i - 1];
-                    const waku = wakubans[i - 1] || "";
+                    const wakuClass = wakuClasses[i - 1] || "";
+                    const waku = wakuClass || (wakubans[i - 1] || "");
                     const umaban = umabans[i - 1] || String(i);
 
                     const sel = document.querySelector(`.custom-select[data-race="${raceNum}"][data-horse="${horseNum}"]`);
