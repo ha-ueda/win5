@@ -9,203 +9,54 @@
         body {
             font-family: "メイリオ", Meiryo, Hiragino Sans, Hiragino Kaku Gothic ProN, 'ヒラギノ角ゴ ProN W3', 'ヒラギノ角ゴ Pro W3', Helvetica Neue, Helvetica, sans-serif;
             margin: 20px;
-            background: #f9fafb;
-            color: #333;
+            background: #f2f2f2;
+            color: #222;
+            font-weight: 400;
             user-select: none !important;
             -webkit-user-select: none !important;
             -ms-user-select: none !important;
         }
 
-        table {
-            touch-action: manipulation;
-            border-collapse: collapse;
-            width: 100%;
-            background: #eaeaea;
+        * {
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+            box-sizing: border-box;
         }
 
-        th,
-        td {
-            touch-action: manipulation;
-            border: 1px solid #d9d8ce;
-            padding: 4px;
-            text-align: center;
-            font-size: 18px;
+        .top-bar-right {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
         }
 
-        th {
-            background-color: #e0f0ff;
-            font-weight: bold;
-        }
-
-        tfoot td {
-            padding: 0;
+        #win5TabSelect {
+            padding: 8px 10px;
+            font-size: 16px;
+            border: 1px solid #cfcfcf;
+            border-radius: 6px;
+            background-color: #fff;
+            color: #222;
+            min-width: 160px;
         }
 
         button.calc-btn {
-            padding: 6px 12px;
-            font-size: 22px;
+            padding: 8px 12px;
+            font-size: 16px;
             background-color: #0078d4;
             color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
-        }
-
-        #result {
-            margin-top: 20px;
-            font-weight: bold;
-            font-size: 20px;
-        }
-
-        #combos {
-            margin-top: 10px;
-            font-size: 22px;
-            white-space: normal;
-            word-break: keep-all;
-            overflow-x: auto;
-            display: block;
-            padding-bottom: calc(300px + env(safe-area-inset-bottom));
-        }
-
-        #combos:empty {
-            padding-bottom: 0;
-        }
-
-        #combos,
-        .table-wrapper {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        #combos::-webkit-scrollbar,
-        .table-wrapper::-webkit-scrollbar {
-            display: none;
-            height: 0;
-        }
-
-        .clear-btn {
-            padding: 4px 4px;
-            font-size: 18px;
-            background-color: #f4f2ec;
-            color: #444;
-            border: none;
-            cursor: pointer;
-            width: 100%;
-            height: 100%;
-            box-sizing: border-box;
-            font-weight: bold;
-        }
-
-        .custom-select {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            cursor: pointer;
-            width: fit-content;
-            margin: 0 auto;
-            position: relative;
-        }
-
-        .custom-select.has-name {
-            width: 100%;
-            margin-left: 0;
-            margin-right: 0;
-        }
-
-        .selected {
-            background: #eaeaea;
-            border: 1px solid #888;
-            border-radius: 8px;
-            text-align: center;
-            user-select: none;
-            width: 32px;
-            height: 32px;
-            line-height: 32px;
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .selected.is-marked {
-            background-color: #ec5754 !important;
-            color: #fff !important;
-            border-color: #ec5754 !important;
-        }
-
-        .custom-select .horse-label {
-            display: inline-flex;
-            align-items: center;
-            justify-content: flex-start;
-            height: 32px;
-            font-size: 18px !important;
-            font-weight: bold;
-            color: #555;
-            user-select: none;
             white-space: nowrap;
-            overflow: visible;
-            flex: 1;
-        }
-
-        .horse-num {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            height: 32px;
-            padding: 0 6px;
-            border-radius: 8px;
-            line-height: 32px;
-        }
-
-        .horse-name {
-            margin-left: 3px;
-            font-size: 16px;
-        }
-
-        .jockey-label {
-            width: 100%;
-            display: block;
-            font-size: 13px;
-            color: #555;
-            text-align: right;
-            white-space: nowrap;
-            min-width: 3em;
-            pointer-events: none;
-            align-self: flex-end;
-            margin-bottom: 2px;
-            line-height: 1;
-        }
-
-        .odds-label {
-            font-feature-settings: "tnum" 1;
-            font-variant-numeric: tabular-nums;
-            width: 100%;
-            display: block;
-            text-align: right;
-            white-space: pre;
-            font-size: 13px;
-            color: #333;
-            align-self: flex-end;
-            margin-bottom: 2px;
-            line-height: 1;
-            pointer-events: none;
-            min-height: 13px;
-        }
-
-        .meta-labels {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 2px;
-            margin-left: auto;
-            min-width: 4.5em;
         }
 
         .toggle-container {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 10px;
-            font-size: 20px;
+            margin: 10px 0 10px;
+            font-size: 16px;
         }
 
         .switch {
@@ -216,6 +67,7 @@
             border-radius: 24px;
             cursor: pointer;
             transition: background 0.2s;
+            flex: 0 0 auto;
         }
 
         .switch::after {
@@ -238,26 +90,369 @@
             left: 24px;
         }
 
-        table thead th {
-            background: #f4f2ec !important;
+        .race-focus {
+            display: none;
+            gap: 8px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding: 6px 0 10px;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
 
-        #raceTable thead th {
-            white-space: pre-line;
+        .race-focus::-webkit-scrollbar {
+            display: none;
+            height: 0;
         }
 
-        * {
-            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+        .race-focus button {
+            border: 1px solid #cfcfcf;
+            background: #fff;
+            color: #222;
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            flex: 0 0 auto;
         }
 
-        .custom-select,
-        .custom-select * {
-            -webkit-user-select: none;
-            user-select: none;
+        .race-focus button.on {
+            border-color: #0078d4;
+            color: #0078d4;
+            font-weight: bold;
         }
 
-        .selected:focus {
-            outline: none;
+        #raceTables {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #raceTables .race-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            width: fit-content;
+            padding-bottom: 10px;
+        }
+
+        .race-card {
+            background: #fff;
+            border: 1px solid #d9d9d9;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            flex: 0 0 360px;
+        }
+
+        @media (min-width: 1200px) {
+            #raceTables .race-row {
+                width: 100%;
+            }
+
+            .race-card {
+                flex: 1 1 0;
+                min-width: 240px;
+            }
+        }
+
+        .race-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 12px;
+            border-bottom: 1px solid #e6e6e6;
+            background: #fff;
+        }
+
+        .race-head-left {
+            min-width: 0;
+        }
+
+        .race-title {
+            font-weight: 700;
+            font-size: 16px;
+            line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .race-sub {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .race-clear {
+            border: 1px solid #d0d0d0;
+            background: #f7f7f7;
+            color: #333;
+            border-radius: 10px;
+            padding: 7px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            flex: 0 0 auto;
+        }
+
+        table.shutuba-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            table-layout: fixed;
+            font-size: 14px;
+        }
+
+        table.shutuba-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #ededed;
+            color: #777;
+            font-weight: 600;
+            padding: 5px 1px;
+            border-bottom: 1px solid #d9d9d9;
+        }
+
+        table.shutuba-table thead th+th {
+            border-left: 1px solid #d9d9d9;
+        }
+
+        table.shutuba-table tbody td {
+            padding: 0;
+            border-bottom: 1px solid #dbe0ea;
+            vertical-align: middle;
+            background: #fff;
+        }
+
+        table.shutuba-table tbody td+td {
+            border-left: 1px solid #dbe0ea;
+        }
+
+        .th-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 13.014px;
+        }
+
+        .th-col .th-title {
+            font-size: 13.014px;
+            font-weight: 400;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .th-col .th-sub {
+            font-size: 13.014px;
+            font-weight: 400;
+            color: #888;
+            white-space: nowrap;
+        }
+
+        .th-col .th-sort {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-top: 2px;
+        }
+
+        .th-col .tri-up,
+        .th-col .tri-down {
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            opacity: 0.7;
+        }
+
+        .th-col .tri-up {
+            border-bottom: 7px solid #9a9a9a;
+        }
+
+        .th-col .tri-down {
+            border-top: 7px solid #9a9a9a;
+        }
+
+        th.sortable {
+            cursor: pointer;
+        }
+
+        th.sortable.sort-asc .tri-up,
+        th.sortable.sort-desc .tri-down {
+            opacity: 1;
+        }
+
+        th.sortable.sort-asc .tri-up {
+            border-bottom-color: #666;
+            opacity: 1;
+        }
+
+        th.sortable.sort-desc .tri-down {
+            border-top-color: #666;
+            opacity: 1;
+        }
+
+        th.sortable .tri-up,
+        th.sortable .tri-down {
+            opacity: 0.45;
+        }
+
+        .th-mark-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .col-no {
+            width: 30px;
+        }
+
+        .no-box {
+            height: 57.2422px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-feature-settings: "tnum" 1;
+            font-variant-numeric: tabular-nums;
+            border-right: 0;
+        }
+
+        .col-mark {
+            width: 51px;
+            text-align: center;
+        }
+
+        .selected {
+            display: block;
+            width: 40px;
+            height: 36px;
+            margin: 0 auto;
+            border-radius: 8px;
+            border: 1px solid rgb(136, 136, 136);
+            background: #fff;
+            font-size: 19.081px;
+            font-weight: 600;
+            color: rgb(17, 17, 17);
+            text-align: center;
+            line-height: 36px;
+        }
+
+        .selected.is-marked {
+            background-color: #ec5754 !important;
+            color: #fff !important;
+            border-color: #ec5754 !important;
+        }
+
+        .custom-select.has-mark td.col-mark,
+        .custom-select.has-mark td.col-info,
+        .custom-select.has-mark td.col-odds {
+            background: #ffebed;
+        }
+
+        .col-info {
+            width: auto;
+        }
+
+        table.shutuba-table thead th.col-info {
+            text-align: center;
+        }
+
+        table.shutuba-table tbody td.col-info {
+            padding: 8px 4px 8px 4px;
+        }
+
+        .info-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .horse-name {
+            font-weight: 700;
+            font-size: 16.8008px;
+            color: rgb(0, 51, 170);
+            line-height: 16.8008px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: block;
+        }
+
+        .info-bottom {
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .jockey-wrap {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 8px;
+            white-space: nowrap;
+            flex: 0 0 auto;
+        }
+
+        .jockey-name {
+            color: rgb(0, 51, 170);
+            font-size: 13.0807px;
+        }
+
+        .col-odds {
+            width: 67.9844px;
+            font-feature-settings: "tnum" 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        table.shutuba-table thead th.col-odds {
+            text-align: center;
+            padding: 5px 1px;
+        }
+
+        table.shutuba-table tbody td.col-odds {
+            text-align: center;
+        }
+
+        .odds-top {
+            display: block;
+            font-weight: 700;
+            font-size: 12.0006px;
+            line-height: 12.0006px;
+            color: #555;
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        .odds-top.is-hot {
+            color: #c62828;
+        }
+
+        .odds-bottom {
+            display: inline-block;
+            font-weight: 600;
+            font-size: 11.0406px;
+            line-height: 11.0406px;
+            color: #7a7a7a;
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        .is-empty {
+            display: none;
         }
 
         .combo-grid {
@@ -322,71 +517,101 @@
             color: #ffffff;
         }
 
-        .top-bar-right {
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-            margin-bottom: 12px;
+        #result {
+            margin-top: 16px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        #combos {
+            margin-top: 10px;
+            font-size: 20px;
+            white-space: normal;
+            word-break: keep-all;
+            overflow-x: auto;
+            display: block;
+            padding-bottom: calc(280px + env(safe-area-inset-bottom));
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        #combos:empty {
+            padding-bottom: 0;
+        }
+
+        #combos::-webkit-scrollbar {
+            display: none;
+            height: 0;
         }
 
         .button-row {
             display: flex;
             justify-content: flex-end;
             gap: 8px;
-            margin-top: 18px;
+            margin-top: 14px;
             width: 100%;
-        }
-
-        .table-wrapper {
-            width: 100%;
-            overflow-x: auto;
-        }
-
-        .custom-select:not(.has-name) {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .custom-select:not(.has-name) .horse-label {
-            flex: 0 0 auto;
-            padding: 0 4px;
-            justify-content: center;
-        }
-
-        .custom-select:not(.has-name) .meta-labels {
-            display: none;
-        }
-
-        .custom-select:not(.has-name) .jockey-label {
-            display: none;
-        }
-
-        .custom-select:not(.has-name) .horse-name {
-            display: none;
-        }
-
-        #win5TabSelect {
-            padding: 6px 12px;
-            font-size: 22px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            background-color: #fff;
-            color: #333;
-            box-sizing: border-box;
         }
 
         #minFav {
-            font-size: 20px;
-            padding: 6px 12px;
-            border: 1px solid #ccc;
+            font-size: 16px;
+            padding: 7px 10px;
+            border: 1px solid #cfcfcf;
             border-radius: 6px;
             background-color: #fff;
-            color: #333;
+            color: #222;
             box-sizing: border-box;
         }
 
-        .race-focus {
+        .menu-container {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .menu-button {
+            background: #0078d4;
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+            display: inline-block;
+        }
+
+        .menu-icon {
+            font-size: 28px;
+            line-height: 1;
+            display: inline-block;
+        }
+
+        .menu-list {
             display: none;
+            position: absolute;
+            top: 40px;
+            left: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            min-width: 140px;
+            z-index: 999;
+            overflow: hidden;
+        }
+
+        .menu-list a {
+            display: block;
+            padding: 10px 14px;
+            text-decoration: none;
+            color: #333;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .menu-list a:hover {
+            background: #f0f7ff;
+        }
+
+        .menu-list a:last-child {
+            border-bottom: none;
         }
 
         .modal-backdrop {
@@ -446,100 +671,63 @@
         }
 
         .modal-actions .calc-btn {
-            font-size: 18px;
+            font-size: 16px;
             padding: 8px 12px;
         }
 
-       @media (hover: none) and (pointer: coarse) {
+        @media (hover: none) and (pointer: coarse) {
             .modal-textarea {
                 font-size: 16px;
             }
         }
 
         @media (max-width: 640px) {
-            .top-bar-right {
-                flex-wrap: wrap;
-                justify-content: flex-start;
-                gap: 8px;
-                margin-bottom: 10px;
+            body {
+                margin: 20px;
             }
 
-            .top-bar-right>* {
+            .race-focus {
+                display: flex;
+            }
+
+            .top-bar-right {
+                justify-content: flex-start;
+            }
+
+            #win5TabSelect,
+            button.calc-btn {
                 flex: 1 1 auto;
                 min-width: 0;
             }
 
-            #win5TabSelect {
-                width: 100%;
-                font-size: 18px;
-                padding: 10px 10px;
-            }
-
             button.calc-btn {
                 width: 100%;
-                font-size: 18px;
-                padding: 10px 10px;
-                border-radius: 10px;
+            }
+
+            body[data-focus-race="1"] .race-card:not([data-race="1"]) {
+                display: none;
+            }
+
+            body[data-focus-race="2"] .race-card:not([data-race="2"]) {
+                display: none;
+            }
+
+            body[data-focus-race="3"] .race-card:not([data-race="3"]) {
+                display: none;
+            }
+
+            body[data-focus-race="4"] .race-card:not([data-race="4"]) {
+                display: none;
+            }
+
+            body[data-focus-race="5"] .race-card:not([data-race="5"]) {
+                display: none;
             }
         }
-
     </style>
 </head>
 
 <body>
-
-    <style>
-        .menu-container {
-            position: relative;
-            margin-bottom: 20px;
-        }
-
-        .menu-button {
-            background: #0078d4;
-            color: #fff;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            user-select: none;
-            display: inline-block;
-        }
-
-        .menu-icon {
-            font-size: 28px;
-            line-height: 1;
-            display: inline-block;
-        }
-
-        .menu-list {
-            display: none;
-            position: absolute;
-            top: 45px;
-            left: 0;
-            background: white;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            min-width: 140px;
-            z-index: 999;
-        }
-
-        .menu-list a {
-            display: block;
-            padding: 10px 14px;
-            text-decoration: none;
-            color: #333;
-            border-bottom: 1px solid #eee;
-        }
-
-        .menu-list a:hover {
-            background: #f0f7ff;
-        }
-
-        .menu-list a:last-child {
-            border-bottom: none;
-        }
-    </style>
-
     <div class="menu-container">
         <div class="menu-button" onclick="toggleMenu()">
             <span class="menu-icon">☰</span>
@@ -550,22 +738,6 @@
         </div>
     </div>
 
-    <script>
-        function toggleMenu() {
-            const menu = document.getElementById("globalMenu");
-            menu.style.display = (menu.style.display === "block") ? "none" : "block";
-        }
-
-        document.addEventListener("click", function (e) {
-            const menu = document.getElementById("globalMenu");
-            const btn = document.querySelector(".menu-button");
-
-            if (!menu.contains(e.target) && !btn.contains(e.target)) {
-                menu.style.display = "none";
-            }
-        });
-    </script>
-
     <div class="top-bar-right">
         <select id="win5TabSelect"></select>
         <button class="calc-btn" onclick="loadWin5Data()">データ取得</button>
@@ -573,42 +745,16 @@
         <button class="calc-btn" onclick="openShare()">共有</button>
     </div>
 
-    <br>
-
     <div class="toggle-container">
         背景選択
         <div id="modeToggle" class="switch"></div>
     </div>
 
-    <div id="raceFocusBar" class="race-focus" aria-label="表示レース切替"></div>
+    <div id="raceTables"></div>
 
-    <div class="table-wrapper">
-        <table id="raceTable">
-            <thead>
-                <tr>
-                    <th>WIN1</th>
-                    <th>WIN2</th>
-                    <th>WIN3</th>
-                    <th>WIN4</th>
-                    <th>WIN5</th>
-                </tr>
-            </thead>
-            <tbody id="raceBody"></tbody>
-            <tfoot>
-                <tr>
-                    <td><button class="clear-btn" onclick="clearColumn(1)">クリア</button></td>
-                    <td><button class="clear-btn" onclick="clearColumn(2)">クリア</button></td>
-                    <td><button class="clear-btn" onclick="clearColumn(3)">クリア</button></td>
-                    <td><button class="clear-btn" onclick="clearColumn(4)">クリア</button></td>
-                    <td><button class="clear-btn" onclick="clearColumn(5)">クリア</button></td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-
-    <div style="margin-top:18px; font-size: 20px;">
+    <div style="margin-top:14px; font-size: 16px;">
         本命
-        <select id="minFav" style="font-size: 20px;">
+        <select id="minFav">
             <option value="1" selected>1</option>
             <option value="2">2</option>
             <option value="3">3</option>
@@ -642,231 +788,470 @@
     </div>
 
     <script>
+        function toggleMenu() {
+            const menu = document.getElementById("globalMenu");
+            menu.style.display = (menu.style.display === "block") ? "none" : "block";
+        }
+
+        document.addEventListener("click", function (e) {
+            const menu = document.getElementById("globalMenu");
+            const btn = document.querySelector(".menu-button");
+            if (!menu || !btn) return;
+            if (!menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.style.display = "none";
+            }
+        });
+
         const TOTAL_RACES = 5;
         const HORSE_MAX = 18;
         const MARKS = ["", "✓", "◎"];
         const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱'];
+        const STORAGE_KEY = 'win5_state_v9';
+        const STORAGE_KEY_OLD = 'win5_state_v8';
+        const WIN5_API = "https://win5-proxy.cooopew.workers.dev/";
+
         let backgroundMode = false;
         const modeBtn = document.getElementById("modeToggle");
 
         function updateSwitch() {
             backgroundMode ? modeBtn.classList.add("on") : modeBtn.classList.remove("on");
         }
+
         modeBtn.addEventListener("click", () => {
             backgroundMode = !backgroundMode;
             updateSwitch();
         });
+
         updateSwitch();
 
         function toCircleNumber(num) {
             return CIRCLES[num - 1] || String(num);
         }
 
-        function updateOddsLabel(el, ninki, odds) {
+        function setOddsHot(el, oddsStr) {
             if (!el) return;
-
-            const oRaw = (odds ?? "").toString().trim();
-            const nRaw = (ninki ?? "").toString().trim();
-
-            const formatOddsFixed = (s) => {
-                const t = (s ?? "").toString().trim();
-                if (!t) return "";
-                if (/^\d{1,3}(?:\.\d)?$/.test(t)) return t.padStart(5, " ");
-                return t;
-            };
-
-            const o = formatOddsFixed(oRaw);
-
-            let nCircle = "";
-            if (nRaw && nRaw !== "**") {
-                const nn = Number(nRaw);
-                if (Number.isFinite(nn) && nn >= 1 && nn <= 18) nCircle = toCircleNumber(nn);
-                else nCircle = nRaw;
-            }
-
-            if (o && nCircle) el.textContent = `${o} ${nCircle}`;
-            else if (o) el.textContent = o;
-            else if (nCircle) el.textContent = nCircle;
-            else el.textContent = "";
+            const s = String(oddsStr ?? "").trim();
+            const v = Number(s);
+            if (s && Number.isFinite(v) && v > 0 && v < 10) el.classList.add("is-hot");
+            else el.classList.remove("is-hot");
         }
 
-        function createCustomSelect(raceNum, horseNum) {
-            const wrapper = document.createElement("div");
-            wrapper.className = "custom-select";
-            wrapper.dataset.race = raceNum;
-            wrapper.dataset.horse = horseNum;
+        function wakuStyle(n) {
+            const w = Number(n);
+            if (!Number.isFinite(w) || w < 1 || w > 8) return null;
+            if (w === 1) return { bg: "#ffffff", fg: "#111", br: "#bdbdbd" };
+            if (w === 2) return { bg: "#1a1a1a", fg: "#ffffff", br: "#1a1a1a" };
+            if (w === 3) return { bg: "#e53935", fg: "#ffffff", br: "#e53935" };
+            if (w === 4) return { bg: "#1e88e5", fg: "#ffffff", br: "#1e88e5" };
+            if (w === 5) return { bg: "#f6c400", fg: "#ffffff", br: "#f6c400" };
+            if (w === 6) return { bg: "#43a047", fg: "#ffffff", br: "#43a047" };
+            if (w === 7) return { bg: "#fb8c00", fg: "#ffffff", br: "#fb8c00" };
+            return { bg: "#f48fb1", fg: "#ffffff", br: "#f48fb1" };
+        }
 
+        function setNoBox(el, waku, umaban) {
+            if (!el) return;
+            const st = wakuStyle(waku);
+            const n = String(umaban || "").trim();
+            el.textContent = n;
+            el.dataset.waku = String(waku || "").trim();
+            el.dataset.umaban = n;
+            if (!st) {
+                el.style.background = "";
+                el.style.color = "";
+                el.style.borderColor = "";
+                return;
+            }
+            el.style.background = st.bg;
+            el.style.color = st.fg;
+            el.style.borderColor = st.br;
+        }
+
+        const sortStateByRace = {};
+
+        function updateSortUI(card, key, dir) {
+            if (!card) return;
+            card.querySelectorAll("th.sortable").forEach(th => {
+                th.classList.remove("sort-asc");
+                th.classList.remove("sort-desc");
+            });
+            const th = card.querySelector(`th.sortable[data-sort-key="${key}"]`);
+            if (!th) return;
+            th.classList.add(dir === 1 ? "sort-asc" : "sort-desc");
+        }
+
+        function parseNum(v) {
+            const n = Number(String(v ?? "").replace(/[^\d.]/g, ""));
+            return Number.isFinite(n) ? n : null;
+        }
+
+        function sortRaceTable(raceNum, key, dir) {
+            const card = document.querySelector(`.race-card[data-race="${raceNum}"]`);
+            const tbody = card?.querySelector("tbody");
+            if (!tbody) return;
+
+            const rows = Array.from(tbody.querySelectorAll("tr.custom-select"));
+            const getVal = (row) => {
+                if (row.classList.contains("is-empty")) return null;
+                if (key === "no") return parseNum(row.dataset.umaban) ?? parseNum(row.querySelector(".no-box")?.textContent) ?? null;
+                if (key === "name") return (row.dataset.name || "").trim();
+                if (key === "odds") return parseNum(row.dataset.odds);
+                return null;
+            };
+
+            rows.sort((a, b) => {
+                const ae = a.classList.contains("is-empty");
+                const be = b.classList.contains("is-empty");
+                if (ae && !be) return 1;
+                if (!ae && be) return -1;
+
+                const av = getVal(a);
+                const bv = getVal(b);
+
+                if (av === null && bv === null) return 0;
+                if (av === null) return 1;
+                if (bv === null) return -1;
+
+                if (typeof av === "number" && typeof bv === "number") {
+                    if (av === bv) return 0;
+                    return (av < bv ? -1 : 1) * dir;
+                }
+
+                const cmp = String(av).localeCompare(String(bv), "ja");
+                if (cmp === 0) return 0;
+                return cmp * dir;
+            });
+
+            for (const r of rows) tbody.appendChild(r);
+            updateSortUI(card, key, dir);
+        }
+
+        function bindSortHandlers(card, raceNum) {
+            const ths = Array.from(card.querySelectorAll("th.sortable"));
+            for (const th of ths) {
+                const key = th.dataset.sortKey;
+                const up = th.querySelector(".tri-up");
+                const down = th.querySelector(".tri-down");
+
+                const setSort = (d) => {
+                    sortStateByRace[raceNum] = { key, dir: d };
+                    sortRaceTable(raceNum, key, d);
+                };
+
+                if (up) up.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); setSort(1); });
+                if (down) down.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); setSort(-1); });
+
+                th.addEventListener("click", (e) => {
+                    if (e.target && e.target.closest(".th-sort")) return;
+                    const cur = sortStateByRace[raceNum];
+                    const d = (cur && cur.key === key) ? (cur.dir * -1) : 1;
+                    setSort(d);
+                });
+            }
+        }
+
+        function applyBg(rowEl, bg) {
+            const td = rowEl?.querySelector(".col-info");
+            if (!td) return;
+            if (bg && bg !== "none") td.style.backgroundColor = bg;
+            else td.style.backgroundColor = "";
+        }
+
+        function applyMarkBackground(rowEl, hasMark) {
+            if (!rowEl) return;
+            rowEl.classList.toggle("has-mark", !!hasMark);
+            const box = rowEl.querySelector(".selected");
+            if (!box) return;
+            if (hasMark) box.classList.add("is-marked");
+            else box.classList.remove("is-marked");
+        }
+
+        function openPalette(rowEl, e) {
+            const box = rowEl.querySelector(".selected");
+            if (!box) return;
+
+            const palette = document.createElement("div");
+            palette.style.position = "absolute";
+            palette.style.zIndex = 9999;
+            palette.style.display = "flex";
+            palette.style.gap = "10px";
+            palette.style.background = "#fff";
+            palette.style.border = "1px solid #999";
+            palette.style.padding = "10px";
+            palette.style.borderRadius = "12px";
+            palette.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
+
+            const colors = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4"];
+            colors.forEach(c => {
+                const btn = document.createElement("div");
+                btn.style.width = "36px";
+                btn.style.height = "36px";
+                btn.style.backgroundColor = c;
+                btn.style.border = "1px solid #777";
+                btn.style.borderRadius = "8px";
+                btn.style.cursor = "pointer";
+                btn.addEventListener("click", () => {
+                    box.dataset.bg = c;
+                    applyBg(rowEl, c);
+                    palette.remove();
+                    saveState();
+                });
+                palette.appendChild(btn);
+            });
+
+            const noneBtn = document.createElement("div");
+            noneBtn.style.width = "36px";
+            noneBtn.style.height = "36px";
+            noneBtn.style.background = "#fff";
+            noneBtn.style.border = "1px solid #777";
+            noneBtn.style.borderRadius = "8px";
+            noneBtn.style.cursor = "pointer";
+            noneBtn.addEventListener("click", () => {
+                box.dataset.bg = "none";
+                applyBg(rowEl, "none");
+                palette.remove();
+                saveState();
+            });
+            palette.appendChild(noneBtn);
+
+            document.body.appendChild(palette);
+
+            const rect = palette.getBoundingClientRect();
+            const pw = rect.width;
+            const ph = rect.height;
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+
+            let left = e.pageX;
+            let top = e.pageY;
+
+            if (left + pw > vw - 10) left = vw - pw - 10;
+            if (top + ph > vh - 10) top = vh - ph - 10;
+
+            palette.style.left = left + "px";
+            palette.style.top = top + "px";
+
+            const closePalette = (ev) => {
+                if (!palette.contains(ev.target)) {
+                    palette.remove();
+                    document.removeEventListener("click", closePalette, true);
+                }
+            };
+
+            setTimeout(() => document.addEventListener("click", closePalette, true), 0);
+        }
+
+
+
+        function createRow(raceNum, horseNum) {
+            const tr = document.createElement("tr");
+            tr.className = "custom-select";
+            tr.dataset.race = String(raceNum);
+            tr.dataset.horse = String(horseNum);
+            tr.dataset.umaban = "";
+            tr.dataset.name = "";
+            tr.dataset.jockey = "";
+            tr.dataset.odds = "";
+            tr.dataset.ninki = "";
+
+            const tdNo = document.createElement("td");
+            tdNo.className = "col-no";
+            const noBox = document.createElement("div");
+            noBox.className = "no-box";
+            noBox.textContent = String(horseNum);
+            tdNo.appendChild(noBox);
+
+            const tdM = document.createElement("td");
+            tdM.className = "col-mark";
             const selected = document.createElement("div");
             selected.className = "selected";
             selected.textContent = "";
             selected.dataset.bg = "none";
+            tdM.appendChild(selected);
 
-            const label = document.createElement("span");
-            label.className = "horse-label";
+            const tdInfo = document.createElement("td");
+            tdInfo.className = "col-info";
 
-            const numSpan = document.createElement("span");
-            numSpan.className = "horse-num";
-            numSpan.textContent = toCircleNumber(horseNum);
+            const top = document.createElement("div");
+            top.className = "info-top";
+            const hName = document.createElement("span");
+            hName.className = "horse-name";
+            hName.textContent = "";
+            top.appendChild(hName);
 
-            const nameSpan = document.createElement("span");
-            nameSpan.className = "horse-name";
-            nameSpan.textContent = "";
+            const bottom = document.createElement("div");
+            bottom.className = "info-bottom";
 
-            label.appendChild(numSpan);
-            label.appendChild(nameSpan);
+            const jWrap = document.createElement("span");
+            jWrap.className = "jockey-wrap";
+            const jName = document.createElement("span");
+            jName.className = "jockey-name";
+            jName.textContent = "";
+            jWrap.appendChild(jName);
+
+            bottom.appendChild(jWrap);
+
+            tdInfo.appendChild(top);
+            tdInfo.appendChild(bottom);
+
+            const tdOdds = document.createElement("td");
+            tdOdds.className = "col-odds";
+            const oTop = document.createElement("span");
+            oTop.className = "odds-top";
+            oTop.textContent = "";
+            const oBottom = document.createElement("span");
+            oBottom.className = "odds-bottom";
+            oBottom.textContent = "";
+            tdOdds.appendChild(oTop);
+            tdOdds.appendChild(oBottom);
 
             selected.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 if (backgroundMode) {
-                    const palette = document.createElement("div");
-                    palette.style.position = "absolute";
-                    palette.style.zIndex = 9999;
-                    palette.style.display = "flex";
-                    palette.style.gap = "10px";
-                    palette.style.background = "#fff";
-                    palette.style.border = "1px solid #999";
-                    palette.style.padding = "10px";
-                    palette.style.borderRadius = "10px";
-                    palette.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
-
-                    const colors = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4"];
-                    colors.forEach(c => {
-                        const btn = document.createElement("div");
-                        btn.style.width = "36px";
-                        btn.style.height = "36px";
-                        btn.style.backgroundColor = c;
-                        btn.style.border = "1px solid #777";
-                        btn.style.borderRadius = "6px";
-                        btn.style.cursor = "pointer";
-                        btn.addEventListener("click", () => {
-                            selected.dataset.bg = c;
-                            numSpan.style.backgroundColor = c;
-                            palette.remove();
-                            saveState();
-                        });
-                        palette.appendChild(btn);
-                    });
-
-                    const noneBtn = document.createElement("div");
-                    noneBtn.style.width = "36px";
-                    noneBtn.style.height = "36px";
-                    noneBtn.style.background = "#fff";
-                    noneBtn.style.border = "1px solid #777";
-                    noneBtn.style.borderRadius = "6px";
-                    noneBtn.style.cursor = "pointer";
-                    noneBtn.addEventListener("click", () => {
-                        selected.dataset.bg = "none";
-                        numSpan.style.backgroundColor = "";
-                        palette.remove();
-                        saveState();
-                    });
-                    palette.appendChild(noneBtn);
-
-                    document.body.appendChild(palette);
-                    const rect = palette.getBoundingClientRect();
-                    const pw = rect.width;
-                    const ph = rect.height;
-                    const vw = window.innerWidth;
-                    const vh = window.innerHeight;
-                    let left = e.pageX;
-                    let top = e.pageY;
-                    if (left + pw > vw - 10) left = vw - pw - 10;
-                    if (top + ph > vh - 10) top = vh - ph - 10;
-                    palette.style.left = left + "px";
-                    palette.style.top = top + "px";
-
-                    const closePalette = (ev) => {
-                        if (!palette.contains(ev.target)) {
-                            palette.remove();
-                            document.removeEventListener("click", closePalette);
-                        }
-                    };
-                    setTimeout(() => document.addEventListener("click", closePalette), 0);
-                } else {
-                    const cur = MARKS.indexOf(selected.textContent);
-                    selected.textContent = MARKS[(cur + 1) % MARKS.length];
-                    const mark = selected.textContent;
-                    selected.style.opacity = "1";
-                    applyMarkBackground(wrapper, mark !== "");
-                    saveState();
+                    openPalette(tr, e);
+                    return;
                 }
+                const cur = MARKS.indexOf(selected.textContent);
+                selected.textContent = MARKS[(cur + 1) % MARKS.length];
+                applyMarkBackground(tr, selected.textContent !== "");
+                saveState();
             });
 
-            const oddsLabel = document.createElement("span");
-            oddsLabel.className = "odds-label";
-            oddsLabel.textContent = ""; const jockeyLabel = document.createElement("span");
-            jockeyLabel.className = "jockey-label";
-            jockeyLabel.textContent = "";
+            tr.appendChild(tdNo);
+            tr.appendChild(tdM);
+            tr.appendChild(tdInfo);
+            tr.appendChild(tdOdds);
 
-            const meta = document.createElement("div");
-            meta.className = "meta-labels";
-            meta.appendChild(oddsLabel);
-            meta.appendChild(jockeyLabel);
-
-            wrapper.appendChild(selected);
-            wrapper.appendChild(label);
-            wrapper.appendChild(meta);
-            return wrapper;
+            return tr;
         }
 
-        function createTable() {
-            const tbody = document.getElementById('raceBody');
-            for (let i = 1; i <= HORSE_MAX; i++) {
-                const tr = document.createElement('tr');
-                for (let r = 1; r <= TOTAL_RACES; r++) {
-                    const td = document.createElement('td');
-                    td.appendChild(createCustomSelect(r, i));
-                    tr.appendChild(td);
+        function createRaceTables() {
+            const root = document.getElementById("raceTables");
+            root.innerHTML = "";
+
+            const row = document.createElement("div");
+            row.className = "race-row";
+            root.appendChild(row);
+
+            for (let r = 1; r <= TOTAL_RACES; r++) {
+                const card = document.createElement("div");
+                card.className = "race-card";
+                card.dataset.race = String(r);
+
+                const head = document.createElement("div");
+                head.className = "race-head";
+
+                const headLeft = document.createElement("div");
+                headLeft.className = "race-head-left";
+
+                const title = document.createElement("div");
+                title.className = "race-title";
+                title.id = `raceTitle${r}`;
+                title.textContent = `WIN${r}`;
+
+                const sub = document.createElement("div");
+                sub.className = "race-sub";
+                sub.id = `raceSub${r}`;
+                sub.textContent = "";
+
+                headLeft.appendChild(title);
+                headLeft.appendChild(sub);
+
+                const clearBtn = document.createElement("button");
+                clearBtn.type = "button";
+                clearBtn.className = "race-clear";
+                clearBtn.textContent = "クリア";
+                clearBtn.addEventListener("click", () => clearColumn(r));
+
+                head.appendChild(headLeft);
+                head.appendChild(clearBtn);
+
+                const table = document.createElement("table");
+                table.className = "shutuba-table";
+
+                const thead = document.createElement("thead");
+                thead.innerHTML = `
+          <tr>
+            <th class="col-no sortable" data-sort-key="no">
+              <div class="th-col">
+                <div class="th-title">馬番</div>
+                <div class="th-sort"><span class="tri-up"></span><span class="tri-down"></span></div>
+              </div>
+            </th>
+            <th class="col-mark">
+              <div class="th-col">
+                <div class="th-title">予想印</div>
+              </div>
+            </th>
+            <th class="col-info sortable" data-sort-key="name">
+              <div class="th-col">
+                <div class="th-title">馬名</div>
+                <div class="th-sub">騎手</div>
+                <div class="th-sort"><span class="tri-up"></span><span class="tri-down"></span></div>
+              </div>
+            </th>
+            <th class="col-odds sortable" data-sort-key="odds">
+              <div class="th-col">
+                <div class="th-title">オッズ</div>
+                <div class="th-sort"><span class="tri-up"></span><span class="tri-down"></span></div>
+              </div>
+            </th>
+          </tr>
+        `;
+                const tbody = document.createElement("tbody");
+                for (let i = 1; i <= HORSE_MAX; i++) {
+                    tbody.appendChild(createRow(r, i));
                 }
-                tbody.appendChild(tr);
+
+                table.appendChild(thead);
+                table.appendChild(tbody);
+
+                card.appendChild(head);
+                card.appendChild(table);
+
+                bindSortHandlers(card, r);
+                row.appendChild(card);
             }
         }
-        const STORAGE_KEY = 'win5_state_v8';
-        const STORAGE_KEY_OLD = 'win5_state_v7';
-
 
         let lastState = '';
         function saveState() {
-            const state = { races: {}, minFav: document.getElementById('minFav').value, raceInfo: window.raceInfo || ["", "", "", "", ""], raceTimes: window.raceTimes || ["", "", "", "", ""] };
+            const state = {
+                races: {},
+                minFav: document.getElementById('minFav').value,
+                raceInfo: window.raceInfo || ["", "", "", "", ""],
+                raceTimes: window.raceTimes || ["", "", "", "", ""]
+            };
 
             for (let r = 1; r <= TOTAL_RACES; r++) {
                 state.races[`r${r}`] = {};
                 document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
-                    const d = sel.querySelector('.selected');
-                    const label = sel.querySelector('.horse-label');
-                    const jLabel = sel.querySelector('.jockey-label');
-                    let name = null;
-                    let jockey = null;
+                    const box = sel.querySelector('.selected');
+                    const nameEl = sel.querySelector('.horse-name');
+                    const jEl = sel.querySelector('.jockey-name');
+                    const oEl = sel.querySelector('.odds-top');
+                    const pEl = sel.querySelector('.odds-bottom');
+                    const noEl = sel.querySelector('.no-box');
 
-                    if (label) {
-                        const numSpan = label.querySelector(".horse-num");
-                        const nameSpan = label.querySelector(".horse-name");
-                        const numTxt = (numSpan?.textContent || "").trim();
-                        const nmTxt = (nameSpan?.textContent || "").trim();
 
-                        if (!numTxt && !nmTxt) {
-                            name = null;
-                        } else {
-                            name = nmTxt;
-                        }
-                    }
-
-                    if (jLabel) {
-                        const jt = (jLabel.textContent || "").trim();
-                        if (jt) {
-                            jockey = jt;
-                        }
-                    }
-
-                    const odds = (sel.dataset.odds || "").trim() || null;
-                    const ninki = (sel.dataset.ninki || "").trim() || null;
+                    const name = (nameEl?.textContent || "").trim();
+                    const isEmpty = sel.classList.contains("is-empty");
+                    const jockey = (jEl?.textContent || "").trim();
+                    const odds = (oEl?.textContent || "").trim();
+                    const ninki = (pEl?.textContent || "").trim().replace("人気", "");
+                    const waku = (noEl?.dataset.waku || "").trim();
+                    const umaban = (noEl?.textContent || "").trim();
 
                     state.races[`r${r}`][sel.dataset.horse] = {
-                        mark: d.textContent,
-                        bg: d.dataset.bg || "none",
-                        name: name,
-                        jockey: jockey,
-                        odds: odds,
-                        ninki: ninki
+                        mark: (box?.textContent || "").trim(),
+                        bg: (box?.dataset.bg || "none").trim(),
+                        name: isEmpty ? null : name,
+                        jockey: jockey || null,
+                        odds: odds || null,
+                        ninki: ninki || null,
+                        waku: waku || null,
+                        umaban: umaban || null
                     };
                 });
             }
@@ -881,88 +1266,88 @@
         function restoreState() {
             const data = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY_OLD);
             if (!data) return;
+
             try {
                 const state = JSON.parse(data);
-                if (state.raceInfo) {
-                    window.raceInfo = state.raceInfo;
-                }
-                if (state.raceTimes) {
-                    window.raceTimes = state.raceTimes;
-                }
+
+                if (state.raceInfo) window.raceInfo = state.raceInfo;
+                if (state.raceTimes) window.raceTimes = state.raceTimes;
+
                 updateRaceHeaders(window.raceInfo || ["", "", "", "", ""]);
 
-                if (state.minFav) {
-                    document.getElementById('minFav').value = state.minFav;
-                }
+                if (state.minFav) document.getElementById('minFav').value = state.minFav;
 
                 for (let r = 1; r <= TOTAL_RACES; r++) {
-                    const race = state.races[`r${r}`];
+                    const race = state.races?.[`r${r}`];
                     if (!race) continue;
 
                     document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
-                        const val = race[sel.dataset.horse];
+                        const val = race?.[sel.dataset.horse];
                         if (!val) return;
 
-                        const d = sel.querySelector('.selected');
-                        const label = sel.querySelector('.horse-label');
-                        const jLabel = sel.querySelector('.jockey-label');
+                        const box = sel.querySelector('.selected');
+                        const nameEl = sel.querySelector('.horse-name');
+                        const jEl = sel.querySelector('.jockey-name');
+                        const oEl = sel.querySelector('.odds-top');
+                        const pEl = sel.querySelector('.odds-bottom');
+                        const noEl = sel.querySelector('.no-box');
 
-                        const oLabel = sel.querySelector('.odds-label');
-                        d.textContent = val.mark || "";
-                        d.style.opacity = "1";
-                        applyMarkBackground(sel, !!val.mark);
 
-                        d.dataset.bg = val.bg || "none";
-                        const numSpan = sel.querySelector(".horse-num");
-                        if (numSpan) {
-                            numSpan.style.backgroundColor = (val.bg && val.bg !== "none") ? val.bg : "";
+                        const m = (val.mark || "").toString();
+                        const b = (val.bg || "none").toString();
+
+                        if (box) {
+                            box.textContent = m;
+                            box.dataset.bg = b;
                         }
 
-                        if (!label) return;
+                        applyMarkBackground(sel, !!m);
+                        applyBg(sel, b);
 
-                        const n = val.name;
-                        const j = (val.jockey || "").trim();
-
-                        const odds = (val.odds ?? "");
-                        const ninki = (val.ninki ?? "");
-
-                        sel.dataset.odds = (odds === null || odds === undefined) ? "" : String(odds);
-                        sel.dataset.ninki = (ninki === null || ninki === undefined) ? "" : String(ninki);
-
-                        const p = String(sel.dataset.ninki || "").trim();
-                        const o = String(sel.dataset.odds || "").trim();
-                        updateOddsLabel(oLabel, p, o);
-                        const nNum = label.querySelector(".horse-num");
-                        const nName = label.querySelector(".horse-name");
-                        const circle = toCircleNumber(Number(sel.dataset.horse));
-
-                        if (n === null) {
-                            if (nNum) nNum.textContent = "";
-                            if (nName) nName.textContent = "";
-                            if (jLabel) jLabel.textContent = "";
-                            sel.classList.remove('has-name');
-                            sel.style.visibility = 'hidden';
-
+                        const name = val.name;
+                        if (name === null) {
+                            sel.classList.add("is-empty");
+                            if (nameEl) nameEl.textContent = "";
+                            if (jEl) jEl.textContent = "";
+                            if (oEl) {
+                                oEl.textContent = "";
+                                setOddsHot(oEl, "");
+                            }
+                            if (pEl) pEl.textContent = "";
+                            if (noEl) setNoBox(noEl, "", "");
+                            sel.dataset.umaban = "";
+                            sel.dataset.name = "";
+                            sel.dataset.jockey = "";
                             sel.dataset.odds = "";
                             sel.dataset.ninki = "";
-                            updateOddsLabel(oLabel, "", "");
-                            d.textContent = "";
-                            d.dataset.bg = "none";
-                            if (numSpan) numSpan.style.backgroundColor = "";
+                            sel.dataset.umaban = "";
+                            sel.dataset.name = "";
+                            sel.dataset.jockey = "";
+                            sel.dataset.odds = "";
+                            sel.dataset.ninki = "";
+                            if (box) {
+                                box.textContent = "";
+                                box.dataset.bg = "none";
+                            }
                             applyMarkBackground(sel, false);
-                        } else if (typeof n === "string" && n.length > 0) {
-                            if (nNum) nNum.textContent = circle;
-                            if (nName) nName.textContent = " " + n;
-                            if (jLabel) jLabel.textContent = j;
-                            sel.classList.add('has-name');
-                            sel.style.visibility = 'visible';
-                        } else {
-                            if (nNum) nNum.textContent = circle;
-                            if (nName) nName.textContent = "";
-                            if (jLabel) jLabel.textContent = j;
-                            sel.classList.remove('has-name');
-                            sel.style.visibility = 'visible';
+                            applyBg(sel, "none");
+                            return;
                         }
+
+                        sel.classList.remove("is-empty");
+                        if (nameEl) nameEl.textContent = String(name);
+                        if (jEl) jEl.textContent = (val.jockey || "") ? String(val.jockey) : "";
+                        if (oEl) {
+                            oEl.textContent = (val.odds || "") ? String(val.odds) : "";
+                            setOddsHot(oEl, oEl.textContent);
+                        }
+                        if (pEl) pEl.textContent = (val.ninki || "") ? (String(val.ninki) + "人気") : "";
+                        if (noEl) setNoBox(noEl, (val.waku || "") ? String(val.waku) : "", (val.umaban || "") ? String(val.umaban) : String(sel.dataset.horse));
+                        sel.dataset.umaban = (val.umaban || "") ? String(val.umaban).trim() : "";
+                        sel.dataset.name = String(name || "").trim();
+                        sel.dataset.jockey = (val.jockey || "") ? String(val.jockey).trim() : "";
+                        sel.dataset.odds = (val.odds || "") ? String(val.odds).trim() : "";
+                        sel.dataset.ninki = (val.ninki || "") ? String(val.ninki).trim() : "";
                     });
                 }
             } catch (e) { }
@@ -970,42 +1355,49 @@
 
         function clearColumn(colNum) {
             document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel => {
-                const selected = sel.querySelector(".selected");
-                const numSpan = sel.querySelector(".horse-num");
-
-                selected.textContent = "";
-                selected.dataset.bg = "none";
-                if (numSpan) numSpan.style.backgroundColor = "";
-
+                const box = sel.querySelector(".selected");
+                if (box) {
+                    box.textContent = "";
+                    box.dataset.bg = "none";
+                }
                 applyMarkBackground(sel, false);
+                applyBg(sel, "none");
             });
             saveState();
         }
 
         function clearAllHorseNames() {
             document.querySelectorAll('.custom-select').forEach(sel => {
-                const label = sel.querySelector('.horse-label');
-                const jockeyLabel = sel.querySelector('.jockey-label');
-                const oLabel = sel.querySelector('.odds-label');
-                if (!label) return;
+                sel.classList.remove("is-empty");
 
-                const horseNum = Number(sel.dataset.horse);
-                const circle = toCircleNumber(horseNum);
+                const nameEl = sel.querySelector('.horse-name');
+                const jEl = sel.querySelector('.jockey-name');
+                const oEl = sel.querySelector('.odds-top');
+                const pEl = sel.querySelector('.odds-bottom');
+                const noEl = sel.querySelector('.no-box');
 
-                const numSpan = label.querySelector(".horse-num");
-                const nameSpan = label.querySelector(".horse-name");
-                if (numSpan) numSpan.textContent = circle;
-                if (nameSpan) nameSpan.textContent = "";
+                const box = sel.querySelector('.selected');
 
-                if (jockeyLabel) {
-                    jockeyLabel.textContent = "";
+                if (nameEl) nameEl.textContent = "";
+                if (jEl) jEl.textContent = "";
+                if (oEl) {
+                    oEl.textContent = "";
+                    setOddsHot(oEl, "");
                 }
-                updateOddsLabel(oLabel, "", "");
+                if (pEl) pEl.textContent = "";
+                if (noEl) setNoBox(noEl, "", String(sel.dataset.horse));
+                sel.dataset.umaban = "";
+                sel.dataset.name = "";
+                sel.dataset.jockey = "";
                 sel.dataset.odds = "";
                 sel.dataset.ninki = "";
 
-                sel.classList.remove('has-name');
-                sel.style.visibility = 'visible';
+                if (box) {
+                    box.textContent = "";
+                    box.dataset.bg = "none";
+                }
+                applyMarkBackground(sel, false);
+                applyBg(sel, "none");
             });
 
             window.raceInfo = ["", "", "", "", ""];
@@ -1018,8 +1410,10 @@
         function getRaceData(r) {
             const favs = [], himo = [], colorMap = {};
             document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
-                const v = sel.querySelector('.selected').textContent;
-                const bg = sel.querySelector('.selected').dataset.bg;
+                if (sel.classList.contains("is-empty")) return;
+                const box = sel.querySelector('.selected');
+                const v = (box?.textContent || "").trim();
+                const bg = (box?.dataset.bg || "none").trim();
                 const num = Number(sel.dataset.horse);
                 colorMap[num] = bg;
                 if (v === "◎") favs.push(num);
@@ -1050,19 +1444,15 @@
                 chk.addEventListener('change', () => {
                     const row = chk.closest('.combo-row');
                     if (!row) return;
-                    if (chk.checked) {
-                        row.classList.add('checked');
-                    } else {
-                        row.classList.remove('checked');
-                    }
+                    if (chk.checked) row.classList.add('checked');
+                    else row.classList.remove('checked');
                 });
             });
         }
 
         function calc() {
-            const t0 = performance.now();
-
             const races = [], favs = [], colorArray = [];
+
             for (let i = 1; i <= TOTAL_RACES; i++) {
                 const d = getRaceData(i);
                 races.push(d.horse);
@@ -1078,12 +1468,10 @@
                 return a.filter(x => !favSet.has(x)).map(x => 1 << (x - 1));
             });
 
-            const colorIdTable = Array.from(
-                { length: TOTAL_RACES },
-                () => new Int16Array(HORSE_MAX).fill(-1)
-            );
+            const colorIdTable = Array.from({ length: TOTAL_RACES }, () => new Int16Array(HORSE_MAX).fill(-1));
             const colorIdMap = new Map();
             let nextColorId = 0;
+
             for (let i = 0; i < TOTAL_RACES; i++) {
                 const usedHorses = races[i];
                 for (let idx = 0; idx < usedHorses.length; idx++) {
@@ -1109,8 +1497,7 @@
             function countCombosDFS(candidates) {
                 const n = candidates.length;
 
-                const order = Array.from({ length: n }, (_, i) => i)
-                    .sort((a, b) => candidates[a].length - candidates[b].length);
+                const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => candidates[a].length - candidates[b].length);
 
                 const revOrder = new Int8Array(n);
                 for (let i = 0; i < n; i++) revOrder[order[i]] = i;
@@ -1196,14 +1583,12 @@
 
             total = count;
 
-            const t1 = performance.now();
-            const elapsedMs = t1 - t0;
-            console.log(`計算速度: ${elapsedMs.toFixed()} ms`);
-
             document.getElementById('result').innerHTML =
                 `買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 通り`;
+
             const combosEl = document.getElementById('combos');
             const combosHtml = comboList.join('');
+
             if (!combosHtml.trim()) {
                 combosEl.replaceChildren();
             } else {
@@ -1307,7 +1692,21 @@
             );
         }
 
-        const WIN5_API = "https://win5-proxy.cooopew.workers.dev/";
+        function updateRaceHeaders(raceInfo) {
+            const raceTimes = window.raceTimes || [];
+
+            for (let i = 0; i < 5; i++) {
+                const title = document.getElementById(`raceTitle${i + 1}`);
+                const sub = document.getElementById(`raceSub${i + 1}`);
+
+                const time = (raceTimes[i] || "").trim();
+                const info = (raceInfo && raceInfo[i]) ? String(raceInfo[i]).trim() : "";
+
+                const label = info ? info : `WIN${i + 1}`;
+                if (title) title.textContent = label;
+                if (sub) sub.textContent = time ? `${time}発走` : "";
+            }
+        }
 
         function applyWin5Data(json) {
             window.raceInfo = json.raceInfo || [];
@@ -1321,81 +1720,77 @@
                 const jockeys = (races[r] && races[r].jockeys) ? races[r].jockeys : [];
                 const oddsArr = (races[r] && races[r].odds) ? races[r].odds : [];
                 const ninkiArr = (races[r] && races[r].ninki) ? races[r].ninki : [];
+                const wakubans = (races[r] && races[r].wakubans) ? races[r].wakubans : [];
+                const umabans = (races[r] && races[r].umabans) ? races[r].umabans : [];
 
                 for (let i = 1; i <= HORSE_MAX; i++) {
                     const raceNum = r + 1;
                     const horseNum = i;
+
                     const name = horses[i - 1] || "";
                     const jockey = jockeys[i - 1] || "";
+                    const odds = oddsArr[i - 1];
+                    const ninki = ninkiArr[i - 1];
+                    const waku = wakubans[i - 1] || "";
+                    const umaban = umabans[i - 1] || String(i);
 
-                    const sel = document.querySelector(
-                        `.custom-select[data-race="${raceNum}"][data-horse="${horseNum}"]`
-                    );
+                    const sel = document.querySelector(`.custom-select[data-race="${raceNum}"][data-horse="${horseNum}"]`);
                     if (!sel) continue;
 
-                    const label = sel.querySelector(".horse-label");
-                    const selected = sel.querySelector(".selected");
-                    const oddsLabel = sel.querySelector(".odds-label");
-                    const jockeyLabel = sel.querySelector(".jockey-label");
-                    if (!label || !selected || !oddsLabel || !jockeyLabel) continue;
-
-                    const circle = toCircleNumber(horseNum);
-                    const numSpan = label.querySelector(".horse-num");
-                    const nameSpan = label.querySelector(".horse-name");
+                    const nameEl = sel.querySelector(".horse-name");
+                    const jEl = sel.querySelector(".jockey-name");
+                    const oEl = sel.querySelector(".odds-top");
+                    const pEl = sel.querySelector(".odds-bottom");
+                    const noEl = sel.querySelector(".no-box");
+                    const box = sel.querySelector(".selected");
 
                     if (name) {
-                        if (numSpan) numSpan.textContent = circle;
-                        if (nameSpan) nameSpan.textContent = " " + name;
-                        jockeyLabel.textContent = jockey || "";
-                        const odds = oddsArr[i - 1];
-                        const ninki = ninkiArr[i - 1];
-
-                        sel.dataset.odds = (odds === undefined || odds === null) ? "" : String(odds);
-                        sel.dataset.ninki = (ninki === undefined || ninki === null) ? "" : String(ninki);
-
-                        const p = String(sel.dataset.ninki || "").trim();
-                        const o = String(sel.dataset.odds || "").trim();
-                        updateOddsLabel(oddsLabel, p, o);
-                        sel.classList.add("has-name");
-                        sel.style.visibility = "visible";
+                        sel.classList.remove("is-empty");
+                        if (nameEl) nameEl.textContent = String(name);
+                        if (jEl) jEl.textContent = String(jockey || "");
+                        if (oEl) {
+                            const oTxt = (odds === undefined || odds === null) ? "" : String(odds);
+                            oEl.textContent = oTxt;
+                            setOddsHot(oEl, oTxt);
+                        }
+                        if (pEl) {
+                            const pTxt = (ninki === undefined || ninki === null || ninki === "") ? "" : `${String(ninki)}人気`;
+                            pEl.textContent = pTxt;
+                        }
+                        if (noEl) setNoBox(noEl, String(waku || ""), String(umaban || ""));
+                        sel.dataset.umaban = String(umaban || "").trim();
+                        sel.dataset.name = String(name || "").trim();
+                        sel.dataset.jockey = String(jockey || "").trim();
+                        sel.dataset.odds = (odds === undefined || odds === null) ? "" : String(odds).trim();
+                        sel.dataset.ninki = (ninki === undefined || ninki === null) ? "" : String(ninki).trim();
                     } else {
-                        if (numSpan) numSpan.textContent = "";
-                        if (nameSpan) nameSpan.textContent = "";
-                        jockeyLabel.textContent = "";
-                        updateOddsLabel(oddsLabel, "", "");
+                        sel.classList.add("is-empty");
+
+                        if (nameEl) nameEl.textContent = "";
+                        if (jEl) jEl.textContent = "";
+                        if (oEl) {
+                            oEl.textContent = "";
+                            setOddsHot(oEl, "");
+                        }
+                        if (pEl) pEl.textContent = "";
+                        if (noEl) setNoBox(noEl, "", "");
+                        sel.dataset.umaban = "";
+                        sel.dataset.name = "";
+                        sel.dataset.jockey = "";
                         sel.dataset.odds = "";
                         sel.dataset.ninki = "";
-                        sel.classList.remove("has-name");
-                        sel.style.visibility = "hidden";
 
-                        selected.textContent = "";
-                        selected.dataset.bg = "none";
-                        const ns = sel.querySelector(".horse-num");
-                        if (ns) ns.style.backgroundColor = "";
+                        if (box) {
+                            box.textContent = "";
+                            box.dataset.bg = "none";
+                        }
                         applyMarkBackground(sel, false);
+                        applyBg(sel, "none");
                     }
                 }
             }
 
             saveState();
-        }
-
-        function updateRaceHeaders(raceInfo) {
-            const raceTimes = window.raceTimes || [];
-            const thRow = document.querySelector("#raceTable thead tr");
-            thRow.innerHTML = "";
-
-            for (let i = 0; i < 5; i++) {
-                const th = document.createElement("th");
-                const time = (raceTimes[i] || "").trim();
-                const info = (raceInfo && raceInfo[i]) ? String(raceInfo[i]).trim() : "";
-
-                let label = info ? info : `WIN${i + 1}`;
-                if (time) label += ` ${time}発走`;
-
-                th.textContent = label;
-                thRow.appendChild(th);
-            }
         }
 
         async function loadWin5Data() {
@@ -1437,20 +1832,6 @@
                 if (i === current) op.selected = true;
                 select.appendChild(op);
             });
-        }
-
-        function applyMarkBackground(sel, hasMark) {
-            const td = sel.parentElement;
-            if (td) td.style.backgroundColor = hasMark ? "#fff0f0" : "";
-
-            const box = sel.querySelector(".selected");
-            if (!box) return;
-
-            if (hasMark) {
-                box.classList.add("is-marked");
-            } else {
-                box.classList.remove("is-marked");
-            }
         }
 
         function openShare() {
@@ -1528,9 +1909,7 @@
                 const payload = decodeSharePayload(token);
                 applySharePayload(payload);
                 closeShare();
-            } catch (e) {
-                console.error("share import failed", e);
-            }
+            } catch (e) { }
         }
 
         function extractShareToken(txt) {
@@ -1544,6 +1923,7 @@
         function buildSharePayload() {
             const items = [];
             document.querySelectorAll(".custom-select").forEach(sel => {
+                if (sel.classList.contains("is-empty")) return;
                 const r = Number(sel.dataset.race);
                 const h = Number(sel.dataset.horse);
                 const box = sel.querySelector(".selected");
@@ -1559,16 +1939,14 @@
 
         function applySharePayload(payload) {
             if (!payload || payload.v !== 1 || !Array.isArray(payload.items)) return;
+
             document.querySelectorAll(".custom-select").forEach(sel => {
                 const box = sel.querySelector(".selected");
-                const numSpan = sel.querySelector(".horse-num");
                 if (!box) return;
-
                 box.textContent = "";
                 box.dataset.bg = "none";
-                if (numSpan) numSpan.style.backgroundColor = "";
-
                 applyMarkBackground(sel, false);
+                applyBg(sel, "none");
             });
 
             for (const it of payload.items) {
@@ -1576,10 +1954,9 @@
                 const [r, h, mark, bg] = it;
 
                 const sel = document.querySelector(`.custom-select[data-race="${r}"][data-horse="${h}"]`);
-                if (!sel) continue;
+                if (!sel || sel.classList.contains("is-empty")) continue;
 
                 const box = sel.querySelector(".selected");
-                const numSpan = sel.querySelector(".horse-num");
                 if (!box) continue;
 
                 const m = (mark || "").toString();
@@ -1589,7 +1966,7 @@
                 applyMarkBackground(sel, !!m);
 
                 box.dataset.bg = b;
-                if (numSpan) numSpan.style.backgroundColor = (b && b !== "none") ? b : "";
+                applyBg(sel, b);
             }
 
             saveState();
@@ -1618,69 +1995,22 @@
                 applySharePayload(payload);
                 const base = location.href.split("#")[0];
                 history.replaceState(null, "", base);
-            } catch (e) {
-                console.error("share parse failed", e);
-            }
+            } catch (e) { }
         }
-
-        createTable();
-        restoreState();
-        applyShareFromURL();
-        loadWin5Tabs();
 
         function isMobileLayout() {
             return window.matchMedia("(max-width: 640px)").matches;
-        }
-
-        function applyRaceFocus(race) {
-            if (!isMobileLayout()) {
-                document.body.dataset.focusRace = "all";
-                const bar = document.getElementById("raceFocusBar");
-                if (bar) bar.querySelectorAll("button").forEach(b => b.classList.remove("on"));
-                return;
-            }
-
-            document.body.dataset.focusRace = race;
-            const bar = document.getElementById("raceFocusBar");
-            if (!bar) return;
-            bar.querySelectorAll("button").forEach(b => {
-                b.classList.toggle("on", b.dataset.race === race);
-            });
-        }
-
-        function setupMobileRaceFocusBar() {
-            const bar = document.getElementById("raceFocusBar");
-            if (!bar) return;
-
-            bar.innerHTML = "";
-            const labels = [
-                { race: "all", text: "全表示" },
-                { race: "1", text: "WIN1" },
-                { race: "2", text: "WIN2" },
-                { race: "3", text: "WIN3" },
-                { race: "4", text: "WIN4" },
-                { race: "5", text: "WIN5" },
-            ];
-
-            for (const item of labels) {
-                const btn = document.createElement("button");
-                btn.type = "button";
-                btn.dataset.race = item.race;
-                btn.textContent = item.text;
-                btn.addEventListener("click", () => applyRaceFocus(item.race));
-                bar.appendChild(btn);
-            }
-
-            applyRaceFocus("all");
         }
 
         window.addEventListener("resize", () => {
             applyRaceFocus(document.body.dataset.focusRace || "all");
         });
 
-        setupMobileRaceFocusBar();
+        createRaceTables();
+        restoreState();
+        applyShareFromURL();
+        loadWin5Tabs();
     </script>
-
 </body>
 
 </html>
