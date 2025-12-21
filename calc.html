@@ -437,12 +437,6 @@
             -webkit-user-select: text !important;
         }
 
-        @media (hover: none) and (pointer: coarse) {
-            .modal-textarea {
-                font-size: 16px;
-            }
-        }
-
         .modal-actions {
             display: flex;
             gap: 8px;
@@ -455,6 +449,40 @@
             font-size: 18px;
             padding: 8px 12px;
         }
+
+       @media (hover: none) and (pointer: coarse) {
+            .modal-textarea {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .top-bar-right {
+                flex-wrap: wrap;
+                justify-content: flex-start;
+                gap: 8px;
+                margin-bottom: 10px;
+            }
+
+            .top-bar-right>* {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+            #win5TabSelect {
+                width: 100%;
+                font-size: 18px;
+                padding: 10px 10px;
+            }
+
+            button.calc-btn {
+                width: 100%;
+                font-size: 18px;
+                padding: 10px 10px;
+                border-radius: 10px;
+            }
+        }
+
     </style>
 </head>
 
