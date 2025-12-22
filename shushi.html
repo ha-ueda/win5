@@ -8,7 +8,7 @@
     <style>
         body {
             font-family: "メイリオ", Meiryo, Hiragino Sans, Hiragino Kaku Gothic ProN, 'ヒラギノ角ゴ ProN W3', 'ヒラギノ角ゴ Pro W3', Helvetica Neue, Helvetica, sans-serif;
-            margin: 20px;
+            margin: 10px;
         }
 
         h2 {
@@ -226,6 +226,122 @@
             padding-left: 0;
             padding-right: 0;
         }
+
+        @media (max-width: 640px) {
+            body {
+                margin: 10px;
+            }
+
+            .container {
+                max-width: 100%;
+            }
+
+            .profit-box {
+                font-size: 24px;
+            }
+
+            table {
+                font-size: 13px;
+            }
+
+            th,
+            td {
+                padding: 4px 6px;
+            }
+
+            .btn {
+                font-size: 16px;
+                padding: 8px 10px;
+            }
+
+            .menu-icon {
+                font-size: 24px;
+            }
+
+            .menu-button {
+                padding: 8px 10px;
+            }
+
+            td.num input[type="text"] {
+                min-width: 0;
+            }
+
+            #mainTable {
+                table-layout: fixed;
+                width: 100%;
+            }
+
+            #mainTable th,
+            #mainTable td {
+                white-space: normal;
+                padding: 4px 4px;
+            }
+
+            #mainTable th:nth-child(1),
+            #mainTable td:nth-child(1) {
+                width: 28%;
+            }
+
+            #mainTable th:nth-child(2),
+            #mainTable td:nth-child(2) {
+                width: 30%;
+            }
+
+            #mainTable th:nth-child(3),
+            #mainTable td:nth-child(3) {
+                width: 30%;
+            }
+
+            #mainTable th:nth-child(4),
+            #mainTable td:nth-child(4) {
+                width: 12%;
+            }
+
+            body.delete-mode #mainTable th:nth-child(1),
+            body.delete-mode #mainTable td:nth-child(1) {
+                width: 28%;
+            }
+
+            body.delete-mode #mainTable th:nth-child(2),
+            body.delete-mode #mainTable td:nth-child(2) {
+                width: 26%;
+            }
+
+            body.delete-mode #mainTable th:nth-child(3),
+            body.delete-mode #mainTable td:nth-child(3) {
+                width: 26%;
+            }
+
+            body.delete-mode #mainTable th:nth-child(4),
+            body.delete-mode #mainTable td:nth-child(4) {
+                width: 12%;
+            }
+
+            body.delete-mode #mainTable th:nth-child(5),
+            body.delete-mode #mainTable td:nth-child(5) {
+                width: 8%;
+            }
+
+            #mainTable input,
+            #mainTable select {
+                font-size: 13px;
+                padding: 0 4px;
+            }
+
+            #mainTable input[type="date"] {
+                min-width: 0;
+                width: 100%;
+            }
+
+            #mainTable select {
+                min-width: 0;
+            }
+
+            #mainTable th:last-child,
+            #mainTable td:last-child {
+                width: 34px;
+            }
+        }
     </style>
 </head>
 
@@ -358,7 +474,8 @@
 
         <button class="btn" onclick="addRow()">追加</button>
         <button class="btn" onclick="saveData()">保存</button>
-        <button class="btn delete-mode-btn" id="deleteModeBtn" aria-pressed="false" onclick="toggleDeleteMode()">削除</button>
+        <button class="btn delete-mode-btn" id="deleteModeBtn" aria-pressed="false"
+            onclick="toggleDeleteMode()">削除</button>
     </div>
 
     <script>
