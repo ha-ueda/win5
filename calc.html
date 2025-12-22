@@ -311,16 +311,13 @@
             width: 30px;
         }
 
-        .no-box {
+        table.shutuba-table tbody td.col-no {
             height: 48px;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            line-height: 48px;
+            text-align: center;
             font-size: 12px;
             font-feature-settings: "tnum" 1;
             font-variant-numeric: tabular-nums;
-            border-right: 0;
         }
 
         .col-mark {
@@ -901,7 +898,7 @@
             const rows = Array.from(tbody.querySelectorAll("tr.custom-select"));
             const getVal = (row) => {
                 if (row.classList.contains("is-empty")) return null;
-                if (key === "no") return parseNum(row.dataset.umaban) ?? parseNum(row.querySelector(".no-box")?.textContent) ?? null;
+                if (key === "no") return parseNum(row.dataset.umaban) ?? parseNum(row.querySelector("td.col-no")?.textContent) ?? null;
                 if (key === "name") return (row.dataset.name || "").trim();
                 if (key === "odds") return parseNum(row.dataset.odds);
                 return null;
@@ -1064,10 +1061,7 @@
 
             const tdNo = document.createElement("td");
             tdNo.className = "col-no";
-            const noBox = document.createElement("div");
-            noBox.className = "no-box";
-            noBox.textContent = String(horseNum);
-            tdNo.appendChild(noBox);
+            tdNo.textContent = String(horseNum);
 
             const tdM = document.createElement("td");
             tdM.className = "col-mark";
@@ -1238,7 +1232,7 @@
                     const jEl = sel.querySelector('.jockey-name');
                     const oEl = sel.querySelector('.odds-top');
                     const pEl = sel.querySelector('.odds-bottom');
-                    const noEl = sel.querySelector('.no-box');
+                    const noEl = sel.querySelector('td.col-no');
 
 
                     const name = (nameEl?.textContent || "").trim();
@@ -1296,7 +1290,7 @@
                         const jEl = sel.querySelector('.jockey-name');
                         const oEl = sel.querySelector('.odds-top');
                         const pEl = sel.querySelector('.odds-bottom');
-                        const noEl = sel.querySelector('.no-box');
+                        const noEl = sel.querySelector('td.col-no');
 
 
                         const m = (val.mark || "").toString();
@@ -1380,7 +1374,7 @@
                 const jEl = sel.querySelector('.jockey-name');
                 const oEl = sel.querySelector('.odds-top');
                 const pEl = sel.querySelector('.odds-bottom');
-                const noEl = sel.querySelector('.no-box');
+                const noEl = sel.querySelector('td.col-no');
 
                 const box = sel.querySelector('.selected');
 
@@ -1749,7 +1743,7 @@
                     const jEl = sel.querySelector(".jockey-name");
                     const oEl = sel.querySelector(".odds-top");
                     const pEl = sel.querySelector(".odds-bottom");
-                    const noEl = sel.querySelector(".no-box");
+                    const noEl = sel.querySelector("td.col-no");
                     const box = sel.querySelector(".selected");
 
                     if (name) {
