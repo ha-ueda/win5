@@ -126,6 +126,7 @@
             width: 100%;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
         }
 
         #raceTables .race-row {
@@ -2026,6 +2027,7 @@
             let sx = 0;
             let sy = 0;
             let active = false;
+            let lock = false;
 
             const start = (e) => {
                 if (!isMobileLayout()) return;
@@ -2033,6 +2035,24 @@
                 sx = t.clientX;
                 sy = t.clientY;
                 active = true;
+                lock = false;
+            };
+
+            const move = (e) => {
+                if (!active) return;
+                if (!isMobileLayout()) return;
+                if (!e.touches || e.touches.length !== 1) return;
+
+                const t = e.touches[0];
+                const dx = t.clientX - sx;
+                const dy = t.clientY - sy;
+
+                if (!lock) {
+                    if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) lock = true;
+                    else return;
+                }
+
+                e.preventDefault();
             };
 
             const end = (e) => {
@@ -2053,7 +2073,9 @@
             };
 
             root.addEventListener("touchstart", start, { passive: true });
+            root.addEventListener("touchmove", move, { passive: false });
             root.addEventListener("touchend", end, { passive: true });
+            root.addEventListener("touchcancel", end, { passive: true });
             root.addEventListener("pointerdown", start);
             root.addEventListener("pointerup", end);
         }
