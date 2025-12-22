@@ -251,13 +251,6 @@
             white-space: nowrap;
         }
 
-        .th-col .th-sub {
-            font-size: 13.014px;
-            font-weight: 400;
-            color: #888;
-            white-space: nowrap;
-        }
-
         .th-col .th-sort {
             display: flex;
             flex-direction: column;
@@ -961,10 +954,10 @@
         }
 
         function applyBg(rowEl, bg) {
-            const td = rowEl?.querySelector(".col-info");
-            if (!td) return;
-            if (bg && bg !== "none") td.style.backgroundColor = bg;
-            else td.style.backgroundColor = "";
+            const el = rowEl?.querySelector(".jockey-name");
+            if (!el) return;
+            if (bg && bg !== "none") el.style.backgroundColor = bg;
+            else el.style.backgroundColor = "";
         }
 
         function applyMarkBackground(rowEl, hasMark) {
@@ -1194,11 +1187,9 @@
                 <div class="th-title">予想印</div>
               </div>
             </th>
-            <th class="col-info sortable" data-sort-key="name">
+            <th class="col-info">
               <div class="th-col">
                 <div class="th-title">馬名</div>
-                <div class="th-sub">騎手</div>
-                <div class="th-sort"><span class="tri-up"></span><span class="tri-down"></span></div>
               </div>
             </th>
             <th class="col-odds sortable" data-sort-key="odds">
@@ -1714,7 +1705,7 @@
 
                 const label = info ? info : `WIN${i + 1}`;
                 if (title) title.textContent = label;
-                if (sub) sub.textContent = time ? `${time}発走` : "";
+                if (sub) sub.textContent = time ? `${time}` : "";
             }
         }
 
