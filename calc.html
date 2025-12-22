@@ -688,7 +688,7 @@
             }
 
             .race-card {
-                flex: 0 0 calc(100vw - 50px);
+                flex: 0 0 calc(100vw - 40px);
             }
 
             .race-focus {
@@ -2009,11 +2009,62 @@
             return window.matchMedia("(max-width: 640px)").matches;
         }
 
+        function applyRaceFocus(v) {
+            const b = document.body;
+            const s = String(v || "all");
+            if (s === "all") {
+                b.removeAttribute("data-focus-race");
+                return;
+            }
+            b.setAttribute("data-focus-race", s);
+        }
+
+        function initMobileSwipe() {
+            const root = document.getElementById("raceTables");
+            if (!root) return;
+
+            let sx = 0;
+            let sy = 0;
+            let active = false;
+
+            const start = (e) => {
+                if (!isMobileLayout()) return;
+                const t = e.touches ? e.touches[0] : e;
+                sx = t.clientX;
+                sy = t.clientY;
+                active = true;
+            };
+
+            const end = (e) => {
+                if (!active) return;
+                active = false;
+
+                if (!isMobileLayout()) return;
+                const t = e.changedTouches ? e.changedTouches[0] : e;
+                const dx = t.clientX - sx;
+                const dy = t.clientY - sy;
+
+                if (Math.abs(dx) < 45) return;
+                if (Math.abs(dx) <= Math.abs(dy)) return;
+
+                const cur = Number(document.body.getAttribute("data-focus-race") || "1") || 1;
+                const next = dx < 0 ? Math.min(TOTAL_RACES, cur + 1) : Math.max(1, cur - 1);
+                if (next !== cur) applyRaceFocus(String(next));
+            };
+
+            root.addEventListener("touchstart", start, { passive: true });
+            root.addEventListener("touchend", end, { passive: true });
+            root.addEventListener("pointerdown", start);
+            root.addEventListener("pointerup", end);
+        }
+
         window.addEventListener("resize", () => {
-            applyRaceFocus(document.body.dataset.focusRace || "all");
+            applyRaceFocus(isMobileLayout() ? (document.body.getAttribute("data-focus-race") || "1") : "all");
         });
 
         createRaceTables();
+        applyRaceFocus(isMobileLayout() ? "1" : "all");
+        initMobileSwipe();
         restoreState();
         applyShareFromURL();
         loadWin5Tabs();
