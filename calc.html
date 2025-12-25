@@ -1774,6 +1774,26 @@
             );
         }
 
+        function escapeHtml(s) {
+            return String(s ?? "").replace(/[&<>"']/g, ch => {
+                if (ch === "&") return "&amp;";
+                if (ch === "<") return "&lt;";
+                if (ch === ">") return "&gt;";
+                if (ch === '"') return "&quot;";
+                return "&#39;";
+            });
+        }
+
+        function colorizeCourse(course) {
+            const c = String(course ?? "").trim();
+            if (!c) return "";
+            const first = c[0];
+            const rest = c.slice(1);
+            if (first === "ダ") return `<span class="surf-dirt">ダ</span>${escapeHtml(rest)}`;
+            if (first === "芝") return `<span class="surf-turf">芝</span>${escapeHtml(rest)}`;
+            return escapeHtml(c);
+        }
+
         function updateRaceHeaders(raceInfo) {
             const raceTimes = window.raceTimes || [];
             const raceCourses = window.raceCourses || [];
