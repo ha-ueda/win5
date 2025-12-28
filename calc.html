@@ -817,6 +817,8 @@
     <div class="toggle-container">
         背景選択
         <div id="modeToggle" class="switch"></div>
+        騎手選択
+        <div id="jockeyToggle" class="switch"></div>
     </div>
 
     <div id="raceTables"></div>
@@ -882,6 +884,86 @@
         let backgroundMode = false;
         const modeBtn = document.getElementById("modeToggle");
 
+        let jockeyLinkMode = false;
+        const jockeyBtn = document.getElementById("jockeyToggle");
+
+        const AUTO_JOCKEY_COLORS = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4", "#ffd8a8", "#c2f0ff", "#d7ffd6", "#ffe3f1", "#e7e1ff"];
+        let jockeyAutoRefreshPending = false;
+
+        function normJockey(s) {
+            return String(s ?? "").replace(/\s+/g, "").trim();
+        }
+
+        function scheduleJockeyAutoRefresh() {
+            if (jockeyAutoRefreshPending) return;
+            jockeyAutoRefreshPending = true;
+            requestAnimationFrame(() => {
+                jockeyAutoRefreshPending = false;
+                refreshJockeyAutoBg();
+            });
+        }
+
+        function refreshJockeyAutoBg() {
+            const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty)'));
+
+            if (!jockeyLinkMode) {
+                rows.forEach(r => {
+                    if (r) delete r.dataset.jockeyAutoBg;
+                    const box = r?.querySelector(".selected");
+                    const manual = box?.dataset?.bg;
+                    if (manual && manual !== "none") applyBg(r, manual);
+                    else applyBg(r, "none");
+                });
+                return;
+            }
+
+            const markedRows = rows.filter(r => r.classList.contains("has-mark"));
+            const counts = new Map();
+            markedRows.forEach(r => {
+                const j = normJockey(r.querySelector(".jockey-name")?.textContent);
+                if (!j) return;
+                counts.set(j, (counts.get(j) || 0) + 1);
+            });
+
+            const dupJockeys = [];
+            const seen = new Set();
+            markedRows.forEach(r => {
+                const j = normJockey(r.querySelector(".jockey-name")?.textContent);
+                if (!j || seen.has(j)) return;
+                seen.add(j);
+                if ((counts.get(j) || 0) >= 2) dupJockeys.push(j);
+            });
+
+            const colorMap = new Map();
+            for (let i = 0; i < dupJockeys.length; i++) {
+                const c = (i < AUTO_JOCKEY_COLORS.length) ? AUTO_JOCKEY_COLORS[i] : `hsl(${(i * 137.508) % 360} 70% 85%)`;
+                colorMap.set(dupJockeys[i], c);
+            }
+
+            rows.forEach(r => {
+                const box = r?.querySelector(".selected");
+                const manual = box?.dataset?.bg;
+                if (manual && manual !== "none") {
+                    delete r.dataset.jockeyAutoBg;
+                    applyBg(r, manual);
+                    return;
+                }
+
+                const j = normJockey(r.querySelector(".jockey-name")?.textContent);
+                const shouldAuto = r.classList.contains("has-mark") && j && ((counts.get(j) || 0) >= 2);
+
+                if (shouldAuto) {
+                    const c = colorMap.get(j);
+                    r.dataset.jockeyAutoBg = c;
+                    applyBg(r, c);
+                } else {
+                    delete r.dataset.jockeyAutoBg;
+                    applyBg(r, "none");
+                }
+            });
+        }
+
+
         function updateSwitch() {
             backgroundMode ? modeBtn.classList.add("on") : modeBtn.classList.remove("on");
         }
@@ -892,6 +974,20 @@
         });
 
         updateSwitch();
+
+        function updateJockeySwitch() {
+            if (!jockeyBtn) return;
+            jockeyLinkMode ? jockeyBtn.classList.add("on") : jockeyBtn.classList.remove("on");
+            scheduleJockeyAutoRefresh();
+        }
+
+        if (jockeyBtn) {
+            jockeyBtn.addEventListener("click", () => {
+                jockeyLinkMode = !jockeyLinkMode;
+                updateJockeySwitch();
+            });
+            updateJockeySwitch();
+        }
 
         function toCircleNumber(num) {
             return CIRCLES[num - 1] || String(num);
@@ -1031,11 +1127,38 @@
             if (!box) return;
             if (hasMark) box.classList.add("is-marked");
             else box.classList.remove("is-marked");
+
+            scheduleJockeyAutoRefresh();
         }
 
         function openPalette(rowEl, e) {
             const box = rowEl.querySelector(".selected");
             if (!box) return;
+
+            const applyColorToRow = (row, color) => {
+                const b = row?.querySelector(".selected");
+                if (b) b.dataset.bg = color;
+                applyBg(row, color);
+            };
+
+            const applyColor = (color) => {
+                const c = (color === "none") ? "none" : String(color);
+                if (jockeyLinkMode) {
+                    const jockey = (rowEl?.querySelector(".jockey-name")?.textContent || "").trim();
+                    if (jockey) {
+                        document.querySelectorAll('.custom-select:not(.is-empty)').forEach(r => {
+                            const j = (r.querySelector(".jockey-name")?.textContent || "").trim();
+                            if (j && j === jockey) applyColorToRow(r, c);
+                        });
+                    } else {
+                        applyColorToRow(rowEl, c);
+                    }
+                } else {
+                    applyColorToRow(rowEl, c);
+                }
+                palette.remove();
+                saveState();
+            };
 
             const palette = document.createElement("div");
             palette.style.position = "absolute";
@@ -1058,10 +1181,7 @@
                 btn.style.borderRadius = "8px";
                 btn.style.cursor = "pointer";
                 btn.addEventListener("click", () => {
-                    box.dataset.bg = c;
-                    applyBg(rowEl, c);
-                    palette.remove();
-                    saveState();
+                    applyColor(c);
                 });
                 palette.appendChild(btn);
             });
@@ -1074,10 +1194,7 @@
             noneBtn.style.borderRadius = "8px";
             noneBtn.style.cursor = "pointer";
             noneBtn.addEventListener("click", () => {
-                box.dataset.bg = "none";
-                applyBg(rowEl, "none");
-                palette.remove();
-                saveState();
+                applyColor("none");
             });
             palette.appendChild(noneBtn);
 
@@ -1169,6 +1286,13 @@
             tdOdds.appendChild(oTop);
             tdOdds.appendChild(oBottom);
 
+            const cycleMark = () => {
+                const cur = MARKS.indexOf(selected.textContent);
+                selected.textContent = MARKS[(cur + 1) % MARKS.length];
+                applyMarkBackground(tr, selected.textContent !== "");
+                saveState();
+            };
+
             selected.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1176,10 +1300,13 @@
                     openPalette(tr, e);
                     return;
                 }
-                const cur = MARKS.indexOf(selected.textContent);
-                selected.textContent = MARKS[(cur + 1) % MARKS.length];
-                applyMarkBackground(tr, selected.textContent !== "");
-                saveState();
+                cycleMark();
+            });
+
+            tr.addEventListener("click", (e) => {
+                if (e.target && e.target.closest(".selected")) return;
+                if (backgroundMode) openPalette(tr, e);
+                else cycleMark();
             });
 
             tr.appendChild(tdNo);
@@ -1478,7 +1605,13 @@
                 if (sel.classList.contains("is-empty")) return;
                 const box = sel.querySelector('.selected');
                 const v = (box?.textContent || "").trim();
-                const bg = (box?.dataset.bg || "none").trim();
+
+                let bg = (box?.dataset.bg || "none").trim();
+                if ((!bg || bg === "none") && jockeyLinkMode) {
+                    const auto = (sel.dataset.jockeyAutoBg || "").trim();
+                    if (auto) bg = auto;
+                }
+
                 const num = Number(sel.dataset.horse);
                 colorMap[num] = bg;
                 if (v === "◎") favs.push(num);
