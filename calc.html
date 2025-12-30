@@ -709,15 +709,6 @@
             margin-bottom: 10px;
         }
 
-        .modal-help {
-            font-size: 13px;
-            color: #555;
-            margin-top: 8px;
-            line-height: 1.35;
-            user-select: text !important;
-            -webkit-user-select: text !important;
-        }
-
         .modal-textarea {
             width: 100%;
             min-height: 120px;
@@ -861,11 +852,6 @@
                 <button class="calc-btn" onclick="copyShareText()">コピー</button>
                 <button class="calc-btn" onclick="importShareText()">読み込み</button>
                 <button class="calc-btn" onclick="closeShare()">閉じる</button>
-            </div>
-            <div class="modal-help">
-                ・コピーしたURLを相手に送ってください。<br>
-                ・読み込みでクリップボード内のURLから反映できます。<br>
-                ・馬名/騎手/オッズは共有しません。
             </div>
         </div>
     </div>
@@ -2231,7 +2217,7 @@
             const t = (txt || "").trim();
             const m = t.match(/[?#&]share=([A-Za-z0-9\-_]+)/);
             if (m) return m[1];
-            if (/^[A-Za-z0-9\-_]{20,}$/.test(t)) return t;
+            if (/^[A-Za-z0-9\-_]{4,}$/.test(t)) return t;
             return null;
         }
 
@@ -2288,16 +2274,110 @@
         }
 
         function encodeSharePayload(obj) {
-            const json = JSON.stringify(obj);
-            const b64 = btoa(unescape(encodeURIComponent(json)));
-            return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+            const legacy = () => {
+                const json = JSON.stringify(obj);
+                const b64 = btoa(unescape(encodeURIComponent(json)));
+                return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+            };
+
+            if (!obj || obj.v !== 1 || !Array.isArray(obj.items) || obj.items.length === 0) return legacy();
+
+            const SHARE_BG_COLORS = [
+                null,
+                "#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4",
+                "#ffd8a8", "#c2f0ff", "#d7ffd6", "#ffe3f1", "#e7e1ff"
+            ];
+            const colorToId = new Map();
+            for (let i = 1; i < SHARE_BG_COLORS.length; i++) colorToId.set(SHARE_BG_COLORS[i], i);
+
+            const markToId = (m) => {
+                if (m === "") return 0;
+                if (m === "✓") return 1;
+                if (m === "◎") return 2;
+                return null;
+            };
+
+            const bytes = [];
+            for (const it of obj.items) {
+                if (!Array.isArray(it) || it.length < 4) continue;
+                const r = Number(it[0]);
+                const h = Number(it[1]);
+                const mark = String(it[2] ?? "").trim();
+                const bg = String(it[3] ?? "none").trim();
+
+                if (!Number.isFinite(r) || !Number.isFinite(h) || r < 1 || r > 5 || h < 1 || h > 18) return legacy();
+
+                const mid = markToId(mark);
+                if (mid === null) return legacy();
+
+                let bid = 0;
+                if (bg && bg !== "none") {
+                    const got = colorToId.get(bg);
+                    if (!got) return legacy();
+                    bid = got;
+                }
+
+                const rv = (r - 1) & 0x7;
+                const hv = (h - 1) & 0x1f;
+                const v = (rv << 12) | (hv << 7) | ((mid & 0x3) << 5) | (bid & 0x1f);
+                bytes.push((v >> 8) & 0xff, v & 0xff);
+            }
+
+            if (bytes.length === 0) return legacy();
+
+            let bin = "";
+            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+            const b64 = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+            return "3" + b64;
         }
 
         function decodeSharePayload(token) {
-            const t = token.replace(/-/g, "+").replace(/_/g, "/");
-            const pad = t.length % 4 ? "=".repeat(4 - (t.length % 4)) : "";
-            const json = decodeURIComponent(escape(atob(t + pad)));
-            return JSON.parse(json);
+            const legacy = (tok) => {
+                const t = tok.replace(/-/g, "+").replace(/_/g, "/");
+                const pad = t.length % 4 ? "=".repeat(4 - (t.length % 4)) : "";
+                const json = decodeURIComponent(escape(atob(t + pad)));
+                return JSON.parse(json);
+            };
+
+            const tok = String(token ?? "").trim();
+            if (tok && tok[0] === "3") {
+                try {
+                    const raw = tok.slice(1).replace(/-/g, "+").replace(/_/g, "/");
+                    const pad = raw.length % 4 ? "=".repeat(4 - (raw.length % 4)) : "";
+                    const bin = atob(raw + pad);
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    if (bytes.length % 2 !== 0) return legacy(tok);
+
+                    const SHARE_BG_COLORS = [
+                        null,
+                        "#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4",
+                        "#ffd8a8", "#c2f0ff", "#d7ffd6", "#ffe3f1", "#e7e1ff"
+                    ];
+                    const idToMark = ["", "✓", "◎", ""];
+                    const items = [];
+
+                    for (let i = 0; i < bytes.length; i += 2) {
+                        const v = (bytes[i] << 8) | bytes[i + 1];
+                        const r = ((v >> 12) & 0x7) + 1;
+                        const h = ((v >> 7) & 0x1f) + 1;
+                        const mid = (v >> 5) & 0x3;
+                        const bid = v & 0x1f;
+
+                        if (r < 1 || r > 5 || h < 1 || h > 18) return legacy(tok);
+
+                        const mark = idToMark[mid] ?? "";
+                        const bg = bid === 0 ? "none" : (SHARE_BG_COLORS[bid] || "none");
+                        items.push([r, h, mark, bg]);
+                    }
+
+                    return { v: 1, items };
+                } catch (e) {
+                    return legacy(tok);
+                }
+            }
+
+            return legacy(tok);
         }
 
         function applyShareFromURL() {
