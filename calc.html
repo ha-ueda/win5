@@ -33,7 +33,7 @@
             padding: 8px 10px;
             font-size: 16px;
             border: 1px solid #cfcfcf;
-            border-radius: 12px;
+            border-radius: 6px;
             background-color: #fff;
             color: #222;
             min-width: 160px;
@@ -45,7 +45,7 @@
             background: rgb(0, 122, 255);
             color: #fff;
             border: 1px solid rgba(0, 0, 0, 0.06);
-            border-radius: 12px;
+            border-radius: 6px;
             cursor: pointer;
             white-space: nowrap;
             font-weight: 600;
@@ -80,10 +80,17 @@
 
         .toggle-container {
             display: flex;
-            align-items: center;
-            gap: 8px;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
             margin: 14px 0 10px;
             font-size: 16px;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .switch {
@@ -603,7 +610,7 @@
             font-size: 16px;
             padding: 7px 10px;
             border: 1px solid #cfcfcf;
-            border-radius: 12px;
+            border-radius: 6px;
             background-color: #fff;
             color: #222;
             box-sizing: border-box;
@@ -618,7 +625,7 @@
             background: rgb(0, 122, 255);
             color: #fff;
             padding: 6px 12px;
-            border-radius: 12px;
+            border-radius: 6px;
             cursor: pointer;
             user-select: none;
             display: inline-block;
@@ -658,7 +665,7 @@
             left: 0;
             background: white;
             border: 1px solid #ccc;
-            border-radius: 12px;
+            border-radius: 6px;
             min-width: 140px;
             z-index: 999;
         }
@@ -815,10 +822,14 @@
     </div>
 
     <div class="toggle-container">
-        背景選択
-        <div id="modeToggle" class="switch"></div>
-        騎手選択
-        <div id="jockeyToggle" class="switch"></div>
+        <div class="toggle-row">
+            <span>背景選択</span>
+            <div id="modeToggle" class="switch"></div>
+        </div>
+        <div class="toggle-row">
+            <span>騎手選択</span>
+            <div id="jockeyToggle" class="switch"></div>
+        </div>
     </div>
 
     <div id="raceTables"></div>
@@ -890,6 +901,34 @@
         const AUTO_JOCKEY_COLORS = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4", "#ffd8a8", "#c2f0ff", "#d7ffd6", "#ffe3f1", "#e7e1ff"];
         let jockeyAutoRefreshPending = false;
 
+        let stableJockeyColorMap = new Map();
+        let stableJockeyUsedColors = new Set();
+
+        function getStableJockeyColor(j) {
+            const key = normJockey(j);
+            if (!key) return null;
+            const ex = stableJockeyColorMap.get(key);
+            if (ex) return ex;
+
+            let c = null;
+            for (let i = 0; i < AUTO_JOCKEY_COLORS.length; i++) {
+                const cand = AUTO_JOCKEY_COLORS[i];
+                if (!stableJockeyUsedColors.has(cand)) { c = cand; break; }
+            }
+            if (!c) {
+                let i = stableJockeyUsedColors.size;
+                while (true) {
+                    const cand = `hsl(${(i * 137.508) % 360} 70% 85%)`;
+                    if (!stableJockeyUsedColors.has(cand)) { c = cand; break; }
+                    i++;
+                }
+            }
+            stableJockeyColorMap.set(key, c);
+            stableJockeyUsedColors.add(c);
+            return c;
+        }
+
+
         function normJockey(s) {
             return String(s ?? "").replace(/\s+/g, "").trim();
         }
@@ -936,8 +975,8 @@
 
             const colorMap = new Map();
             for (let i = 0; i < dupJockeys.length; i++) {
-                const c = (i < AUTO_JOCKEY_COLORS.length) ? AUTO_JOCKEY_COLORS[i] : `hsl(${(i * 137.508) % 360} 70% 85%)`;
-                colorMap.set(dupJockeys[i], c);
+                const j = dupJockeys[i];
+                colorMap.set(j, getStableJockeyColor(j));
             }
 
             rows.forEach(r => {
@@ -961,6 +1000,8 @@
                     applyBg(r, "none");
                 }
             });
+
+            saveState();
         }
 
 
@@ -975,6 +1016,27 @@
 
         updateSwitch();
 
+        function clearAllRowBackgrounds() {
+
+            document.querySelectorAll('.custom-select:not(.is-empty)').forEach(r => {
+
+                if (!r) return;
+
+                delete r.dataset.jockeyAutoBg;
+
+                const box = r.querySelector(".selected");
+
+                if (box) box.dataset.bg = "none";
+
+                applyBg(r, "none");
+
+            });
+
+            saveState();
+
+        }
+
+
         function updateJockeySwitch() {
             if (!jockeyBtn) return;
             jockeyLinkMode ? jockeyBtn.classList.add("on") : jockeyBtn.classList.remove("on");
@@ -984,6 +1046,7 @@
         if (jockeyBtn) {
             jockeyBtn.addEventListener("click", () => {
                 jockeyLinkMode = !jockeyLinkMode;
+                if (!jockeyLinkMode) clearAllRowBackgrounds();
                 updateJockeySwitch();
             });
             updateJockeySwitch();
@@ -1143,19 +1206,7 @@
 
             const applyColor = (color) => {
                 const c = (color === "none") ? "none" : String(color);
-                if (jockeyLinkMode) {
-                    const jockey = (rowEl?.querySelector(".jockey-name")?.textContent || "").trim();
-                    if (jockey) {
-                        document.querySelectorAll('.custom-select:not(.is-empty)').forEach(r => {
-                            const j = (r.querySelector(".jockey-name")?.textContent || "").trim();
-                            if (j && j === jockey) applyColorToRow(r, c);
-                        });
-                    } else {
-                        applyColorToRow(rowEl, c);
-                    }
-                } else {
-                    applyColorToRow(rowEl, c);
-                }
+                applyColorToRow(rowEl, c);
                 palette.remove();
                 saveState();
             };
@@ -1411,7 +1462,9 @@
                 minFav: document.getElementById('minFav').value,
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
-                raceCourses: window.raceCourses || ["", "", "", "", ""]
+                raceCourses: window.raceCourses || ["", "", "", "", ""],
+                jockeyLinkMode: !!jockeyLinkMode,
+                jockeyColorMap: Array.from(stableJockeyColorMap.entries())
             };
 
             for (let r = 1; r <= TOTAL_RACES; r++) {
@@ -1436,6 +1489,7 @@
                     state.races[`r${r}`][sel.dataset.horse] = {
                         mark: (box?.textContent || "").trim(),
                         bg: (box?.dataset.bg || "none").trim(),
+                        jbg: (sel.dataset.jockeyAutoBg || null),
                         name: isEmpty ? null : name,
                         jockey: jockey || null,
                         odds: odds || null,
@@ -1464,6 +1518,16 @@
                 if (state.raceTimes) window.raceTimes = state.raceTimes;
                 if (state.raceCourses) window.raceCourses = state.raceCourses;
 
+                if (Array.isArray(state.jockeyColorMap)) {
+                    stableJockeyColorMap = new Map(state.jockeyColorMap);
+                    stableJockeyUsedColors = new Set(Array.from(stableJockeyColorMap.values()));
+                }
+
+                if (typeof state.jockeyLinkMode === "boolean") {
+                    jockeyLinkMode = !!state.jockeyLinkMode;
+                    updateJockeySwitch();
+                }
+
                 updateRaceHeaders(window.raceInfo || ["", "", "", "", ""]);
 
                 if (state.minFav) document.getElementById('minFav').value = state.minFav;
@@ -1486,6 +1550,10 @@
 
                         const m = (val.mark || "").toString();
                         const b = (val.bg || "none").toString();
+                        const jbg = (val.jbg || "").toString();
+
+                        if (jbg) sel.dataset.jockeyAutoBg = jbg;
+                        else delete sel.dataset.jockeyAutoBg;
 
                         if (box) {
                             box.textContent = m;
@@ -1493,8 +1561,8 @@
                         }
 
                         applyMarkBackground(sel, !!m);
-                        applyBg(sel, b);
-
+                        const effBg = (b && b !== "none") ? b : ((jockeyLinkMode && jbg) ? jbg : "none");
+                        applyBg(sel, effBg);
                         const name = val.name;
                         if (name === null) {
                             sel.classList.add("is-empty");

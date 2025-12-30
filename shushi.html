@@ -41,13 +41,14 @@
             background: rgb(0, 122, 255);
             color: #fff;
             border: 1px solid rgba(0, 0, 0, 0.06);
-            border-radius: 12px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
             -webkit-appearance: none;
             appearance: none;
             box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 8px 20px rgba(0, 0, 0, 0.10);
             transition: transform 0.06s ease, filter 0.18s ease, box-shadow 0.18s ease;
+            white-space: nowrap;
         }
 
         .btn:hover {
@@ -132,6 +133,22 @@
             align-items: center;
             justify-content: space-between;
             gap: 12px;
+        }
+
+
+        .action-left,
+        .action-right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin: 6px 0 14px;
         }
 
         #toast {
@@ -267,6 +284,11 @@
                 margin: 10px;
             }
 
+            .btn {
+                font-size: 16px;
+                padding: 6px 10px;
+            }
+
             .container {
                 max-width: 100%;
             }
@@ -381,7 +403,7 @@
             background: rgb(0, 122, 255);
             color: #fff;
             padding: 6px 12px;
-            border-radius: 12px;
+            border-radius: 6px;
             cursor: pointer;
             user-select: none;
             display: inline-block;
@@ -390,6 +412,7 @@
             appearance: none;
             box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 8px 20px rgba(0, 0, 0, 0.10);
             transition: transform 0.06s ease, filter 0.18s ease, box-shadow 0.18s ease;
+            white-space: nowrap;
         }
 
         .menu-button:hover {
@@ -421,7 +444,7 @@
             left: 0;
             background: white;
             border: 1px solid #ccc;
-            border-radius: 12px;
+            border-radius: 6px;
             min-width: 140px;
             z-index: 999;
         }
@@ -466,6 +489,10 @@
         <div class="profit-box">
             <span class="profit-label">収支：</span>
             <span id="profit">¥0</span>
+        </div>
+
+        <div class="filter-bar">
+            <select id="yearFilter"></select>
         </div>
 
         <table class="summary-table">
@@ -514,12 +541,12 @@
 
         <div class="action-bar">
             <div class="action-left">
-                <button class="btn" onclick="saveData()">保存</button>
-            </div>
-            <div class="action-right">
                 <button class="btn" onclick="addRow()">追加</button>
                 <button class="btn delete-mode-btn" id="deleteModeBtn" aria-pressed="false"
                     onclick="toggleDeleteMode()">削除</button>
+            </div>
+            <div class="action-right">
+                <button class="btn" onclick="saveData()">保存</button>
             </div>
         </div>
 
@@ -528,6 +555,52 @@
     <script>
         const API_URL = "https://shushi.cooopew.workers.dev/";
         const tbody = document.getElementById("tbody");
+
+        const yearFilter = document.getElementById("yearFilter");
+
+        function getRowYear(tr) {
+            const v = (tr.children[0] && tr.children[0].children[0] && tr.children[0].children[0].value) ? tr.children[0].children[0].value : "";
+            return v.length >= 4 ? v.slice(0, 4) : "";
+        }
+
+        function rebuildYearOptions() {
+            if (!yearFilter) return;
+
+            const years = new Set();
+            [...tbody.children].forEach(tr => {
+                const y = getRowYear(tr);
+                if (y) years.add(y);
+            });
+
+            if (years.size === 0) years.add(String(new Date().getFullYear()));
+
+            const saved = localStorage.getItem("shushi_year_filter") || "all";
+            const current = yearFilter.value || saved || "all";
+            const arr = [...years].sort((a, b) => b.localeCompare(a));
+
+            yearFilter.innerHTML = `<option value="all">全期間</option>` + arr.map(y => `<option value="${y}">${y}年</option>`).join("");
+            yearFilter.value = arr.includes(current) ? current : "all";
+        }
+
+        function applyYearFilter() {
+            if (!yearFilter) {
+                calc();
+                return;
+            }
+
+            const y = yearFilter.value || "all";
+            localStorage.setItem("shushi_year_filter", y);
+
+            [...tbody.children].forEach(tr => {
+                const ry = getRowYear(tr);
+                const show = (y === "all") || (ry === y);
+                tr.style.display = show ? "" : "none";
+            });
+
+            calc();
+        }
+
+
 
         function formatYen(n) {
             if (!n || isNaN(n)) return "¥0";
@@ -554,14 +627,18 @@
         function addRow(data = {}) {
             const today = new Date().toISOString().split("T")[0];
             const isNewRow = Object.keys(data).length === 0;
-            const date = isNewRow ? today : (data.date ?? "");
+            let date = isNewRow ? today : (data.date ?? "");
             const amount = isNewRow ? "" : (data.amount ?? "");
             const payout = isNewRow ? "" : (data.payout ?? "");
             const buyer = isNewRow ? "" : (data.buyer ?? "");
 
+            if (isNewRow && yearFilter && yearFilter.value && yearFilter.value !== "all") {
+                date = `${yearFilter.value}-${today.slice(5)}`;
+            }
+
             const tr = document.createElement("tr");
             tr.innerHTML = `
-                <td><input type="date" value="${date}"></td>
+                <td><input type="date" value="${date}" onchange="rebuildYearOptions(); applyYearFilter()"></td>
 
                 <td class="num">
                     <input type="text"
@@ -593,6 +670,10 @@
                 </td>
             `;
             tbody.appendChild(tr);
+            if (isNewRow) {
+                rebuildYearOptions();
+                applyYearFilter();
+            }
         }
 
         async function loadData() {
@@ -602,7 +683,8 @@
 
                 tbody.innerHTML = "";
                 data.forEach(r => addRow(r));
-                calc();
+                rebuildYearOptions();
+                applyYearFilter();
             } catch (e) {
                 showToast("読み込みに失敗しました");
             }
@@ -633,6 +715,8 @@
             let payUeda = 0, payChiba = 0;
 
             [...tbody.children].forEach(tr => {
+                if (tr.style.display === "none") return;
+
                 const amount = parseYen(tr.children[1].children[0].value);
                 const payout = parseYen(tr.children[2].children[0].value);
                 const buyer = tr.children[3].children[0].value;
@@ -697,6 +781,9 @@
         }
 
         setDeleteMode(false);
+        if (yearFilter) yearFilter.addEventListener("change", applyYearFilter);
+        rebuildYearOptions();
+        applyYearFilter();
         loadData();
     </script>
 
