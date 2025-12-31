@@ -243,6 +243,13 @@
             flex: 0 0 auto;
         }
 
+        #modeToggle.on {
+            background: #3251BC;
+            color: #fff;
+            border-color: #3251BC;
+        }
+
+
         table.shutuba-table {
             width: 100%;
             border-collapse: separate;
@@ -816,12 +823,9 @@
 
     <div class="toggle-container">
         <div class="toggle-row">
-            <span>背景選択</span>
-            <div id="modeToggle" class="switch"></div>
-        </div>
-        <div class="toggle-row">
-            <span>騎手選択</span>
-            <div id="jockeyToggle" class="switch"></div>
+            <button id="modeToggle" class="race-clear" type="button">個別選択</button>
+            <button id="jockeyApplyBtn" class="race-clear" type="button">一括選択</button>
+            <button id="bgClearAllBtn" class="race-clear" type="button">クリア</button>
         </div>
     </div>
 
@@ -884,7 +888,9 @@
         const modeBtn = document.getElementById("modeToggle");
 
         let jockeyLinkMode = false;
-        const jockeyBtn = document.getElementById("jockeyToggle");
+        const jockeyBtn = document.getElementById("jockeyApplyBtn");
+
+        const bgClearAllBtn = document.getElementById("bgClearAllBtn");
 
         const AUTO_JOCKEY_COLORS = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4", "#ffd8a8", "#c2f0ff", "#d7ffd6", "#ffe3f1", "#e7e1ff"];
         let jockeyAutoRefreshPending = false;
@@ -992,9 +998,13 @@
             saveState();
         }
 
-
         function updateSwitch() {
-            backgroundMode ? modeBtn.classList.add("on") : modeBtn.classList.remove("on");
+            if (!modeBtn) return;
+            if (backgroundMode) {
+                modeBtn.classList.add("on");
+            } else {
+                modeBtn.classList.remove("on");
+            }
         }
 
         modeBtn.addEventListener("click", () => {
@@ -1005,6 +1015,8 @@
         updateSwitch();
 
         function clearAllRowBackgrounds() {
+
+            jockeyLinkMode = false;
 
             document.querySelectorAll('.custom-select:not(.is-empty)').forEach(r => {
 
@@ -1025,19 +1037,17 @@
         }
 
 
-        function updateJockeySwitch() {
-            if (!jockeyBtn) return;
-            jockeyLinkMode ? jockeyBtn.classList.add("on") : jockeyBtn.classList.remove("on");
-            scheduleJockeyAutoRefresh();
+        if (bgClearAllBtn) {
+            bgClearAllBtn.addEventListener("click", () => {
+                clearAllRowBackgrounds();
+            });
         }
 
         if (jockeyBtn) {
             jockeyBtn.addEventListener("click", () => {
-                jockeyLinkMode = !jockeyLinkMode;
-                if (!jockeyLinkMode) clearAllRowBackgrounds();
-                updateJockeySwitch();
+                jockeyLinkMode = true;
+                refreshJockeyAutoBg();
             });
-            updateJockeySwitch();
         }
 
         function toCircleNumber(num) {
@@ -1178,8 +1188,6 @@
             if (!box) return;
             if (hasMark) box.classList.add("is-marked");
             else box.classList.remove("is-marked");
-
-            scheduleJockeyAutoRefresh();
         }
 
         function openPalette(rowEl, e) {
@@ -1513,7 +1521,6 @@
 
                 if (typeof state.jockeyLinkMode === "boolean") {
                     jockeyLinkMode = !!state.jockeyLinkMode;
-                    updateJockeySwitch();
                 }
 
                 updateRaceHeaders(window.raceInfo || ["", "", "", "", ""]);
