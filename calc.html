@@ -93,37 +93,6 @@
             gap: 8px;
         }
 
-        .switch {
-            position: relative;
-            width: 46px;
-            height: 24px;
-            background: #ccc;
-            border-radius: 24px;
-            cursor: pointer;
-            transition: background 0.2s;
-            flex: 0 0 auto;
-        }
-
-        .switch::after {
-            content: "";
-            top: 2px;
-            left: 2px;
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: #fff;
-            border-radius: 50%;
-            transition: left 0.2s;
-        }
-
-        .switch.on {
-            background: #2196F3;
-        }
-
-        .switch.on::after {
-            left: 24px;
-        }
-
         .race-focus {
             display: none;
             gap: 8px;
@@ -749,10 +718,6 @@
         }
 
         @media (max-width: 640px) {
-            body {
-                margin: 10px;
-            }
-
             #raceTables {
                 touch-action: pan-y;
             }
@@ -976,6 +941,13 @@
             rows.forEach(r => {
                 const box = r?.querySelector(".selected");
                 const manual = box?.dataset?.bg;
+                const locked = r?.dataset?.bgLock === "1";
+                if (locked) {
+                    delete r.dataset.jockeyAutoBg;
+                    if (manual && manual !== "none") applyBg(r, manual);
+                    else applyBg(r, "none");
+                    return;
+                }
                 if (manual && manual !== "none") {
                     delete r.dataset.jockeyAutoBg;
                     applyBg(r, manual);
@@ -1024,6 +996,8 @@
 
                 delete r.dataset.jockeyAutoBg;
 
+                delete r.dataset.bgLock;
+
                 const box = r.querySelector(".selected");
 
                 if (box) box.dataset.bg = "none";
@@ -1045,6 +1019,9 @@
 
         if (jockeyBtn) {
             jockeyBtn.addEventListener("click", () => {
+                document.querySelectorAll(".custom-select").forEach(sel => {
+                    if (sel) delete sel.dataset.bgLock;
+                });
                 jockeyLinkMode = true;
                 refreshJockeyAutoBg();
             });
@@ -1197,6 +1174,10 @@
             const applyColorToRow = (row, color) => {
                 const b = row?.querySelector(".selected");
                 if (b) b.dataset.bg = color;
+                if (row) {
+                    row.dataset.bgLock = "1";
+                    delete row.dataset.jockeyAutoBg;
+                }
                 applyBg(row, color);
             };
 
@@ -1486,6 +1467,7 @@
                         mark: (box?.textContent || "").trim(),
                         bg: (box?.dataset.bg || "none").trim(),
                         jbg: (sel.dataset.jockeyAutoBg || null),
+                        bgLock: (sel.dataset.bgLock === "1") ? 1 : 0,
                         name: isEmpty ? null : name,
                         jockey: jockey || null,
                         odds: odds || null,
@@ -1546,6 +1528,10 @@
                         const m = (val.mark || "").toString();
                         const b = (val.bg || "none").toString();
                         const jbg = (val.jbg || "").toString();
+                        const lock = !!val.bgLock;
+
+                        if (lock) sel.dataset.bgLock = "1";
+                        else delete sel.dataset.bgLock;
 
                         if (jbg) sel.dataset.jockeyAutoBg = jbg;
                         else delete sel.dataset.jockeyAutoBg;
@@ -1556,7 +1542,7 @@
                         }
 
                         applyMarkBackground(sel, !!m);
-                        const effBg = (b && b !== "none") ? b : ((jockeyLinkMode && jbg) ? jbg : "none");
+                        const effBg = (b && b !== "none") ? b : (lock ? "none" : ((jockeyLinkMode && jbg) ? jbg : "none"));
                         applyBg(sel, effBg);
                         const name = val.name;
                         if (name === null) {
@@ -1583,6 +1569,8 @@
                                 box.textContent = "";
                                 box.dataset.bg = "none";
                             }
+                            delete sel.dataset.jockeyAutoBg;
+                            delete sel.dataset.bgLock;
                             applyMarkBackground(sel, false);
                             applyBg(sel, "none");
                             return;
@@ -1614,6 +1602,8 @@
                     box.textContent = "";
                     box.dataset.bg = "none";
                 }
+                delete sel.dataset.jockeyAutoBg;
+                delete sel.dataset.bgLock;
                 applyMarkBackground(sel, false);
                 applyBg(sel, "none");
             });
@@ -1650,6 +1640,8 @@
                     box.textContent = "";
                     box.dataset.bg = "none";
                 }
+                delete sel.dataset.jockeyAutoBg;
+                delete sel.dataset.bgLock;
                 applyMarkBackground(sel, false);
                 applyBg(sel, "none");
             });
@@ -1670,7 +1662,7 @@
                 const v = (box?.textContent || "").trim();
 
                 let bg = (box?.dataset.bg || "none").trim();
-                if ((!bg || bg === "none") && jockeyLinkMode) {
+                if ((!bg || bg === "none") && jockeyLinkMode && sel.dataset.bgLock !== "1") {
                     const auto = (sel.dataset.jockeyAutoBg || "").trim();
                     if (auto) bg = auto;
                 }
@@ -2254,6 +2246,8 @@
                 if (!box) return;
                 box.textContent = "";
                 box.dataset.bg = "none";
+                delete sel.dataset.jockeyAutoBg;
+                delete sel.dataset.bgLock;
                 applyMarkBackground(sel, false);
                 applyBg(sel, "none");
             });
