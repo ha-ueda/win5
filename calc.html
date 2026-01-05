@@ -347,8 +347,8 @@
         }
 
         table.shutuba-table tbody td.col-no {
-            height: 48px;
-            line-height: 48px;
+            height: 46px;
+            line-height: 46px;
             text-align: center;
             font-size: 12px;
             font-feature-settings: "tnum" 1;
@@ -1375,8 +1375,6 @@
             setTimeout(() => document.addEventListener("click", closePalette, true), 0);
         }
 
-
-
         function createRow(raceNum, horseNum) {
             const tr = document.createElement("tr");
             tr.className = "custom-select";
@@ -1660,8 +1658,6 @@
                         const oEl = sel.querySelector('.odds-top');
                         const pEl = sel.querySelector('.odds-bottom');
                         const noEl = sel.querySelector('td.col-no');
-
-
                         const m = (val.mark || "").toString();
                         const b = (val.bg || "none").toString();
                         const jbg = (val.jbg || "").toString();
@@ -1756,7 +1752,6 @@
                 const oEl = sel.querySelector('.odds-top');
                 const pEl = sel.querySelector('.odds-bottom');
                 const noEl = sel.querySelector('td.col-no');
-
                 const box = sel.querySelector('.selected');
 
                 if (nameEl) nameEl.textContent = "";
