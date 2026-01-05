@@ -93,39 +93,6 @@
             gap: 8px;
         }
 
-        .race-focus {
-            display: none;
-            gap: 8px;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            padding: 6px 0 10px;
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        .race-focus::-webkit-scrollbar {
-            display: none;
-            height: 0;
-        }
-
-        .race-focus button {
-            border: 1px solid #cfcfcf;
-            background: #fff;
-            color: #222;
-            border-radius: 999px;
-            padding: 8px 12px;
-            font-size: 14px;
-            cursor: pointer;
-            white-space: nowrap;
-            flex: 0 0 auto;
-        }
-
-        .race-focus button.on {
-            border-color: #0078d4;
-            color: #0078d4;
-            font-weight: bold;
-        }
-
         #raceTables {
             width: 100%;
             overflow-x: auto;
@@ -234,7 +201,6 @@
         }
 
 
-
         table.shutuba-table {
             width: 100%;
             border-collapse: separate;
@@ -285,61 +251,13 @@
             font-weight: 400;
             text-align: center;
             white-space: nowrap;
-        }
-
-        .th-col .th-sort {
             display: flex;
             flex-direction: column;
             gap: 2px;
-            margin-top: 2px;
-        }
-
-        .th-col .tri-up,
-        .th-col .tri-down {
-            width: 0;
-            height: 0;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            opacity: 0.7;
-        }
-
-        .th-col .tri-up {
-            border-bottom: 7px solid #9a9a9a;
-        }
-
-        .th-col .tri-down {
-            border-top: 7px solid #9a9a9a;
         }
 
         th.sortable {
             cursor: pointer;
-        }
-
-        th.sortable.sort-asc .tri-up,
-        th.sortable.sort-desc .tri-down {
-            opacity: 1;
-        }
-
-        th.sortable.sort-asc .tri-up {
-            border-bottom-color: #666;
-            opacity: 1;
-        }
-
-        th.sortable.sort-desc .tri-down {
-            border-top-color: #666;
-            opacity: 1;
-        }
-
-        th.sortable .tri-up,
-        th.sortable .tri-down {
-            opacity: 0.45;
-        }
-
-        .th-mark-wrap {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
         }
 
         .col-no {
@@ -742,10 +660,6 @@
                 flex: 0 0 calc(100vw - 20px);
             }
 
-            .race-focus {
-                display: flex;
-            }
-
             .top-bar-right {
                 justify-content: flex-start;
             }
@@ -913,8 +827,6 @@
         const bgClearAllBtn = document.getElementById("bgClearAllBtn");
 
         const AUTO_JOCKEY_COLORS = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4", "#ffd8a8", "#c2f0ff", "#d7ffd6", "#ffe3f1", "#e7e1ff"];
-        let jockeyAutoRefreshPending = false;
-
         let stableJockeyColorMap = new Map();
         let stableJockeyUsedColors = new Set();
 
@@ -945,15 +857,6 @@
 
         function normJockey(s) {
             return String(s ?? "").replace(/\s+/g, "").trim();
-        }
-
-        function scheduleJockeyAutoRefresh() {
-            if (jockeyAutoRefreshPending) return;
-            jockeyAutoRefreshPending = true;
-            requestAnimationFrame(() => {
-                jockeyAutoRefreshPending = false;
-                refreshJockeyAutoBg();
-            });
         }
 
         function refreshJockeyAutoBg() {
@@ -1252,22 +1155,16 @@
             for (const r of rows) tbody.appendChild(r);
             updateSortUI(card, key, dir);
         }
-
         function bindSortHandlers(card, raceNum) {
             const ths = Array.from(card.querySelectorAll("th.sortable"));
             for (const th of ths) {
                 const key = th.dataset.sortKey;
-                const up = th.querySelector(".tri-up");
-
                 const setSortAsc = () => {
                     sortStateByRace[raceNum] = { key, dir: 1 };
                     sortRaceTable(raceNum, key, 1);
                 };
-
-                if (up) up.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); setSortAsc(); });
-
                 th.addEventListener("click", (e) => {
-                    if (e.target && e.target.closest(".th-sort")) return;
+                    e.preventDefault();
                     setSortAsc();
                 });
             }
@@ -1528,7 +1425,6 @@
             <th class="col-no sortable" data-sort-key="no">
               <div class="th-col">
                 <div class="th-title">馬番</div>
-                <div class="th-sort"><span class="tri-up"></span></div>
               </div>
             </th>
             <th class="col-mark">
@@ -1544,7 +1440,6 @@
             <th class="col-odds sortable" data-sort-key="odds">
               <div class="th-col">
                 <div class="th-title">オッズ</div>
-                <div class="th-sort"><span class="tri-up"></span></div>
               </div>
             </th>
           </tr>
@@ -1688,11 +1583,6 @@
                             }
                             if (pEl) pEl.textContent = "";
                             if (noEl) setNoBox(noEl, "", "");
-                            sel.dataset.umaban = "";
-                            sel.dataset.name = "";
-                            sel.dataset.jockey = "";
-                            sel.dataset.odds = "";
-                            sel.dataset.ninki = "";
                             sel.dataset.umaban = "";
                             sel.dataset.name = "";
                             sel.dataset.jockey = "";
