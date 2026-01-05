@@ -97,8 +97,22 @@
             text-align: center;
         }
 
+        .summary-table {
+            table-layout: fixed;
+        }
+
+        .summary-table col.summary-col-label {
+            width: 22%;
+        }
+
+        .summary-table col.summary-col-money {
+            width: 26%;
+        }
+
+
         .summary-table td:nth-child(2),
-        .summary-table td:nth-child(3) {
+        .summary-table td:nth-child(3),
+        .summary-table td:nth-child(4) {
             text-align: right;
             padding-right: 10px;
         }
@@ -495,28 +509,38 @@
         </div>
 
         <table class="summary-table">
+            <colgroup>
+                <col class="summary-col-label">
+                <col class="summary-col-money">
+                <col class="summary-col-money">
+                <col class="summary-col-money">
+            </colgroup>
             <tr>
                 <th></th>
                 <th>購入</th>
                 <th>払戻</th>
+                <th>収支</th>
             </tr>
 
             <tr>
                 <td>上田</td>
                 <td id="sumUeda"><span>¥0</span></td>
                 <td id="payUeda"><span>¥0</span></td>
+                <td id="profitUeda"><span>¥0</span></td>
             </tr>
 
             <tr>
                 <td>千葉</td>
                 <td id="sumChiba"><span>¥0</span></td>
                 <td id="payChiba"><span>¥0</span></td>
+                <td id="profitChiba"><span>¥0</span></td>
             </tr>
 
             <tr>
                 <td>合計</td>
                 <td id="sumTotal"><span>¥0</span></td>
                 <td id="sumPayout"><span>¥0</span></td>
+                <td id="profitTotal"><span>¥0</span></td>
             </tr>
         </table>
 
@@ -604,6 +628,12 @@
         function formatYen(n) {
             if (!n || isNaN(n)) return "¥0";
             return "¥" + Number(n).toLocaleString();
+        }
+
+        function formatProfitSpan(n) {
+            if (n > 0) return `<span class="profit">${formatYen(n)}</span>`;
+            if (n < 0) return `<span class="loss">${formatYen(n)}</span>`;
+            return `<span>¥0</span>`;
         }
 
         function parseYen(s) {
@@ -733,6 +763,9 @@
             const sumPayout = payUeda + payChiba;
             const profit = sumPayout - sumTotal;
 
+            const profitUeda = payUeda - sumUeda;
+            const profitChiba = payChiba - sumChiba;
+
             document.getElementById("sumUeda").innerHTML = `<span>${formatYen(sumUeda)}</span>`;
             document.getElementById("payUeda").innerHTML = `<span>${formatYen(payUeda)}</span>`;
 
@@ -741,6 +774,13 @@
 
             document.getElementById("sumTotal").innerHTML = `<span>${formatYen(sumTotal)}</span>`;
             document.getElementById("sumPayout").innerHTML = `<span>${formatYen(sumPayout)}</span>`;
+
+            const pu = document.getElementById("profitUeda");
+            if (pu) pu.innerHTML = formatProfitSpan(profitUeda);
+            const pc = document.getElementById("profitChiba");
+            if (pc) pc.innerHTML = formatProfitSpan(profitChiba);
+            const pt = document.getElementById("profitTotal");
+            if (pt) pt.innerHTML = formatProfitSpan(profit);
 
             const profitElem = document.getElementById("profit");
 
