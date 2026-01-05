@@ -165,7 +165,7 @@
             align-items: center;
             justify-content: space-between;
             gap: 10px;
-            padding: 10px 12px;
+            padding: 5px;
             border-bottom: 1px solid #e6e6e6;
             background: #fff;
         }
@@ -1451,12 +1451,6 @@
                     return;
                 }
                 cycleMark();
-            });
-
-            tr.addEventListener("click", (e) => {
-                if (e.target && e.target.closest(".selected")) return;
-                if (backgroundMode) openPalette(tr, e);
-                else cycleMark();
             });
 
             tr.appendChild(tdNo);
