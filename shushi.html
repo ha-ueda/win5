@@ -449,7 +449,7 @@
             }
 
             .cal-amt {
-                font-size: 12px;
+                font-size: 9px;
             }
 
             .entry-row {
@@ -788,14 +788,6 @@
             const btn = document.querySelector(".menu-button");
             if (!menu.contains(e.target) && !btn.contains(e.target)) menu.style.display = "none";
         });
-
-
-        let fitTimer = null;
-        window.addEventListener("resize", () => {
-            clearTimeout(fitTimer);
-            fitTimer = setTimeout(() => fitCalAmts(), 120);
-        });
-
     </script>
 
     <div class="container">
@@ -928,7 +920,6 @@
         const dayList = document.getElementById("dayList");
         const dayEmpty = document.getElementById("dayEmpty");
 
-
         const editorOverlay = document.getElementById("editorOverlay");
         const editorTitle = document.getElementById("editorTitle");
         const editorInvest = document.getElementById("editorInvest");
@@ -949,7 +940,6 @@
         buyerBtns.forEach(btn => {
             btn.addEventListener("click", () => setEditorBuyer(btn.dataset.buyer || "上田"));
         });
-
 
         let viewMonth = "";
         let selectedDate = "";
@@ -1144,39 +1134,7 @@
                     cells.push(`<div class="cal-cell outside"></div>`);
                     continue;
 
-                    requestAnimationFrame(() => fitCalAmts());
-
                 }
-
-
-                function fitCalAmts() {
-                    const amts = document.querySelectorAll(".cal-amt");
-                    amts.forEach(el => {
-                        el.style.transform = "";
-                        el.style.display = "inline-block";
-                        el.style.whiteSpace = "nowrap";
-
-                        const base = 12;
-                        const min = 4;
-
-                        let size = base;
-                        el.style.fontSize = size + "px";
-
-                        const maxIter = base - min;
-                        for (let i = 0; i <= maxIter; i++) {
-                            if (el.scrollWidth <= el.clientWidth + 0.5) break;
-                            size -= 1;
-                            el.style.fontSize = size + "px";
-                        }
-
-                        if (el.scrollWidth > el.clientWidth + 0.5) {
-                            const ratio = el.clientWidth / el.scrollWidth;
-                            el.style.transformOrigin = "center";
-                            el.style.transform = "scaleX(" + Math.max(ratio, 0.7) + ")";
-                        }
-                    });
-                }
-
 
                 const dateStr = `${viewMonth}-${pad2(day)}`;
                 const dow = new Date(y, m - 1, day).getDay();
