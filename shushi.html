@@ -245,7 +245,7 @@
 
         .cal-dow {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
+            grid-template-columns: repeat(7, minmax(0, 1fr));
             gap: 0;
             padding: 0 2px;
             box-sizing: border-box;
@@ -269,7 +269,7 @@
 
         .cal-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
+            grid-template-columns: repeat(7, minmax(0, 1fr));
             gap: 0;
             padding: 0 2px;
             box-sizing: border-box;
@@ -283,6 +283,7 @@
             position: relative;
             background: #fff;
             text-align: center;
+            min-width: 0;
         }
 
         .cal-cell.outside {
@@ -335,9 +336,8 @@
             color: inherit;
         }
 
-
-
         .cal-amt {
+            display: inline-block;
             position: static;
             margin-top: 6px;
             width: 100%;
@@ -348,6 +348,8 @@
             white-space: nowrap;
             overflow-wrap: normal;
             word-break: normal;
+            max-width: 100%;
+            line-height: 1.05;
         }
 
         .cal-amt.pos {
@@ -512,7 +514,6 @@
         .fab-edit:active {
             transform: scale(.98);
         }
-
 
         .editor-overlay {
             position: fixed;
@@ -787,6 +788,14 @@
             const btn = document.querySelector(".menu-button");
             if (!menu.contains(e.target) && !btn.contains(e.target)) menu.style.display = "none";
         });
+
+
+        let fitTimer = null;
+        window.addEventListener("resize", () => {
+            clearTimeout(fitTimer);
+            fitTimer = setTimeout(() => fitCalAmts(), 120);
+        });
+
     </script>
 
     <div class="container">
@@ -1134,7 +1143,40 @@
                 if (day < 1 || day > lastDay) {
                     cells.push(`<div class="cal-cell outside"></div>`);
                     continue;
+
+                    requestAnimationFrame(() => fitCalAmts());
+
                 }
+
+
+                function fitCalAmts() {
+                    const amts = document.querySelectorAll(".cal-amt");
+                    amts.forEach(el => {
+                        el.style.transform = "";
+                        el.style.display = "inline-block";
+                        el.style.whiteSpace = "nowrap";
+
+                        const base = 12;
+                        const min = 6;
+
+                        let size = base;
+                        el.style.fontSize = size + "px";
+
+                        const maxIter = base - min;
+                        for (let i = 0; i <= maxIter; i++) {
+                            if (el.scrollWidth <= el.clientWidth + 0.5) break;
+                            size -= 1;
+                            el.style.fontSize = size + "px";
+                        }
+
+                        if (el.scrollWidth > el.clientWidth + 0.5) {
+                            const ratio = el.clientWidth / el.scrollWidth;
+                            el.style.transformOrigin = "center";
+                            el.style.transform = "scaleX(" + Math.max(ratio, 0.7) + ")";
+                        }
+                    });
+                }
+
 
                 const dateStr = `${viewMonth}-${pad2(day)}`;
                 const dow = new Date(y, m - 1, day).getDay();
