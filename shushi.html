@@ -18,7 +18,7 @@
         table {
             border-collapse: collapse;
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 50px;
             font-size: 15px;
         }
 
@@ -87,6 +87,51 @@
             table-layout: fixed;
         }
 
+        .month-summary {
+            margin-top: 14px;
+        }
+
+        .month-summary-label {
+            color: #777;
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .month-summary-body {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .month-profit {
+            font-size: 42px;
+            font-weight: 900;
+            letter-spacing: 0.2px;
+        }
+
+        .month-side {
+            min-width: 160px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .ms-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            gap: 14px;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .ms-row .ms-val {
+            text-align: right;
+            color: #888;
+            font-weight: 800;
+        }
+
         .summary-table col.summary-col-label {
             width: 22%;
         }
@@ -110,6 +155,23 @@
 
         .profit-label {
             font-weight: bold;
+        }
+
+        .profit-box #yearFilter {
+            font: inherit;
+            font-weight: bold;
+            color: inherit;
+            -webkit-text-fill-color: currentColor;
+            background: transparent;
+            border: 0;
+            padding: 0;
+            margin: 0;
+            width: auto;
+            min-width: 0;
+            line-height: inherit;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
         }
 
         .profit {
@@ -415,6 +477,19 @@
         @media (max-width: 640px) {
             body {
                 margin: 10px;
+
+                .month-profit {
+                    font-size: 34px;
+                }
+
+                .ms-row {
+                    font-size: 16px;
+                }
+
+                .month-side {
+                    min-width: 150px;
+                }
+
             }
 
             .btn {
@@ -794,7 +869,7 @@
     <div class="container">
 
         <div class="profit-box">
-            <span class="profit-label">収支：</span><span id="profit">¥0</span>
+            <select id="yearFilter"></select><span class="profit-label">収支：</span><span id="profit">¥0</span>
         </div>
 
         <table class="summary-table">
@@ -854,6 +929,22 @@
             <div class="cal-grid" id="calGrid"></div>
         </div>
 
+        <div class="month-summary">
+            <div class="month-summary-label">月間収支</div>
+            <div class="month-summary-body">
+                <div class="month-profit" id="monthProfit">¥0</div>
+                <div class="month-side">
+                    <div class="ms-row">
+                        <div>購入</div>
+                        <div class="ms-val" id="monthInvest">¥0</div>
+                    </div>
+                    <div class="ms-row">
+                        <div>払戻</div>
+                        <div class="ms-val" id="monthRecover">¥0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="day-editor">
@@ -906,7 +997,6 @@
         <button class="fab-edit" id="fabEdit" type="button" onclick="openEditorFromFab()">✎</button>
     </div>
 
-
     <script>
         const API_URL = "https://shushi.cooopew.workers.dev/";
 
@@ -916,11 +1006,9 @@
         const calGrid = document.getElementById("calGrid");
         const monthTitle = document.getElementById("monthTitle");
         const monthPicker = document.getElementById("monthPicker");
-
         const dayTitle = document.getElementById("dayTitle");
         const dayList = document.getElementById("dayList");
         const dayEmpty = document.getElementById("dayEmpty");
-
         const editorOverlay = document.getElementById("editorOverlay");
         const editorTitle = document.getElementById("editorTitle");
         const editorInvest = document.getElementById("editorInvest");
@@ -929,7 +1017,7 @@
         const editorDelete = document.getElementById("editorDelete");
         const buyerBtns = Array.from(document.querySelectorAll(".buyer-btn"));
         const fabEdit = document.getElementById("fabEdit");
-
+        const yearFilter = document.getElementById("yearFilter");
         let editorDate = "";
         let editorBuyer = "上田";
         let editingUid = null;
@@ -1041,13 +1129,77 @@
             return rows.filter(r => r.date && r.date.startsWith(ym));
         }
 
+        function rebuildYearOptions() {
+            if (!yearFilter) return;
+
+            const years = Array.from(new Set(
+                rows
+                    .map(r => (r.date || "").slice(0, 4))
+                    .filter(y => y && y.length === 4)
+            )).sort((a, b) => Number(b) - Number(a));
+
+            const saved = localStorage.getItem("shushi_year_filter") || "all";
+            const current = yearFilter.value || saved || "all";
+
+            yearFilter.innerHTML = `<option value="all">全期間</option>` + years.map(y => `<option value="${y}">${y}年</option>`).join("");
+            yearFilter.value = (current !== "all" && years.includes(current)) ? current : "all";
+        }
+
+        function getYearFilterValue() {
+            if (!yearFilter) return "all";
+            return yearFilter.value || "all";
+        }
+
+        function applyYearFilter() {
+            if (!yearFilter) {
+                calc();
+                return;
+            }
+
+
+
+            function fitYearFilterWidth() {
+                if (!yearFilter) return;
+
+                const opt = yearFilter.options[yearFilter.selectedIndex];
+                const text = opt ? opt.text : "";
+
+                let meas = document.getElementById("yearMeasure");
+                if (!meas) {
+                    meas = document.createElement("span");
+                    meas.id = "yearMeasure";
+                    meas.style.position = "absolute";
+                    meas.style.visibility = "hidden";
+                    meas.style.whiteSpace = "pre";
+                    meas.style.pointerEvents = "none";
+                    document.body.appendChild(meas);
+
+                    fitYearFilterWidth();
+                }
+
+                const cs = getComputedStyle(yearFilter);
+                meas.style.font = cs.font;
+                meas.style.fontWeight = cs.fontWeight;
+                meas.textContent = text;
+
+                const w = meas.getBoundingClientRect().width;
+                yearFilter.style.width = Math.ceil(w + 2) + "px";
+            }
+
+            const y = getYearFilterValue();
+            localStorage.setItem("shushi_year_filter", y);
+            fitYearFilterWidth();
+            calc();
+        }
+
         function calc() {
-            const monthRows = getRowsInMonth(viewMonth);
+            const yFilter = getYearFilterValue();
+            const baseRows = (yFilter === "all") ? rows : rows.filter(r => (r.date || "").slice(0, 4) === yFilter);
 
             let sumUeda = 0, sumChiba = 0;
             let payUeda = 0, payChiba = 0;
 
-            monthRows.forEach(r => {
+            baseRows.forEach(r => {
                 const amount = Number(r.amount) || 0;
                 const payout = Number(r.payout) || 0;
                 const buyer = r.buyer || "上田";
@@ -1068,12 +1220,18 @@
             const profitUeda = payUeda - sumUeda;
             const profitChiba = payChiba - sumChiba;
 
-            document.getElementById("sumUeda").innerHTML = `<span>${formatYen(sumUeda)}</span>`;
-            document.getElementById("payUeda").innerHTML = `<span>${formatYen(payUeda)}</span>`;
-            document.getElementById("sumChiba").innerHTML = `<span>${formatYen(sumChiba)}</span>`;
-            document.getElementById("payChiba").innerHTML = `<span>${formatYen(payChiba)}</span>`;
-            document.getElementById("sumTotal").innerHTML = `<span>${formatYen(sumTotal)}</span>`;
-            document.getElementById("sumPayout").innerHTML = `<span>${formatYen(sumPayout)}</span>`;
+            const su = document.getElementById("sumUeda");
+            if (su) su.innerHTML = `<span>${formatYen(sumUeda)}</span>`;
+            const pueda = document.getElementById("payUeda");
+            if (pueda) pueda.innerHTML = `<span>${formatYen(payUeda)}</span>`;
+            const sc = document.getElementById("sumChiba");
+            if (sc) sc.innerHTML = `<span>${formatYen(sumChiba)}</span>`;
+            const pchiba = document.getElementById("payChiba");
+            if (pchiba) pchiba.innerHTML = `<span>${formatYen(payChiba)}</span>`;
+            const st = document.getElementById("sumTotal");
+            if (st) st.innerHTML = `<span>${formatYen(sumTotal)}</span>`;
+            const sp = document.getElementById("sumPayout");
+            if (sp) sp.innerHTML = `<span>${formatYen(sumPayout)}</span>`;
 
             const pu = document.getElementById("profitUeda");
             if (pu) pu.innerHTML = formatProfitSpan(profitUeda);
@@ -1083,23 +1241,75 @@
             if (pt) pt.innerHTML = formatProfitSpan(profit);
 
             const profitElem = document.getElementById("profit");
-            if (profit > 0) profitElem.innerHTML = `<span class="profit">${formatYen(profit)}</span>`;
-            else if (profit < 0) profitElem.innerHTML = `<span class="loss">${formatYen(profit)}</span>`;
-            else profitElem.innerHTML = `<span>¥0</span>`;
+            if (profitElem) {
+                if (profit > 0) profitElem.innerHTML = `<span class="profit">${formatYen(profit)}</span>`;
+                else if (profit < 0) profitElem.innerHTML = `<span class="loss">${formatYen(profit)}</span>`;
+                else profitElem.innerHTML = `<span>¥0</span>`;
+            }
+
+            const monthRows = getRowsInMonth(viewMonth);
+            let monthInvest = 0;
+            let monthRecover = 0;
+
+            monthRows.forEach(r => {
+                monthInvest += Number(r.amount) || 0;
+                monthRecover += Number(r.payout) || 0;
+            });
+
+            const monthProfit = monthRecover - monthInvest;
 
             const mp = document.getElementById("monthProfit");
             const mi = document.getElementById("monthInvest");
             const mr = document.getElementById("monthRecover");
 
             if (mp) {
-                mp.textContent = formatYen(profit);
-                mp.classList.toggle("loss", profit < 0);
-                mp.classList.toggle("profit", profit > 0);
-                if (profit === 0) { mp.classList.remove("loss"); mp.classList.remove("profit"); }
+                mp.textContent = formatYen(monthProfit);
+                mp.classList.toggle("loss", monthProfit < 0);
+                mp.classList.toggle("profit", monthProfit > 0);
+                if (monthProfit === 0) { mp.classList.remove("loss"); mp.classList.remove("profit"); }
             }
-            if (mi) mi.textContent = formatYen(sumTotal);
-            if (mr) mr.textContent = formatYen(sumPayout);
+            if (mi) mi.textContent = formatYen(monthInvest);
+            if (mr) mr.textContent = formatYen(monthRecover);
         }
+
+        const sumTotal = sumUeda + sumChiba;
+        const sumPayout = payUeda + payChiba;
+        const profit = sumPayout - sumTotal;
+
+        const profitUeda = payUeda - sumUeda;
+        const profitChiba = payChiba - sumChiba;
+
+        document.getElementById("sumUeda").innerHTML = `<span>${formatYen(sumUeda)}</span>`;
+        document.getElementById("payUeda").innerHTML = `<span>${formatYen(payUeda)}</span>`;
+        document.getElementById("sumChiba").innerHTML = `<span>${formatYen(sumChiba)}</span>`;
+        document.getElementById("payChiba").innerHTML = `<span>${formatYen(payChiba)}</span>`;
+        document.getElementById("sumTotal").innerHTML = `<span>${formatYen(sumTotal)}</span>`;
+        document.getElementById("sumPayout").innerHTML = `<span>${formatYen(sumPayout)}</span>`;
+
+        const pu = document.getElementById("profitUeda");
+        if (pu) pu.innerHTML = formatProfitSpan(profitUeda);
+        const pc = document.getElementById("profitChiba");
+        if (pc) pc.innerHTML = formatProfitSpan(profitChiba);
+        const pt = document.getElementById("profitTotal");
+        if (pt) pt.innerHTML = formatProfitSpan(profit);
+
+        const profitElem = document.getElementById("profit");
+        if (profit > 0) profitElem.innerHTML = `<span class="profit">${formatYen(profit)}</span>`;
+        else if (profit < 0) profitElem.innerHTML = `<span class="loss">${formatYen(profit)}</span>`;
+        else profitElem.innerHTML = `<span>¥0</span>`;
+
+        const mp = document.getElementById("monthProfit");
+        const mi = document.getElementById("monthInvest");
+        const mr = document.getElementById("monthRecover");
+
+        if (mp) {
+            mp.textContent = formatYen(profit);
+            mp.classList.toggle("loss", profit < 0);
+            mp.classList.toggle("profit", profit > 0);
+            if (profit === 0) { mp.classList.remove("loss"); mp.classList.remove("profit"); }
+        }
+        if (mi) mi.textContent = formatYen(sumTotal);
+        if (mr) mr.textContent = formatYen(sumPayout);
 
         function renderCalendar() {
             const y = parseInt(viewMonth.slice(0, 4), 10);
@@ -1293,6 +1503,10 @@
             calc();
             renderCalendar();
 
+
+            rebuildYearOptions();
+            applyYearFilter();
+
             const ok = await saveData();
             if (ok) closeEditor();
         }
@@ -1305,6 +1519,10 @@
 
             calc();
             renderCalendar();
+
+
+            rebuildYearOptions();
+            applyYearFilter();
 
             const ok = await saveData();
             if (ok) closeEditor();
@@ -1347,9 +1565,13 @@
                     buyer: r.buyer || "上田"
                 }));
 
+                rebuildYearOptions();
+
                 const todayYm = new Date().toISOString().slice(0, 7);
                 const initialYm = rows.length ? (ymFromDate(rows[rows.length - 1].date) || todayYm) : todayYm;
                 setViewMonth(initialYm);
+
+                applyYearFilter();
             } catch (e) {
                 showToast("読み込みに失敗しました");
                 const todayYm = new Date().toISOString().slice(0, 7);
@@ -1464,6 +1686,7 @@
             setViewMonth(monthPicker.value);
         });
 
+        if (yearFilter) yearFilter.addEventListener("change", () => applyYearFilter());
         setDeleteMode(false);
         loadData();
     </script>
