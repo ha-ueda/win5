@@ -83,18 +83,6 @@
             color: #333;
         }
 
-        td.num input[type="text"] {
-            min-width: 120px;
-            width: 100%;
-            text-align: right;
-        }
-
-        td select {
-            min-width: 72px;
-            width: 100%;
-            text-align: center;
-        }
-
         .summary-table {
             table-layout: fixed;
         }
@@ -116,7 +104,7 @@
 
         .profit-box {
             font-size: 30px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             text-align: center;
         }
 
@@ -137,28 +125,6 @@
         .container {
             max-width: 950px;
             margin: auto;
-        }
-
-        .action-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .action-left,
-        .action-right {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .filter-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            margin: 6px 0 14px;
         }
 
         #toast {
@@ -216,77 +182,223 @@
             background-color: #d92c2c;
         }
 
-        #mainTable th:last-child,
-        #mainTable td:last-child {
-            display: none;
-            width: 40px;
-            text-align: center;
+        .calendar-block {
+            margin-top: 8px;
         }
 
-        body.delete-mode #mainTable th:last-child,
-        body.delete-mode #mainTable td:last-child {
-            display: table-cell;
+        .cal-header {
+            display: grid;
+            grid-template-columns: 44px 1fr 44px;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0 8px;
         }
 
-        .table-wrapper {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        #mainTable {
-            --control-h: 33px;
-        }
-
-        #mainTable input,
-        #mainTable select {
-            height: var(--control-h);
-        }
-
-        #mainTable input[type="date"] {
-            padding-top: 0;
-            padding-bottom: 0;
-            line-height: normal;
-        }
-
-        #mainTable input,
-        #mainTable select {
+        .cal-nav {
             border: none;
             background: transparent;
-            box-shadow: none;
+            font-size: 28px;
+            line-height: 1;
+            height: 40px;
+            cursor: pointer;
+            border-radius: 10px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .cal-nav:active {
+            transform: scale(0.98);
+        }
+
+        .cal-title {
+            border: none;
+            background: transparent;
+            font-size: 22px;
+            font-weight: 800;
+            text-align: center;
+            padding: 6px 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .cal-title:focus-visible {
             outline: none;
-            border-radius: 0;
-            padding: 0 6px;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.25);
         }
 
-        #mainTable input:focus,
-        #mainTable select:focus {
+        #monthPicker {
+            position: absolute;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .cal-dow {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0;
+            padding: 0 2px;
+            box-sizing: border-box;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .cal-dow div {
+            text-align: center;
+            font-size: 13px;
+            padding: 8px 0;
+            font-weight: 700;
+        }
+
+        .cal-dow .sat {
+            color: #0b63d1;
+        }
+
+        .cal-dow .sun {
+            color: #d40000;
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0;
+            padding: 0 2px;
+            box-sizing: border-box;
+        }
+
+        .cal-cell {
+            min-height: 54px;
+            padding: 6px 6px 10px;
+            border-top: 1px solid #eee;
+            cursor: pointer;
+            position: relative;
             background: #fff;
-            outline: 2px solid #0078d4;
-            outline-offset: -2px;
-            border-radius: 4px;
-        }
-
-        #mainTable input[type="date"] {
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        #mainTable select {
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        #mainTable td:nth-child(4) {
             text-align: center;
         }
 
-        #mainTable td:nth-child(4) select {
+        .cal-cell.outside {
+            background: #fff;
+            cursor: default;
+        }
+
+        .cal-cell:active {
+            background: #f3f6ff;
+        }
+
+        .cal-dayline {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .cal-daynum {
+            font-size: 16px;
+            font-weight: 800;
+            line-height: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .cal-daychip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 999px;
+        }
+
+        .cal-cell.selected .cal-daychip {
+            background: #38a169;
+            color: #fff;
+        }
+
+        .cal-cell.sat .cal-daynum {
+            color: #111;
+        }
+
+        .cal-cell.sun .cal-daynum {
+            color: #111;
+        }
+
+        .cal-cell.selected .cal-daynum {
+            color: inherit;
+        }
+
+
+
+        .cal-amt {
+            position: static;
+            margin-top: 6px;
+            width: 100%;
             text-align: center;
-            text-align-last: center;
-            -moz-text-align-last: center;
-            padding-left: 0;
-            padding-right: 0;
+            font-size: 13px;
+            font-weight: 700;
+            opacity: 0.9;
+        }
+
+        .cal-amt.pos {
+            color: #0070f3;
+        }
+
+        .cal-amt.neg {
+            color: #d40000;
+        }
+
+        .day-editor {
+            margin-top: 18px;
+            border-top: 1px solid #eee;
+            padding-top: 14px;
+        }
+
+        .day-title {
+            font-size: 16px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .day-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .entry-row {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1fr 0.8fr 34px;
+            gap: 8px;
+            align-items: center;
+            padding: 8px 10px;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        .entry-row input[type="date"] {
+            -webkit-appearance: none;
+            appearance: none;
+            padding: 6px 8px;
+        }
+
+        .entry-row input[type="text"] {
+            text-align: right;
+        }
+
+        .entry-delete {
+            display: none;
+        }
+
+        body.delete-mode .entry-delete {
+            display: inline-flex;
+        }
+
+        .empty-hint {
+            color: #777;
+            font-size: 14px;
+            padding: 10px 2px 0;
         }
 
         @media (max-width: 640px) {
@@ -297,10 +409,6 @@
             .btn {
                 font-size: 16px;
                 padding: 6px 10px;
-            }
-
-            .container {
-                max-width: 100%;
             }
 
             .profit-box {
@@ -316,84 +424,270 @@
                 padding: 4px 6px;
             }
 
-            td.num input[type="text"] {
-                min-width: 0;
+            .cal-title {
+                font-size: 20px;
             }
 
-            #mainTable {
-                table-layout: fixed;
-                width: 100%;
+            .cal-cell {
+                min-height: 48px;
+                padding: 6px 6px 10px;
             }
 
-            #mainTable th,
-            #mainTable td {
-                white-space: normal;
-                padding: 4px 4px;
+            .cal-daynum {
+                font-size: 15px;
             }
 
-            #mainTable th:nth-child(1),
-            #mainTable td:nth-child(1) {
-                width: 28%;
+            .cal-amt {
+                font-size: 12px;
             }
 
-            #mainTable th:nth-child(2),
-            #mainTable td:nth-child(2) {
-                width: 30%;
+            .entry-row {
+                grid-template-columns: 1fr 1fr;
+                grid-template-areas:
+                    "date buyer"
+                    "amount payout"
+                    "del del";
+                gap: 8px;
             }
 
-            #mainTable th:nth-child(3),
-            #mainTable td:nth-child(3) {
-                width: 30%;
+            .entry-row .entry-date {
+                grid-area: date;
             }
 
-            #mainTable th:nth-child(4),
-            #mainTable td:nth-child(4) {
-                width: 12%;
+            .entry-row .entry-buyer {
+                grid-area: buyer;
             }
 
-            body.delete-mode #mainTable th:nth-child(1),
-            body.delete-mode #mainTable td:nth-child(1) {
-                width: 28%;
+            .entry-row .entry-amount {
+                grid-area: amount;
             }
 
-            body.delete-mode #mainTable th:nth-child(2),
-            body.delete-mode #mainTable td:nth-child(2) {
-                width: 26%;
+            .entry-row .entry-payout {
+                grid-area: payout;
             }
 
-            body.delete-mode #mainTable th:nth-child(3),
-            body.delete-mode #mainTable td:nth-child(3) {
-                width: 26%;
+            .entry-row .entry-delete {
+                grid-area: del;
+                justify-self: end;
             }
+        }
 
-            body.delete-mode #mainTable th:nth-child(4),
-            body.delete-mode #mainTable td:nth-child(4) {
-                width: 12%;
-            }
+        .day-editor {
+            display: none;
+        }
 
-            body.delete-mode #mainTable th:nth-child(5),
-            body.delete-mode #mainTable td:nth-child(5) {
-                width: 8%;
-            }
+        .page-end-actions {
+            display: flex;
+            justify-content: flex-end;
+            padding: 16px 6px 28px;
+        }
 
-            #mainTable input,
-            #mainTable select {
-                font-size: 13px;
-                padding: 0 4px;
-            }
+        .fab-edit {
+            position: static;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            border: none;
+            background: #2e7d32;
+            color: #fff;
+            font-size: 22px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 18px rgba(0, 0, 0, .18);
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-            #mainTable input[type="date"] {
-                min-width: 0;
-                width: 100%;
-            }
+        .fab-edit:active {
+            transform: scale(.98);
+        }
 
-            #mainTable select {
-                min-width: 0;
-            }
 
-            #mainTable th:last-child,
-            #mainTable td:last-child {
-                width: 34px;
+        .editor-overlay {
+            position: fixed;
+            inset: 0;
+            background: #f2f2f7;
+            display: none;
+            z-index: 5000;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .editor-overlay.show {
+            display: block;
+        }
+
+        body.editor-open {
+            overflow: hidden;
+        }
+
+        .editor-top {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #f2f2f7;
+            padding: 14px 12px;
+            display: grid;
+            grid-template-columns: 48px 1fr 74px;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .editor-close {
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            background: #fff;
+            border: 1px solid #e2e2e7;
+            font-size: 24px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .editor-title {
+            text-align: center;
+            font-weight: 800;
+            font-size: 16px;
+        }
+
+        .editor-save {
+            justify-self: end;
+            padding: 10px 14px;
+            border-radius: 18px;
+            background: #fff;
+            border: 1px solid #e2e2e7;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .editor-body {
+            padding: 8px 12px 24px;
+        }
+
+        .editor-card {
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid #ececf2;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, .06);
+            padding: 4px 12px;
+            margin: 10px 0;
+        }
+
+        .editor-field {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .editor-field:last-child {
+            border-bottom: none;
+        }
+
+        .editor-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 7px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 900;
+            flex: 0 0 auto;
+        }
+
+        .editor-icon.invest {
+            background: #d40000;
+        }
+
+        .editor-icon.recover {
+            background: #1e6ad6;
+        }
+
+        .editor-icon.profit {
+            background: #666;
+        }
+
+        .editor-icon.buyer {
+            background: #888;
+        }
+
+        .editor-input {
+            flex: 1 1 auto;
+            border: none;
+            outline: none;
+            font-size: 18px;
+            padding: 0;
+            background: transparent;
+        }
+
+        .editor-profit {
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+        .editor-profit.pos {
+            color: #1e6ad6;
+        }
+
+        .editor-profit.neg {
+            color: #d40000;
+        }
+
+        .buyer-seg {
+            margin-left: auto;
+            display: inline-flex;
+            border: 1px solid #d7d7de;
+            border-radius: 999px;
+            overflow: hidden;
+            background: #eeeeF5;
+        }
+
+        .buyer-btn {
+            border: none;
+            background: transparent;
+            padding: 10px 18px;
+            font-weight: 900;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            min-width: 88px;
+        }
+
+        .buyer-btn+.buyer-btn {
+            border-left: 1px solid #d7d7de;
+        }
+
+        .buyer-btn.active {
+            background: #1c1c1e;
+            color: #fff;
+        }
+
+        .buyer-btn:focus-visible {
+            outline: 2px solid #1c1c1e;
+            outline-offset: 2px;
+        }
+
+        .editor-delete {
+
+            width: 100%;
+            margin-top: 14px;
+            padding: 14px 12px;
+            border-radius: 16px;
+            border: 1px solid #ececf2;
+            background: #fff;
+            color: #d40000;
+            font-weight: 900;
+            cursor: pointer;
+        }
+
+        @media (max-width: 760px) {
+            .fab-edit {
+                display: inline-flex;
             }
         }
     </style>
@@ -482,10 +776,6 @@
             <span class="profit-label">収支：</span><span id="profit">¥0</span>
         </div>
 
-        <div class="filter-bar">
-            <select id="yearFilter"></select>
-        </div>
-
         <table class="summary-table">
             <colgroup>
                 <col class="summary-col-label">
@@ -522,83 +812,128 @@
             </tr>
         </table>
 
-        <br>
-
-        <div class="table-wrapper">
-            <table id="mainTable">
-                <thead>
-                    <tr>
-                        <th>日付</th>
-                        <th>購入</th>
-                        <th>払戻</th>
-                        <th>購入者</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="tbody"></tbody>
-            </table>
-        </div>
-
-
-        <div class="action-bar">
-            <div class="action-left">
-                <button class="btn" onclick="addRow()">追加</button>
-                <button class="btn delete-mode-btn" id="deleteModeBtn" aria-pressed="false"
-                    onclick="toggleDeleteMode()">削除</button>
+        <div class="calendar-block">
+            <div class="cal-header">
+                <button class="cal-nav" type="button" onclick="shiftMonth(-1)">‹</button>
+                <button class="cal-title" type="button" id="monthTitle" onclick="openMonthPicker()"></button>
+                <button class="cal-nav" type="button" onclick="shiftMonth(1)">›</button>
+                <input type="month" id="monthPicker">
             </div>
-            <div class="action-right">
-                <button class="btn" onclick="saveData()">保存</button>
+
+            <div class="cal-dow">
+                <div>月</div>
+                <div>火</div>
+                <div>水</div>
+                <div>木</div>
+                <div>金</div>
+                <div class="sat">土</div>
+                <div class="sun">日</div>
             </div>
+
+            <div class="cal-grid" id="calGrid"></div>
         </div>
 
     </div>
 
+    <div class="day-editor">
+        <div class="day-title" id="dayTitle"></div>
+        <div class="day-list" id="dayList"></div>
+        <div class="empty-hint" id="dayEmpty" style="display:none;">この日のデータはありません</div>
+    </div>
+    </div>
+
+    </div>
+    <div class="editor-overlay" id="editorOverlay" aria-hidden="true">
+        <div class="editor-top">
+            <button class="editor-close" type="button" onclick="closeEditor()">×</button>
+            <div class="editor-title" id="editorTitle"></div>
+            <button class="editor-save" type="button" onclick="saveEditor()">保存</button>
+        </div>
+
+        <div class="editor-body">
+            <div class="editor-card">
+                <div class="editor-field">
+                    <div class="editor-icon invest">購入</div>
+                    <input id="editorInvest" class="editor-input" inputmode="numeric" placeholder="購入金額">
+                </div>
+                <div class="editor-field">
+                    <div class="editor-icon recover">払戻</div>
+                    <input id="editorRecover" class="editor-input" inputmode="numeric" placeholder="払戻金額">
+                </div>
+                <div class="editor-field">
+                    <div class="editor-icon profit">収支</div>
+                    <div class="editor-profit" id="editorProfit">¥0</div>
+                </div>
+            </div>
+
+            <div class="editor-card">
+                <div class="editor-field">
+                    <div class="editor-icon buyer">買主</div>
+                    <div class="buyer-seg" id="buyerSeg">
+                        <button type="button" class="buyer-btn active" data-buyer="上田" aria-pressed="true">上田</button>
+                        <button type="button" class="buyer-btn" data-buyer="千葉" aria-pressed="false">千葉</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="editor-delete" id="editorDelete" type="button" onclick="deleteEditor()"
+                style="display:none;">削除</button>
+        </div>
+    </div>
+
+    <div class="page-end-actions">
+        <button class="fab-edit" id="fabEdit" type="button" onclick="openEditorFromFab()">✎</button>
+    </div>
+
+
     <script>
         const API_URL = "https://shushi.cooopew.workers.dev/";
-        const tbody = document.getElementById("tbody");
 
-        const yearFilter = document.getElementById("yearFilter");
+        let rows = [];
+        let uidSeq = 1;
 
-        function getRowYear(tr) {
-            const v = (tr.children[0] && tr.children[0].children[0] && tr.children[0].children[0].value) ? tr.children[0].children[0].value : "";
-            return v.length >= 4 ? v.slice(0, 4) : "";
-        }
+        const calGrid = document.getElementById("calGrid");
+        const monthTitle = document.getElementById("monthTitle");
+        const monthPicker = document.getElementById("monthPicker");
 
-        function rebuildYearOptions() {
-            if (!yearFilter) return;
+        const dayTitle = document.getElementById("dayTitle");
+        const dayList = document.getElementById("dayList");
+        const dayEmpty = document.getElementById("dayEmpty");
 
-            const years = new Set();
-            [...tbody.children].forEach(tr => {
-                const y = getRowYear(tr);
-                if (y) years.add(y);
-            });
 
-            if (years.size === 0) years.add(String(new Date().getFullYear()));
+        const editorOverlay = document.getElementById("editorOverlay");
+        const editorTitle = document.getElementById("editorTitle");
+        const editorInvest = document.getElementById("editorInvest");
+        const editorRecover = document.getElementById("editorRecover");
+        const editorProfit = document.getElementById("editorProfit");
+        const editorDelete = document.getElementById("editorDelete");
+        const buyerBtns = Array.from(document.querySelectorAll(".buyer-btn"));
+        const fabEdit = document.getElementById("fabEdit");
 
-            const saved = localStorage.getItem("shushi_year_filter") || "all";
-            const current = yearFilter.value || saved || "all";
-            const arr = [...years].sort((a, b) => b.localeCompare(a));
+        let editorDate = "";
+        let editorBuyer = "上田";
+        let editingUid = null;
+        let lastBuyer = "上田";
 
-            yearFilter.innerHTML = `<option value="all">全期間</option>` + arr.map(y => `<option value="${y}">${y}年</option>`).join("");
-            yearFilter.value = arr.includes(current) ? current : "all";
-        }
+        if (editorInvest) editorInvest.addEventListener("input", () => { sanitizeNumberInput(editorInvest); updateEditorProfit(); });
+        if (editorRecover) editorRecover.addEventListener("input", () => { sanitizeNumberInput(editorRecover); updateEditorProfit(); });
 
-        function applyYearFilter() {
-            if (!yearFilter) {
-                calc();
-                return;
-            }
+        buyerBtns.forEach(btn => {
+            btn.addEventListener("click", () => setEditorBuyer(btn.dataset.buyer || "上田"));
+        });
 
-            const y = yearFilter.value || "all";
-            localStorage.setItem("shushi_year_filter", y);
 
-            [...tbody.children].forEach(tr => {
-                const ry = getRowYear(tr);
-                const show = (y === "all") || (ry === y);
-                tr.style.display = show ? "" : "none";
-            });
+        let viewMonth = "";
+        let selectedDate = "";
 
-            calc();
+        function pad2(n) { return String(n).padStart(2, "0"); }
+
+        function ymFromDate(d) { return d && d.length >= 7 ? d.slice(0, 7) : ""; }
+
+        function formatMonthTitle(ym) {
+            const y = ym.slice(0, 4);
+            const m = String(parseInt(ym.slice(5, 7), 10));
+            return `${y}年${m}月`;
         }
 
         function formatYen(n) {
@@ -606,14 +941,16 @@
             if (!isFinite(num) || num === 0) return "¥0";
             if (num < 0) return "-¥" + Math.abs(num).toLocaleString();
             return "¥" + num.toLocaleString();
-        } function formatProfitSpan(n) {
+        }
+
+        function formatProfitSpan(n) {
             if (n > 0) return `<span class="profit">${formatYen(n)}</span>`;
             if (n < 0) return `<span class="loss">${formatYen(n)}</span>`;
             return `<span>¥0</span>`;
         }
 
         function parseYen(s) {
-            return Number(s.replace(/[¥,]/g, "")) || 0;
+            return Number(String(s || "").replace(/[¥,]/g, "")) || 0;
         }
 
         function sanitizeNumberInput(el) {
@@ -621,110 +958,80 @@
         }
 
         function startEdit(el) {
-            el.value = el.value ? String(parseYen(el.value)) : "";
+            const v = el.value ? String(parseYen(el.value)) : "";
+            el.value = v === "0" ? "" : v;
             el.select();
         }
 
         function endEdit(el) {
-            el.value = el.value ? formatYen(parseYen(el.value)) : "";
+            if (!el.value) return;
+            const n = parseYen(el.value);
+            el.value = n ? formatYen(n) : "";
         }
 
-        function addRow(data = {}) {
-            const today = new Date().toISOString().split("T")[0];
-            const isNewRow = Object.keys(data).length === 0;
-            let date = isNewRow ? today : (data.date ?? "");
-            const amount = isNewRow ? "" : (data.amount ?? "");
-            const payout = isNewRow ? "" : (data.payout ?? "");
-            const buyer = isNewRow ? "" : (data.buyer ?? "");
+        function showToast(msg) {
+            const t = document.getElementById("toast");
+            t.innerText = msg;
+            t.className = "show";
+            setTimeout(() => (t.className = t.className.replace("show", "")), 2000);
+        }
 
-            if (isNewRow && yearFilter && yearFilter.value && yearFilter.value !== "all") {
-                date = `${yearFilter.value}-${today.slice(5)}`;
-            }
-
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td><input type="date" value="${date}" onchange="rebuildYearOptions(); applyYearFilter()"></td>
-
-                <td class="num">
-                    <input type="text"
-                    inputmode="numeric"
-                    value="${amount !== "" ? formatYen(amount) : ""}"
-                    onfocus="startEdit(this)"
-                    oninput="sanitizeNumberInput(this); calc()"
-                    onblur="endEdit(this); calc()">
-                </td>
-
-                <td class="num">
-                    <input type="text"
-                    inputmode="numeric"
-                    value="${payout !== "" ? formatYen(payout) : ""}"
-                    onfocus="startEdit(this)"
-                    oninput="sanitizeNumberInput(this); calc()"
-                    onblur="endEdit(this); calc()">
-                </td>
-
-                <td>
-                    <select onchange="calc()">
-                        <option value="上田" ${buyer === "上田" ? "selected" : ""}>上田</option>
-                        <option value="千葉" ${buyer === "千葉" ? "selected" : ""}>千葉</option>
-                    </select>
-                </td>
-
-                <td>
-                    <button class="delete-btn" onclick="this.parentNode.parentNode.remove(); calc();">×</button>
-                </td>
-            `;
-            tbody.appendChild(tr);
-            if (isNewRow) {
-                rebuildYearOptions();
-                applyYearFilter();
+        function setDeleteMode(on) {
+            const btn = document.getElementById("deleteModeBtn");
+            if (!btn) return;
+            if (on) {
+                document.body.classList.add("delete-mode");
+                btn.setAttribute("aria-pressed", "true");
+            } else {
+                document.body.classList.remove("delete-mode");
+                btn.setAttribute("aria-pressed", "false");
             }
         }
 
-        async function loadData() {
-            try {
-                const res = await fetch(API_URL);
-                const data = await res.json();
-
-                tbody.innerHTML = "";
-                data.forEach(r => addRow(r));
-                rebuildYearOptions();
-                applyYearFilter();
-            } catch (e) {
-                showToast("読み込みに失敗しました");
-            }
+        function toggleDeleteMode() {
+            const on = !document.body.classList.contains("delete-mode");
+            setDeleteMode(on);
         }
 
-        async function saveData() {
-            const rows = [...tbody.children].map(tr => ({
-                date: tr.children[0].children[0].value,
-                amount: parseYen(tr.children[1].children[0].value),
-                payout: parseYen(tr.children[2].children[0].value),
-                buyer: tr.children[3].children[0].value
-            }));
+        function setViewMonth(ym) {
+            viewMonth = ym;
+            monthTitle.textContent = formatMonthTitle(ym);
+            monthPicker.value = ym;
 
-            try {
-                await fetch(API_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(rows)
-                });
-                showToast("保存しました");
-            } catch {
-                showToast("保存に失敗しました");
+            if (!selectedDate || ymFromDate(selectedDate) !== ym) {
+                const today = new Date().toISOString().slice(0, 10);
+                selectedDate = ymFromDate(today) === ym ? today : `${ym}-01`;
             }
+
+            renderAll();
+        }
+
+        function openMonthPicker() {
+            monthPicker.click();
+            monthPicker.focus();
+        }
+
+        function shiftMonth(delta) {
+            const y = parseInt(viewMonth.slice(0, 4), 10);
+            const m = parseInt(viewMonth.slice(5, 7), 10);
+            const d = new Date(y, m - 1 + delta, 1);
+            setViewMonth(`${d.getFullYear()}-${pad2(d.getMonth() + 1)}`);
+        }
+
+        function getRowsInMonth(ym) {
+            return rows.filter(r => r.date && r.date.startsWith(ym));
         }
 
         function calc() {
+            const monthRows = getRowsInMonth(viewMonth);
+
             let sumUeda = 0, sumChiba = 0;
             let payUeda = 0, payChiba = 0;
 
-            [...tbody.children].forEach(tr => {
-                if (tr.style.display === "none") return;
-
-                const amount = parseYen(tr.children[1].children[0].value);
-                const payout = parseYen(tr.children[2].children[0].value);
-                const buyer = tr.children[3].children[0].value;
+            monthRows.forEach(r => {
+                const amount = Number(r.amount) || 0;
+                const payout = Number(r.payout) || 0;
+                const buyer = r.buyer || "上田";
 
                 if (buyer === "上田") {
                     sumUeda += amount;
@@ -744,10 +1051,8 @@
 
             document.getElementById("sumUeda").innerHTML = `<span>${formatYen(sumUeda)}</span>`;
             document.getElementById("payUeda").innerHTML = `<span>${formatYen(payUeda)}</span>`;
-
             document.getElementById("sumChiba").innerHTML = `<span>${formatYen(sumChiba)}</span>`;
             document.getElementById("payChiba").innerHTML = `<span>${formatYen(payChiba)}</span>`;
-
             document.getElementById("sumTotal").innerHTML = `<span>${formatYen(sumTotal)}</span>`;
             document.getElementById("sumPayout").innerHTML = `<span>${formatYen(sumPayout)}</span>`;
 
@@ -759,46 +1064,387 @@
             if (pt) pt.innerHTML = formatProfitSpan(profit);
 
             const profitElem = document.getElementById("profit");
+            if (profit > 0) profitElem.innerHTML = `<span class="profit">${formatYen(profit)}</span>`;
+            else if (profit < 0) profitElem.innerHTML = `<span class="loss">${formatYen(profit)}</span>`;
+            else profitElem.innerHTML = `<span>¥0</span>`;
 
-            if (profit > 0) {
-                profitElem.innerHTML = `<span class="profit">${formatYen(profit)}</span>`;
-            } else if (profit < 0) {
-                profitElem.innerHTML = `<span class="loss">${formatYen(profit)}</span>`;
+            const mp = document.getElementById("monthProfit");
+            const mi = document.getElementById("monthInvest");
+            const mr = document.getElementById("monthRecover");
+
+            if (mp) {
+                mp.textContent = formatYen(profit);
+                mp.classList.toggle("loss", profit < 0);
+                mp.classList.toggle("profit", profit > 0);
+                if (profit === 0) { mp.classList.remove("loss"); mp.classList.remove("profit"); }
+            }
+            if (mi) mi.textContent = formatYen(sumTotal);
+            if (mr) mr.textContent = formatYen(sumPayout);
+        }
+
+        function renderCalendar() {
+            const y = parseInt(viewMonth.slice(0, 4), 10);
+            const m = parseInt(viewMonth.slice(5, 7), 10);
+            const first = new Date(y, m - 1, 1);
+            const lastDay = new Date(y, m, 0).getDate();
+
+            const offsetMon = (first.getDay() + 6) % 7;
+
+            const monthRows = getRowsInMonth(viewMonth);
+            const profitByDate = new Map();
+            const countByDate = new Map();
+
+            monthRows.forEach(r => {
+                if (!r.date) return;
+                const amount = Number(r.amount) || 0;
+                const payout = Number(r.payout) || 0;
+                const p = payout - amount;
+
+                profitByDate.set(r.date, (profitByDate.get(r.date) || 0) + p);
+                countByDate.set(r.date, (countByDate.get(r.date) || 0) + 1);
+            });
+
+            const totalSlots = offsetMon + lastDay;
+            const weeks = Math.ceil(totalSlots / 7);
+            const cellCount = weeks * 7;
+
+            const cells = [];
+            for (let i = 0; i < cellCount; i++) {
+                const day = i - offsetMon + 1;
+
+                if (day < 1 || day > lastDay) {
+                    cells.push(`<div class="cal-cell outside"></div>`);
+                    continue;
+                }
+
+                const dateStr = `${viewMonth}-${pad2(day)}`;
+                const dow = new Date(y, m - 1, day).getDay();
+                const weekClass = dow === 0 ? " sun" : (dow === 6 ? " sat" : "");
+                const p = profitByDate.get(dateStr);
+                const c = countByDate.get(dateStr) || 0;
+
+                const isSel = dateStr === selectedDate;
+                const amt = c ? formatYen(p) : "";
+                const amtClass = c ? (p < 0 ? "neg" : (p > 0 ? "pos" : "")) : "";
+                const selectedClass = isSel ? " selected" : "";
+
+                cells.push(
+                    `<div class="cal-cell${weekClass}${selectedClass}" data-date="${dateStr}">
+                                <div class="cal-dayline">
+                                    <div class="cal-daynum"><span class="cal-daychip">${day}</span></div>
+                                </div>
+                                ${c ? `<div class="cal-amt ${amtClass}">${amt}</div>` : ``}
+                            </div>`
+                );
+            }
+
+            calGrid.innerHTML = cells.join("");
+        }
+
+        function renderDayEditor() {
+            dayTitle.textContent = selectedDate ? selectedDate : "";
+            const list = rows
+                .filter(r => r.date === selectedDate)
+                .sort((a, b) => (a.uid || 0) - (b.uid || 0));
+
+            if (list.length === 0) {
+                dayList.innerHTML = "";
+                dayEmpty.style.display = "";
+                return;
+            }
+
+            dayEmpty.style.display = "none";
+            dayList.innerHTML = list.map(r => {
+                const amount = (Number(r.amount) || 0) ? formatYen(r.amount) : "";
+                const payout = (Number(r.payout) || 0) ? formatYen(r.payout) : "";
+                const buyer = r.buyer || "上田";
+
+                return `
+                            <div class="entry-row" data-uid="${r.uid}">
+                                <input class="entry-date" type="date" value="${r.date}">
+                                <input class="entry-amount" type="text" inputmode="numeric" value="${amount}">
+                                <input class="entry-payout" type="text" inputmode="numeric" value="${payout}">
+                                <select class="entry-buyer">
+                                    <option value="上田" ${buyer === "上田" ? "selected" : ""}>上田</option>
+                                    <option value="千葉" ${buyer === "千葉" ? "selected" : ""}>千葉</option>
+                                </select>
+                                <button class="delete-btn entry-delete" type="button">×</button>
+                            </div>
+                        `;
+            }).join("");
+        }
+
+        function renderAll() {
+            renderCalendar();
+            calc();
+        }
+
+        function ensureSelectedInMonth() {
+            if (!selectedDate) return;
+            const ym = ymFromDate(selectedDate);
+            if (ym && ym !== viewMonth) setViewMonth(ym);
+        }
+
+        function formatEditorTitle(d, isEdit) {
+            if (!d || d.length < 10) return "";
+            const mm = Number(d.slice(5, 7));
+            const dd = Number(d.slice(8, 10));
+            const s = `${mm}月${dd}日の収支を${isEdit ? "編集" : "入力"}`;
+            return s;
+        }
+
+        function setEditorBuyer(b) {
+            editorBuyer = b || "上田";
+            lastBuyer = editorBuyer;
+            buyerBtns.forEach(x => {
+                const on = (x.dataset.buyer || "上田") === editorBuyer;
+                x.classList.toggle("active", on);
+                x.setAttribute("aria-pressed", on ? "true" : "false");
+            });
+            loadEditorState();
+        }
+
+        function openEditor(d) {
+            editorDate = d;
+            if (!editorBuyer) editorBuyer = lastBuyer || "上田";
+            buyerBtns.forEach(x => x.classList.toggle("active", (x.dataset.buyer || "上田") === editorBuyer));
+            loadEditorState();
+            if (editorOverlay) {
+                editorOverlay.classList.add("show");
+                editorOverlay.setAttribute("aria-hidden", "false");
+            }
+            document.body.classList.add("editor-open");
+        }
+
+        function closeEditor() {
+            if (editorOverlay) {
+                editorOverlay.classList.remove("show");
+                editorOverlay.setAttribute("aria-hidden", "true");
+            }
+            document.body.classList.remove("editor-open");
+        }
+
+        function loadEditorState() {
+            const row = rows.find(r => r.date === editorDate && (r.buyer || "上田") === editorBuyer);
+            editingUid = row ? row.uid : null;
+
+            if (editorInvest) editorInvest.value = row && row.amount != null && row.amount !== 0 ? String(row.amount).replace(/[^\d]/g, "") : "";
+            if (editorRecover) editorRecover.value = row && row.payout != null && row.payout !== 0 ? String(row.payout).replace(/[^\d]/g, "") : "";
+
+            const isEdit = !!row;
+            if (editorTitle) editorTitle.textContent = formatEditorTitle(editorDate, isEdit);
+            if (editorDelete) editorDelete.style.display = isEdit ? "block" : "none";
+
+            updateEditorProfit();
+        }
+
+        function updateEditorProfit() {
+            const a = editorInvest ? Number(editorInvest.value) || 0 : 0;
+            const p = editorRecover ? Number(editorRecover.value) || 0 : 0;
+            const diff = p - a;
+
+            if (!editorProfit) return;
+            editorProfit.textContent = formatYen(diff);
+            editorProfit.classList.remove("pos", "neg");
+            if (diff > 0) editorProfit.classList.add("pos");
+            if (diff < 0) editorProfit.classList.add("neg");
+        }
+
+        async function saveEditor() {
+            if (!editorDate) return;
+
+            const a = editorInvest ? Number(editorInvest.value) || 0 : 0;
+            const p = editorRecover ? Number(editorRecover.value) || 0 : 0;
+
+            const existing = rows.find(r => r.date === editorDate && (r.buyer || "上田") === editorBuyer);
+            if (existing) {
+                existing.amount = a ? String(a) : "";
+                existing.payout = p ? String(p) : "";
             } else {
-                profitElem.innerHTML = `<span>¥0</span>`;
+                rows.push({
+                    uid: uidSeq++,
+                    date: editorDate,
+                    amount: a ? String(a) : "",
+                    payout: p ? String(p) : "",
+                    buyer: editorBuyer || "上田"
+                });
+            }
+
+            calc();
+            renderCalendar();
+
+            const ok = await saveData();
+            if (ok) closeEditor();
+        }
+
+        async function deleteEditor() {
+            const row = rows.find(r => r.date === editorDate && (r.buyer || "上田") === editorBuyer);
+            if (!row) return;
+
+            rows = rows.filter(x => x.uid !== row.uid);
+
+            calc();
+            renderCalendar();
+
+            const ok = await saveData();
+            if (ok) closeEditor();
+        }
+
+        function openEditorFromFab() {
+            const today = new Date().toISOString().slice(0, 10);
+            const d = selectedDate || (ymFromDate(today) === viewMonth ? today : (viewMonth ? `${viewMonth}-01` : today));
+            selectedDate = d;
+            ensureSelectedInMonth();
+            renderCalendar();
+            openEditor(d);
+        }
+
+        function addRow() {
+            const today = new Date().toISOString().slice(0, 10);
+            const d = selectedDate || (ymFromDate(today) === viewMonth ? today : (viewMonth ? `${viewMonth}-01` : today));
+            selectedDate = d;
+            ensureSelectedInMonth();
+            renderCalendar();
+            openEditor(d);
+        }
+
+        function removeRow(uid) {
+            rows = rows.filter(r => String(r.uid) !== String(uid));
+            renderAll();
+        }
+
+        async function loadData() {
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+
+                uidSeq = 1;
+                rows = (Array.isArray(data) ? data : []).map(r => ({
+                    uid: uidSeq++,
+                    date: r.date || "",
+                    amount: r.amount ?? "",
+                    payout: r.payout ?? "",
+                    buyer: r.buyer || "上田"
+                }));
+
+                const todayYm = new Date().toISOString().slice(0, 7);
+                const initialYm = rows.length ? (ymFromDate(rows[rows.length - 1].date) || todayYm) : todayYm;
+                setViewMonth(initialYm);
+            } catch (e) {
+                showToast("読み込みに失敗しました");
+                const todayYm = new Date().toISOString().slice(0, 7);
+                setViewMonth(todayYm);
             }
         }
 
-        function setDeleteMode(on) {
-            const btn = document.getElementById("deleteModeBtn");
+        async function saveData() {
+            const payload = rows.map(r => ({
+                date: r.date,
+                amount: Number(r.amount) || 0,
+                payout: Number(r.payout) || 0,
+                buyer: r.buyer || "上田"
+            }));
+
+            try {
+                await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                showToast("保存しました");
+                return true;
+            } catch {
+                showToast("保存に失敗しました");
+                return false;
+            }
+        }
+
+        calGrid.addEventListener("click", e => {
+            const cell = e.target.closest(".cal-cell");
+            if (!cell || cell.classList.contains("outside")) return;
+            const d = cell.dataset.date;
+            if (!d) return;
+            selectedDate = d;
+            renderCalendar();
+        });
+
+        dayList.addEventListener("focusin", e => {
+            const t = e.target;
+            if (t && (t.classList.contains("entry-amount") || t.classList.contains("entry-payout"))) startEdit(t);
+        });
+
+        dayList.addEventListener("input", e => {
+            const t = e.target;
+            const rowEl = t && t.closest(".entry-row");
+            if (!t || !rowEl) return;
+
+            const uid = rowEl.dataset.uid;
+            const r = rows.find(x => String(x.uid) === String(uid));
+            if (!r) return;
+
+            if (t.classList.contains("entry-amount")) {
+                sanitizeNumberInput(t);
+                r.amount = t.value ? parseYen(t.value) : "";
+                calc();
+                renderCalendar();
+                return;
+            }
+
+            if (t.classList.contains("entry-payout")) {
+                sanitizeNumberInput(t);
+                r.payout = t.value ? parseYen(t.value) : "";
+                calc();
+                renderCalendar();
+                return;
+            }
+        });
+
+        dayList.addEventListener("focusout", e => {
+            const t = e.target;
+            if (!t) return;
+            if (t.classList.contains("entry-amount") || t.classList.contains("entry-payout")) endEdit(t);
+        });
+
+        dayList.addEventListener("change", e => {
+            const t = e.target;
+            const rowEl = t && t.closest(".entry-row");
+            if (!t || !rowEl) return;
+
+            const uid = rowEl.dataset.uid;
+            const r = rows.find(x => String(x.uid) === String(uid));
+            if (!r) return;
+
+            if (t.classList.contains("entry-date")) {
+                r.date = t.value || r.date;
+                selectedDate = r.date;
+                ensureSelectedInMonth();
+                renderAll();
+                return;
+            }
+
+            if (t.classList.contains("entry-buyer")) {
+                r.buyer = t.value;
+                calc();
+                renderCalendar();
+                return;
+            }
+        });
+
+        dayList.addEventListener("click", e => {
+            const btn = e.target.closest(".entry-delete");
             if (!btn) return;
-            if (on) {
-                document.body.classList.add("delete-mode");
-                btn.textContent = "削除";
-                btn.setAttribute("aria-pressed", "true");
-            } else {
-                document.body.classList.remove("delete-mode");
-                btn.textContent = "削除";
-                btn.setAttribute("aria-pressed", "false");
-            }
-        }
+            if (!document.body.classList.contains("delete-mode")) return;
+            const rowEl = btn.closest(".entry-row");
+            if (!rowEl) return;
+            removeRow(rowEl.dataset.uid);
+        });
 
-        function toggleDeleteMode() {
-            const on = !document.body.classList.contains("delete-mode");
-            setDeleteMode(on);
-        }
-
-        function showToast(msg) {
-            const t = document.getElementById("toast");
-            t.innerText = msg;
-            t.className = "show";
-            setTimeout(() => (t.className = t.className.replace("show", "")), 2000);
-        }
+        monthPicker.addEventListener("change", () => {
+            if (!monthPicker.value) return;
+            setViewMonth(monthPicker.value);
+        });
 
         setDeleteMode(false);
-        if (yearFilter) yearFilter.addEventListener("change", applyYearFilter);
-        rebuildYearOptions();
-        applyYearFilter();
         loadData();
     </script>
 
