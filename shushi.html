@@ -84,6 +84,36 @@
 
         .summary-table {
             table-layout: fixed;
+            border-collapse: collapse;
+            border-top: 2px solid #d6d6d6;
+        }
+
+        .summary-table th,
+        .summary-table td {
+            border: none !important;
+            background: transparent !important;
+            padding: 14px 10px;
+        }
+
+        .summary-table tr {
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .summary-table tr:first-child {
+            border-bottom: 2px solid #d6d6d6;
+        }
+
+        .summary-table tr:last-child {
+            border-bottom: 2px solid #d6d6d6;
+        }
+
+        .summary-table th {
+            font-weight: 700;
+            color: #555;
+        }
+
+        .summary-table td {
+            color: #444;
         }
 
         .month-summary {
@@ -137,11 +167,13 @@
             width: 26%;
         }
 
+        .summary-table th:nth-child(2),
+        .summary-table th:nth-child(3),
+        .summary-table th:nth-child(4),
         .summary-table td:nth-child(2),
         .summary-table td:nth-child(3),
         .summary-table td:nth-child(4) {
-            text-align: right;
-            padding-right: 10px;
+            text-align: center;
         }
 
         .profit-box {
