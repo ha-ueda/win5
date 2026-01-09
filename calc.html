@@ -477,16 +477,41 @@
         }
 
         #minFav {
-            font-size: 16px;
-            padding: 7px 10px;
-            border: 1px solid #cfcfcf;
+            font-size: 16px;            border: 1px solid #cfcfcf;
+            height: 44px;
+            padding: 0 10px;
             border-radius: 6px;
             background-color: #fff;
             color: #222;
             box-sizing: border-box;
+        
         }
 
-        .menu-container {
+        
+
+        .fav-calc-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .fav-calc-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fav-calc-row .calc-btn {
+            height: 44px;
+            padding: 0 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+.menu-container {
             position: relative;
             margin-bottom: 20px;
         }
@@ -617,20 +642,21 @@
 
     <div id="raceTables"></div>
 
-    <div>
-        本命
-        <select id="minFav">
+    <div class="fav-calc-row">
+        <div class="fav-calc-left">
+            <span class="fav-label">本命</span>
+            <select id="minFav">
             <option value="1" selected>1</option>
             <option value="2">2</option>
             <option value="3">3</option>
             <option value="4">4</option>
             <option value="5">5</option>
-        </select> 勝
-    </div>
-
-    <div class="button-row">
+        </select>
+            <span class="fav-suffix">勝</span>
+        </div>
         <button class="calc-btn" onclick="calc()">計算する</button>
     </div>
+
 
     <div id="result"></div>
     <div id="combos"></div>
