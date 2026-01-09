@@ -488,8 +488,6 @@
 
         }
 
-
-
         .fav-calc-row {
             display: flex;
             align-items: center;
@@ -503,6 +501,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            font-size: 20px;
         }
 
         .fav-calc-row .calc-btn {
@@ -822,34 +821,19 @@
             updateSwitch();
         });
 
-
-
-
-
         updateSwitch();
 
         function clearAllRowBackgrounds() {
-
             jockeyLinkMode = false;
-
             document.querySelectorAll('.custom-select:not(.is-empty)').forEach(r => {
-
                 if (!r) return;
-
                 delete r.dataset.jockeyAutoBg;
-
                 delete r.dataset.bgLock;
-
                 const box = r.querySelector(".selected");
-
                 if (box) box.dataset.bg = "none";
-
                 applyBg(r, "none");
-
             });
-
             saveState();
-
         }
 
         if (bgClearAllBtn) {
