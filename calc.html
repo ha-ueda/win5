@@ -477,17 +477,18 @@
         }
 
         #minFav {
-            font-size: 16px;            border: 1px solid #cfcfcf;
+            font-size: 16px;
+            border: 1px solid #cfcfcf;
             height: 44px;
             padding: 0 10px;
             border-radius: 6px;
             background-color: #fff;
             color: #222;
             box-sizing: border-box;
-        
+
         }
 
-        
+
 
         .fav-calc-row {
             display: flex;
@@ -511,7 +512,8 @@
             align-items: center;
             justify-content: center;
         }
-.menu-container {
+
+        .menu-container {
             position: relative;
             margin-bottom: 20px;
         }
@@ -646,12 +648,12 @@
         <div class="fav-calc-left">
             <span class="fav-label">本命</span>
             <select id="minFav">
-            <option value="1" selected>1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-        </select>
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
             <span class="fav-suffix">勝</span>
         </div>
         <button class="calc-btn" onclick="calc()">計算する</button>
@@ -819,11 +821,11 @@
             backgroundMode = !backgroundMode;
             updateSwitch();
         });
-        
-        
-        
 
-        
+
+
+
+
         updateSwitch();
 
         function clearAllRowBackgrounds() {
@@ -1994,8 +1996,8 @@
             try {
                 await navigator.clipboard.writeText(txt);
             } catch (e) {
-            ta.focus();
-            ta.select();
+                ta.focus();
+                ta.select();
                 document.execCommand("copy");
             }
         }
@@ -2213,10 +2215,6 @@
             } catch (e) { }
         }
 
-        
-        
-        
-        
         createRaceTables();
         restoreState();
         applyShareFromURL();
