@@ -660,6 +660,9 @@
 
 
     <div id="result"></div>
+    <div id="copyBetsRow" class="button-row" style="display:none;">
+        <button id="copyBetsBtn" class="calc-btn" type="button">買い目コピー</button>
+    </div>
     <div id="combos"></div>
 
     <div id="shareModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="印共有">
@@ -1646,6 +1649,10 @@
 
             total = count;
 
+            window.__lastDisplayBlocks = displayBlocks;
+            const copyRow = document.getElementById('copyBetsRow');
+            if (copyRow) copyRow.style.display = (total > 0 && displayBlocks.length) ? 'flex' : 'none';
+
             document.getElementById('result').innerHTML =
                 `買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 組`;
 
@@ -1662,6 +1669,60 @@
             }
             saveState();
         }
+
+        function buildBetsCopyTextFromBlocks(blocks) {
+            const map = Array.from({ length: TOTAL_RACES }, () => new Array(HORSE_MAX + 1).fill(""));
+            document.querySelectorAll('.custom-select:not(.is-empty)').forEach(sel => {
+                const r = Number(sel.dataset.race);
+                const h = Number(sel.dataset.horse);
+                if (!Number.isFinite(r) || !Number.isFinite(h) || r < 1 || r > TOTAL_RACES || h < 1 || h > HORSE_MAX) return;
+                let u = (sel.dataset.umaban || "").trim();
+                if (!u) u = (sel.querySelector('td.col-no')?.textContent || "").trim();
+                map[r - 1][h] = u || String(h);
+            });
+
+            const lines = [];
+            for (let bi = 0; bi < blocks.length; bi++) {
+                const block = blocks[bi];
+                const parts = [];
+                for (let r = 0; r < TOTAL_RACES; r++) {
+                    const mask = (block[r] >>> 0);
+                    const nums = [];
+                    for (let i = 1; i <= HORSE_MAX; i++) {
+                        if (mask & (1 << (i - 1))) nums.push(map[r][i] || String(i));
+                    }
+                    parts.push(nums.join(","));
+                }
+                lines.push(parts.join("-"));
+            }
+            return lines.join("\n");
+        }
+
+        async function copyBets() {
+            const blocks = window.__lastDisplayBlocks;
+            if (!blocks || !blocks.length) return;
+
+            const text = buildBetsCopyTextFromBlocks(blocks);
+            if (!text) return;
+
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch (e) {
+                const ta = document.createElement("textarea");
+                ta.value = text;
+                ta.style.position = "fixed";
+                ta.style.left = "-9999px";
+                ta.style.top = "0";
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                try { document.execCommand("copy"); } catch (e2) { }
+                ta.remove();
+            }
+        }
+
+        const copyBetsBtn = document.getElementById("copyBetsBtn");
+        if (copyBetsBtn) copyBetsBtn.addEventListener("click", () => { copyBets(); });
 
         function fullyMergeBlocksStableBit(blocks) {
             const n = TOTAL_RACES | 0;
