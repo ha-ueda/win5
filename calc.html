@@ -658,7 +658,6 @@
         <button class="calc-btn" onclick="calc()">計算する</button>
     </div>
 
-
     <div id="result"></div>
     <div id="copyBetsRow" class="button-row" style="display:none;">
         <button id="copyBetsBtn" class="calc-btn" type="button">買い目コピー</button>
@@ -670,7 +669,7 @@
             <div class="modal-title">印を共有</div>
             <textarea id="shareText" class="modal-textarea" spellcheck="false"></textarea>
             <div class="modal-actions">
-                <button class="calc-btn" onclick="copyShareText()">コピー</button>
+                <button id="copyShareBtn" class="calc-btn" type="button" onclick="copyShareText()">コピー</button>
                 <button class="calc-btn" onclick="importShareText()">読み込み</button>
                 <button class="calc-btn" onclick="closeShare()">閉じる</button>
             </div>
@@ -958,6 +957,7 @@
             for (const r of rows) tbody.appendChild(r);
             updateSortUI(card, key, dir);
         }
+
         function bindSortHandlers(card, raceNum) {
             const ths = Array.from(card.querySelectorAll("th.sortable"));
             for (const th of ths) {
@@ -1697,6 +1697,18 @@
             }
             return lines.join("\n");
         }
+        function flashCopyButton(btn, doneText = "コピーしました", ms = 1200) {
+            if (!btn) return;
+            const prev = btn.textContent;
+            btn.textContent = doneText;
+            if (btn.__flashTimer) clearTimeout(btn.__flashTimer);
+            btn.disabled = true;
+            btn.__flashTimer = setTimeout(() => {
+                btn.textContent = prev;
+                btn.disabled = false;
+                btn.__flashTimer = null;
+            }, ms);
+        }
 
         async function copyBets() {
             const blocks = window.__lastDisplayBlocks;
@@ -1705,8 +1717,12 @@
             const text = buildBetsCopyTextFromBlocks(blocks);
             if (!text) return;
 
+            const btn = document.getElementById("copyBetsBtn");
+            let ok = false;
+
             try {
                 await navigator.clipboard.writeText(text);
+                ok = true;
             } catch (e) {
                 const ta = document.createElement("textarea");
                 ta.value = text;
@@ -1716,10 +1732,13 @@
                 document.body.appendChild(ta);
                 ta.focus();
                 ta.select();
-                try { document.execCommand("copy"); } catch (e2) { }
+                try { document.execCommand("copy"); ok = true; } catch (e2) { }
                 ta.remove();
             }
+
+            if (ok) flashCopyButton(btn);
         }
+
 
         const copyBetsBtn = document.getElementById("copyBetsBtn");
         if (copyBetsBtn) copyBetsBtn.addEventListener("click", () => { copyBets(); });
@@ -2038,14 +2057,22 @@
             const txt = ta.value || "";
             if (!txt) return;
 
+            const btn = document.getElementById("copyShareBtn");
+            let ok = false;
+
             try {
                 await navigator.clipboard.writeText(txt);
+                ok = true;
             } catch (e) {
                 ta.focus();
                 ta.select();
                 document.execCommand("copy");
+                ok = true;
             }
+
+            if (ok) flashCopyButton(btn);
         }
+
 
         async function importShareText() {
             const ta = document.getElementById("shareText");
