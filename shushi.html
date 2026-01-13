@@ -134,11 +134,39 @@
 
         .month-profit {
             font-size: 30px;
-            font-weight: 900;
+            font-weight: bold;
             letter-spacing: 0.2px;
         }
 
         .month-side {
+            min-width: 160px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .day-summary {
+            margin-top: 18px;
+        }
+
+        .day-summary-date {
+            color: #777;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .day-summary-body {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .day-profit {
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 0.2px;
+        }
+
+        .day-side {
             min-width: 160px;
             display: grid;
             gap: 10px;
@@ -963,6 +991,22 @@
                 </div>
             </div>
         </div>
+        <div class="day-summary" id="daySummary">
+            <div class="day-summary-date" id="daySummaryDate"></div>
+            <div class="day-summary-body">
+                <div class="day-profit" id="dayProfit">¥0</div>
+                <div class="day-side">
+                    <div class="ms-row">
+                        <div>購入</div>
+                        <div class="ms-val" id="dayInvest">¥0</div>
+                    </div>
+                    <div class="ms-row">
+                        <div>払戻</div>
+                        <div class="ms-val" id="dayRecover">¥0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="day-editor">
@@ -1027,6 +1071,10 @@
         const dayTitle = document.getElementById("dayTitle");
         const dayList = document.getElementById("dayList");
         const dayEmpty = document.getElementById("dayEmpty");
+        const daySummaryDate = document.getElementById("daySummaryDate");
+        const dayProfit = document.getElementById("dayProfit");
+        const dayInvest = document.getElementById("dayInvest");
+        const dayRecover = document.getElementById("dayRecover");
         const editorOverlay = document.getElementById("editorOverlay");
         const editorTitle = document.getElementById("editorTitle");
         const editorInvest = document.getElementById("editorInvest");
@@ -1059,6 +1107,14 @@
             const y = ym.slice(0, 4);
             const m = String(parseInt(ym.slice(5, 7), 10));
             return `${y}年${m}月`;
+        }
+
+        function formatDayLabel(d) {
+            if (!d || d.length < 10) return "";
+            const mm = Number(d.slice(5, 7));
+            const dd = Number(d.slice(8, 10));
+            if (!mm || !dd) return "";
+            return `${mm}月${dd}日`;
         }
 
         function formatYen(n) {
@@ -1288,6 +1344,38 @@
             }
             if (mi) mi.textContent = formatYen(monthInvest);
             if (mr) mr.textContent = formatYen(monthRecover);
+
+            updateDaySummary();
+        }
+
+        function updateDaySummary() {
+            if (!daySummaryDate || !dayProfit || !dayInvest || !dayRecover) return;
+            if (!selectedDate) {
+                daySummaryDate.textContent = "";
+                dayProfit.textContent = "¥0";
+                dayProfit.classList.remove("loss", "profit");
+                dayInvest.textContent = "¥0";
+                dayRecover.textContent = "¥0";
+                return;
+            }
+
+            const dayRows = rows.filter(r => r.date === selectedDate);
+            let invest = 0;
+            let recover = 0;
+
+            dayRows.forEach(r => {
+                invest += Number(r.amount) || 0;
+                recover += Number(r.payout) || 0;
+            });
+
+            const profit = recover - invest;
+            daySummaryDate.textContent = formatDayLabel(selectedDate);
+            dayProfit.textContent = formatYen(profit);
+            dayProfit.classList.toggle("loss", profit < 0);
+            dayProfit.classList.toggle("profit", profit > 0);
+            if (profit === 0) dayProfit.classList.remove("loss", "profit");
+            dayInvest.textContent = formatYen(invest);
+            dayRecover.textContent = formatYen(recover);
         }
 
         const sumTotal = sumUeda + sumChiba;
@@ -1626,6 +1714,7 @@
             if (!d) return;
             selectedDate = d;
             renderCalendar();
+            updateDaySummary();
         });
 
         dayList.addEventListener("focusin", e => {
