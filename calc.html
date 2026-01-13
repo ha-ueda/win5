@@ -1740,18 +1740,6 @@
             }
             return lines.join("\n");
         }
-        function flashCopyButton(btn, doneText = "コピーしました", ms = 1200) {
-            if (!btn) return;
-            const prev = btn.textContent;
-            btn.textContent = doneText;
-            if (btn.__flashTimer) clearTimeout(btn.__flashTimer);
-            btn.disabled = true;
-            btn.__flashTimer = setTimeout(() => {
-                btn.textContent = prev;
-                btn.disabled = false;
-                btn.__flashTimer = null;
-            }, ms);
-        }
 
         async function copyBets() {
             const blocks = window.__lastDisplayBlocks;
@@ -1779,7 +1767,7 @@
                 ta.remove();
             }
 
-            if (ok) flashCopyButton(btn);
+            if (ok) showToast("コピーしました");
         }
 
 
