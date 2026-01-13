@@ -1007,7 +1007,7 @@
     <div class="day-editor">
         <div class="day-title" id="dayTitle"></div>
         <div class="day-list" id="dayList"></div>
-        <div class="empty-hint" id="dayEmpty" style="display:none;">この日のデータはありません</div>
+        <div class="empty-hint" id="dayEmpty" style="display:none;"></div>
     </div>
     </div>
 
@@ -1356,7 +1356,7 @@
             daySummaryDate.textContent = formatDayLabel(selectedDate);
 
             if (dayRows.length === 0) {
-                daySummaryList.innerHTML = `<div class="empty-hint">この日のデータはありません</div>`;
+                daySummaryList.innerHTML = "";
                 return;
             }
 
