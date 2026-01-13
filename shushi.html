@@ -1080,6 +1080,7 @@
         let editorDate = "";
         let editorBuyer = "上田";
         let editingUid = null;
+        let editorForceNew = false;
         let lastBuyer = "上田";
 
         if (editorInvest) editorInvest.addEventListener("input", () => { sanitizeNumberInput(editorInvest); updateEditorProfit(); });
@@ -1366,7 +1367,7 @@
                 const profit = recover - invest;
                 const profitClass = profit > 0 ? "profit" : (profit < 0 ? "loss" : "");
                 return `
-                    <div class="day-summary-entry">
+                    <div class="day-summary-entry" data-uid="${r.uid}">
                         <div class="day-entry-profit ${profitClass}">${formatYen(profit)}</div>
                         <div class="day-entry-side">
                             <div class="ms-row">
@@ -1537,6 +1538,9 @@
         function setEditorBuyer(b) {
             editorBuyer = b || "上田";
             lastBuyer = editorBuyer;
+            if (editingUid && !editorForceNew) {
+                editingUid = null;
+            }
             buyerBtns.forEach(x => {
                 const on = (x.dataset.buyer || "上田") === editorBuyer;
                 x.classList.toggle("active", on);
@@ -1545,9 +1549,17 @@
             loadEditorState();
         }
 
-        function openEditor(d) {
+        function openEditor(d, options = {}) {
+            const { buyer, uid, forceNew = false } = options;
             editorDate = d;
+            editorForceNew = !!forceNew;
+            editingUid = uid ?? null;
+            if (buyer) editorBuyer = buyer;
             if (!editorBuyer) editorBuyer = lastBuyer || "上田";
+            if (editingUid != null) {
+                const row = rows.find(r => String(r.uid) === String(editingUid));
+                if (row && row.buyer) editorBuyer = row.buyer;
+            }
             buyerBtns.forEach(x => x.classList.toggle("active", (x.dataset.buyer || "上田") === editorBuyer));
             loadEditorState();
             if (editorOverlay) {
@@ -1566,7 +1578,9 @@
         }
 
         function loadEditorState() {
-            const row = rows.find(r => r.date === editorDate && (r.buyer || "上田") === editorBuyer);
+            const row = editingUid != null
+                ? rows.find(r => String(r.uid) === String(editingUid))
+                : (editorForceNew ? null : rows.find(r => r.date === editorDate && (r.buyer || "上田") === editorBuyer));
             editingUid = row ? row.uid : null;
 
             if (editorInvest) editorInvest.value = row && row.amount != null && row.amount !== 0 ? String(row.amount).replace(/[^\d]/g, "") : "";
@@ -1597,10 +1611,13 @@
             const a = editorInvest ? Number(editorInvest.value) || 0 : 0;
             const p = editorRecover ? Number(editorRecover.value) || 0 : 0;
 
-            const existing = rows.find(r => r.date === editorDate && (r.buyer || "上田") === editorBuyer);
+            const existing = editingUid != null
+                ? rows.find(r => String(r.uid) === String(editingUid))
+                : (editorForceNew ? null : rows.find(r => r.date === editorDate && (r.buyer || "上田") === editorBuyer));
             if (existing) {
                 existing.amount = a ? String(a) : "";
                 existing.payout = p ? String(p) : "";
+                existing.buyer = editorBuyer || "上田";
             } else {
                 rows.push({
                     uid: uidSeq++,
@@ -1623,7 +1640,9 @@
         }
 
         async function deleteEditor() {
-            const row = rows.find(r => r.date === editorDate && (r.buyer || "上田") === editorBuyer);
+            const row = editingUid != null
+                ? rows.find(r => String(r.uid) === String(editingUid))
+                : rows.find(r => r.date === editorDate && (r.buyer || "上田") === editorBuyer);
             if (!row) return;
 
             rows = rows.filter(x => x.uid !== row.uid);
@@ -1645,7 +1664,7 @@
             selectedDate = d;
             ensureSelectedInMonth();
             renderCalendar();
-            openEditor(d);
+            openEditor(d, { forceNew: true });
         }
 
         function addRow() {
@@ -1654,7 +1673,7 @@
             selectedDate = d;
             ensureSelectedInMonth();
             renderCalendar();
-            openEditor(d);
+            openEditor(d, { forceNew: true });
         }
 
         function removeRow(uid) {
@@ -1720,6 +1739,18 @@
             selectedDate = d;
             renderCalendar();
             updateDaySummary();
+        });
+
+        daySummaryList.addEventListener("click", e => {
+            const entry = e.target.closest(".day-summary-entry");
+            if (!entry) return;
+            const uid = entry.dataset.uid;
+            const row = rows.find(r => String(r.uid) === String(uid));
+            if (!row) return;
+            selectedDate = row.date;
+            ensureSelectedInMonth();
+            renderCalendar();
+            openEditor(row.date, { uid: row.uid, buyer: row.buyer, forceNew: false });
         });
 
         dayList.addEventListener("focusin", e => {
