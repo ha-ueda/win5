@@ -31,27 +31,40 @@
         }
 
         #win5TabSelect {
-            padding: 8px 10px;
-            font-size: 20px;
+            padding: 0 clamp(12px, 2.2vw, 18px);
+            font-size: clamp(14px, 1.6vw, 18px);
             border: 1px solid #cfcfcf;
-            border-radius: 6px;
+            border-radius: 10px;
             background-color: #fff;
             color: #222;
             min-width: 160px;
+            min-height: clamp(40px, 5vw, 52px);
         }
 
         button.calc-btn {
-            padding: 8px 12px;
-            font-size: 20px;
-            background: #3251BC;
+            padding: 0 clamp(14px, 2.4vw, 20px);
+            font-size: clamp(14px, 1.6vw, 18px);
+            min-height: clamp(40px, 5vw, 52px);
+            background: linear-gradient(180deg, #3c5dd6 0%, #2d4bb0 100%);
             color: #fff;
-            border: 1px solid rgba(0, 0, 0, 0.06);
-            border-radius: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 10px;
             cursor: pointer;
             white-space: nowrap;
             font-weight: 600;
             -webkit-appearance: none;
             appearance: none;
+        }
+
+        button.calc-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 3px 8px rgba(50, 81, 188, 0.22);
+        }
+
+        button.calc-btn:focus-visible,
+        #win5TabSelect:focus-visible {
+            outline: 3px solid rgba(50, 81, 188, 0.35);
+            outline-offset: 2px;
         }
 
         .toggle-container {
@@ -639,6 +652,17 @@
         .toast.show {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
+        }
+
+        @media (max-width: 640px) {
+            .top-bar-right {
+                justify-content: stretch;
+                gap: 10px;
+            }
+
+            .top-bar-right>* {
+                flex: 1 1 140px;
+            }
         }
     </style>
 </head>
