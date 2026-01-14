@@ -27,6 +27,7 @@
             justify-content: flex-end;
             margin-bottom: 10px;
             flex-wrap: wrap;
+            margin-bottom: 20px;
         }
 
         #win5TabSelect {
@@ -60,14 +61,14 @@
             flex-direction: column;
             align-items: flex-start;
             gap: 10px;
-            margin: 10px 0;
+            margin: 14px 0 10px;
             font-size: 16px;
         }
 
         .toggle-row {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
 
         #raceTables {
@@ -645,13 +646,16 @@
         @media (max-width: 640px) {
             .top-bar-right {
                 justify-content: flex-start;
-                gap: 8px;
+                gap: 10px;
                 flex-wrap: nowrap;
                 overflow-x: auto;
+                padding-bottom: 4px;
+                width: 100%;
             }
 
             .top-bar-right > * {
-                flex: 0 0 auto;
+                flex: 1 1 0;
+                min-width: 140px;
             }
         }
     </style>
