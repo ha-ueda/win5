@@ -27,7 +27,6 @@
             justify-content: flex-end;
             margin-bottom: 10px;
             flex-wrap: wrap;
-            margin-bottom: 20px;
         }
 
         #win5TabSelect {
@@ -37,7 +36,7 @@
             border-radius: 10px;
             background-color: #fff;
             color: #222;
-            min-width: 160px;
+            min-width: 140px;
             min-height: 44px;
         }
 
@@ -61,7 +60,7 @@
             flex-direction: column;
             align-items: flex-start;
             gap: 10px;
-            margin: 14px 0 10px;
+            margin: 10px 0;
             font-size: 16px;
         }
 
@@ -645,12 +644,14 @@
 
         @media (max-width: 640px) {
             .top-bar-right {
-                justify-content: stretch;
-                gap: 10px;
+                justify-content: flex-start;
+                gap: 8px;
+                flex-wrap: nowrap;
+                overflow-x: auto;
             }
 
-            .top-bar-right>* {
-                flex: 1 1 140px;
+            .top-bar-right > * {
+                flex: 0 0 auto;
             }
         }
     </style>
