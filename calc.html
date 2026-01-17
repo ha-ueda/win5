@@ -658,7 +658,7 @@
                 width: 100%;
             }
 
-            .top-bar-right > * {
+            .top-bar-right>* {
                 flex: 1 1 0;
             }
         }
@@ -710,7 +710,7 @@
 
     <div id="result"></div>
     <div id="copyBetsRow" class="button-row" style="display:none;">
-        <button id="copyBetsBtn" class="calc-btn" type="button">買い目コピー</button>
+        <button id="copyBetsBtn" class="calc-btn" type="button">UMACAへ進む</button>
     </div>
     <div id="combos"></div>
 
@@ -1789,12 +1789,24 @@
                 ta.remove();
             }
 
-            if (ok) showToast("コピーしました");
+            void ok;
+        }
+
+        function openIpatTab() {
+            const url = "https://www.ipat.jra.go.jp/sp/umaca/";
+            try {
+                window.open(url, "_blank", "noopener");
+            } catch (e) {
+                window.location.href = url;
+            }
         }
 
 
         const copyBetsBtn = document.getElementById("copyBetsBtn");
-        if (copyBetsBtn) copyBetsBtn.addEventListener("click", () => { copyBets(); });
+        if (copyBetsBtn) copyBetsBtn.addEventListener("click", () => {
+            openIpatTab();
+            copyBets();
+        });
 
         function fullyMergeBlocksStableBit(blocks) {
             const n = TOTAL_RACES | 0;
