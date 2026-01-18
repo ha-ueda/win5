@@ -110,10 +110,6 @@
             gap: 8px;
         }
 
-        .race-max-btn {
-            display: none;
-        }
-
         .race-head-left {
             min-width: 0;
         }
@@ -694,43 +690,6 @@
                 display: none;
             }
 
-            .race-max-btn {
-                display: inline-block;
-            }
-
-            body[data-table-max="1"] {
-                overflow: hidden;
-            }
-
-            body[data-table-max="1"] #raceTables {
-                overflow: hidden;
-            }
-
-            .race-card.is-max {
-                position: fixed;
-                inset: 0;
-                z-index: 19000;
-                border-radius: 0;
-                margin: 0;
-                width: 100vw;
-                height: 100dvh;
-                display: flex;
-                flex-direction: column;
-            }
-
-            .race-card.is-max .race-head {
-                flex: 0 0 auto;
-                position: sticky;
-                top: 0;
-                z-index: 3;
-                background: #fff;
-            }
-
-            .race-card.is-max .shutuba-wrap {
-                flex: 1 1 auto;
-                overflow: auto;
-                -webkit-overflow-scrolling: touch;
-            }
         }
     </style>
 </head>
@@ -959,73 +918,6 @@
         });
 
         updateSwitch();
-
-        let prevFocusRaceForMax = "";
-
-        function updateRaceMaxButtons() {
-            document.querySelectorAll(".race-card").forEach(card => {
-                const btn = card.querySelector(".race-max-btn");
-                if (!btn) return;
-                btn.textContent = card.classList.contains("is-max") ? "戻る" : "最大化";
-            });
-        }
-
-        function toggleRaceMax(raceNum) {
-            const card = document.querySelector(`.race-card[data-race="${raceNum}"]`);
-            if (!card) return;
-
-            const opening = !card.classList.contains("is-max");
-
-            if (opening) {
-                prevFocusRaceForMax = document.body.dataset.focusRace || "";
-                document.querySelectorAll(".race-card.is-max").forEach(c => c.classList.remove("is-max"));
-                card.classList.add("is-max");
-                document.body.dataset.tableMax = "1";
-                document.body.dataset.focusRace = String(raceNum);
-            } else {
-                card.classList.remove("is-max");
-                delete document.body.dataset.tableMax;
-                if (prevFocusRaceForMax) document.body.dataset.focusRace = prevFocusRaceForMax;
-                else delete document.body.dataset.focusRace;
-                prevFocusRaceForMax = "";
-            }
-
-            updateRaceMaxButtons();
-        }
-
-        function switchRaceMaxTo(raceNum) {
-            const target = document.querySelector(`.race-card[data-race="${raceNum}"]`);
-            if (!target) return;
-
-            const current = document.querySelector(".race-card.is-max");
-            if (!current) {
-                applyRaceFocus(String(raceNum));
-                return;
-            }
-
-            if (current === target) return;
-
-            document.body.dataset.focusRace = String(raceNum);
-            document.body.dataset.tableMax = "1";
-
-            current.classList.remove("is-max");
-            target.classList.add("is-max");
-
-            const wrap = target.querySelector(".shutuba-wrap");
-            if (wrap) wrap.scrollTop = 0;
-
-            updateRaceMaxButtons();
-        }
-
-        document.addEventListener("keydown", (e) => {
-            if (e.key !== "Escape") return;
-            if (document.body.dataset.tableMax !== "1") return;
-            const maxCard = document.querySelector(".race-card.is-max");
-            if (!maxCard) return;
-            const raceNum = maxCard.dataset.race;
-            if (!raceNum) return;
-            toggleRaceMax(raceNum);
-        });
 
         function clearAllRowBackgrounds() {
             jockeyLinkMode = false;
@@ -1396,22 +1288,12 @@
 
                 const headRight = document.createElement("div");
                 headRight.className = "race-head-right";
-                const maxBtn = document.createElement("button");
-                maxBtn.type = "button";
-                maxBtn.className = "race-clear race-max-btn";
-                maxBtn.textContent = "最大化";
-                maxBtn.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleRaceMax(r);
-                });
                 const clearBtn = document.createElement("button");
                 clearBtn.type = "button";
                 clearBtn.className = "race-clear";
                 clearBtn.textContent = "クリア";
                 clearBtn.addEventListener("click", () => clearColumn(r));
 
-                headRight.appendChild(maxBtn);
                 headRight.appendChild(clearBtn);
 
                 head.appendChild(headLeft);
@@ -2573,8 +2455,7 @@
                 const cur = Number(document.body.getAttribute("data-focus-race") || "1") || 1;
                 const next = dx < 0 ? Math.min(TOTAL_RACES, cur + 1) : Math.max(1, cur - 1);
                 if (next !== cur) {
-                    if (document.body.dataset.tableMax === "1") switchRaceMaxTo(String(next));
-                    else applyRaceFocus(String(next));
+                    applyRaceFocus(String(next));
                 }
             };
 
@@ -2604,7 +2485,6 @@
         createRaceTables();
         applyRaceFocus(isMobileLayout() ? "1" : "all");
         initMobileSwipe();
-        updateRaceMaxButtons();
         restoreState();
         applyShareFromURL();
         loadWin5Tabs();
