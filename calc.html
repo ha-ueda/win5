@@ -111,6 +111,10 @@
             gap: 8px;
         }
 
+        .race-max-btn {
+            display: none;
+        }
+
         .race-head-left {
             min-width: 0;
         }
@@ -662,9 +666,73 @@
                 flex: 1 1 0;
             }
 
+            #raceTables {
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                -webkit-overflow-scrolling: touch;
+                scroll-padding-left: 10px;
+            }
+
             .race-card {
-                min-width: 100%;
-                width: 100%;
+                flex: 0 0 calc(100vw - 20px);
+            }
+
+            body[data-focus-race="1"] .race-card:not([data-race="1"]) {
+                display: none;
+            }
+
+            body[data-focus-race="2"] .race-card:not([data-race="2"]) {
+                display: none;
+            }
+
+            body[data-focus-race="3"] .race-card:not([data-race="3"]) {
+                display: none;
+            }
+
+            body[data-focus-race="4"] .race-card:not([data-race="4"]) {
+                display: none;
+            }
+
+            body[data-focus-race="5"] .race-card:not([data-race="5"]) {
+                display: none;
+            }
+
+            .race-max-btn {
+                display: inline-block;
+            }
+
+            body[data-table-max="1"] {
+                overflow: hidden;
+            }
+
+            body[data-table-max="1"] #raceTables {
+                overflow: hidden;
+            }
+
+            .race-card.is-max {
+                position: fixed;
+                inset: 0;
+                z-index: 19000;
+                border-radius: 0;
+                margin: 0;
+                width: 100vw;
+                height: 100dvh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .race-card.is-max .race-head {
+                flex: 0 0 auto;
+                position: sticky;
+                top: 0;
+                z-index: 3;
+                background: #fff;
+            }
+
+            .race-card.is-max .shutuba-wrap {
+                flex: 1 1 auto;
+                overflow: auto;
+                -webkit-overflow-scrolling: touch;
             }
         }
     </style>
@@ -894,6 +962,73 @@
         });
 
         updateSwitch();
+
+        let prevFocusRaceForMax = "";
+
+        function updateRaceMaxButtons() {
+            document.querySelectorAll(".race-card").forEach(card => {
+                const btn = card.querySelector(".race-max-btn");
+                if (!btn) return;
+                btn.textContent = card.classList.contains("is-max") ? "戻る" : "最大化";
+            });
+        }
+
+        function toggleRaceMax(raceNum) {
+            const card = document.querySelector(`.race-card[data-race="${raceNum}"]`);
+            if (!card) return;
+
+            const opening = !card.classList.contains("is-max");
+
+            if (opening) {
+                prevFocusRaceForMax = document.body.dataset.focusRace || "";
+                document.querySelectorAll(".race-card.is-max").forEach(c => c.classList.remove("is-max"));
+                card.classList.add("is-max");
+                document.body.dataset.tableMax = "1";
+                document.body.dataset.focusRace = String(raceNum);
+            } else {
+                card.classList.remove("is-max");
+                delete document.body.dataset.tableMax;
+                if (prevFocusRaceForMax) document.body.dataset.focusRace = prevFocusRaceForMax;
+                else delete document.body.dataset.focusRace;
+                prevFocusRaceForMax = "";
+            }
+
+            updateRaceMaxButtons();
+        }
+
+        function switchRaceMaxTo(raceNum) {
+            const target = document.querySelector(`.race-card[data-race="${raceNum}"]`);
+            if (!target) return;
+
+            const current = document.querySelector(".race-card.is-max");
+            if (!current) {
+                applyRaceFocus(String(raceNum));
+                return;
+            }
+
+            if (current === target) return;
+
+            document.body.dataset.focusRace = String(raceNum);
+            document.body.dataset.tableMax = "1";
+
+            current.classList.remove("is-max");
+            target.classList.add("is-max");
+
+            const wrap = target.querySelector(".shutuba-wrap");
+            if (wrap) wrap.scrollTop = 0;
+
+            updateRaceMaxButtons();
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key !== "Escape") return;
+            if (document.body.dataset.tableMax !== "1") return;
+            const maxCard = document.querySelector(".race-card.is-max");
+            if (!maxCard) return;
+            const raceNum = maxCard.dataset.race;
+            if (!raceNum) return;
+            toggleRaceMax(raceNum);
+        });
 
         function clearAllRowBackgrounds() {
             jockeyLinkMode = false;
@@ -1235,6 +1370,7 @@
 
             const row = document.createElement("div");
             row.className = "race-row";
+            row.style.setProperty("--race-count", String(TOTAL_RACES));
             root.appendChild(row);
 
             for (let r = 1; r <= TOTAL_RACES; r++) {
@@ -1263,12 +1399,22 @@
 
                 const headRight = document.createElement("div");
                 headRight.className = "race-head-right";
+                const maxBtn = document.createElement("button");
+                maxBtn.type = "button";
+                maxBtn.className = "race-clear race-max-btn";
+                maxBtn.textContent = "最大化";
+                maxBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleRaceMax(r);
+                });
                 const clearBtn = document.createElement("button");
                 clearBtn.type = "button";
                 clearBtn.className = "race-clear";
                 clearBtn.textContent = "クリア";
                 clearBtn.addEventListener("click", () => clearColumn(r));
 
+                headRight.appendChild(maxBtn);
                 headRight.appendChild(clearBtn);
 
                 head.appendChild(headLeft);
@@ -1282,29 +1428,29 @@
 
                 const thead = document.createElement("thead");
                 thead.innerHTML = `
-          <tr>
-            <th class="col-no sortable" data-sort-key="no">
-              <div class="th-col">
-                <div class="th-title">馬番</div>
-              </div>
-            </th>
-            <th class="col-mark">
-              <div class="th-col">
-                <div class="th-title">予想印</div>
-              </div>
-            </th>
-            <th class="col-info">
-              <div class="th-col">
-                <div class="th-title">馬名</div>
-              </div>
-            </th>
-            <th class="col-odds sortable" data-sort-key="odds">
-              <div class="th-col">
-                <div class="th-title">オッズ</div>
-              </div>
-            </th>
-          </tr>
-        `;
+                <tr>
+                    <th class="col-no sortable" data-sort-key="no">
+                    <div class="th-col">
+                        <div class="th-title">馬番</div>
+                    </div>
+                    </th>
+                    <th class="col-mark">
+                    <div class="th-col">
+                        <div class="th-title">予想印</div>
+                    </div>
+                    </th>
+                    <th class="col-info">
+                    <div class="th-col">
+                        <div class="th-title">馬名</div>
+                    </div>
+                    </th>
+                    <th class="col-odds sortable" data-sort-key="odds">
+                    <div class="th-col">
+                        <div class="th-title">オッズ</div>
+                    </div>
+                    </th>
+                </tr>
+                `;
                 const tbody = document.createElement("tbody");
                 for (let i = 1; i <= HORSE_MAX; i++) {
                     tbody.appendChild(createRow(r, i));
@@ -2348,6 +2494,103 @@
             return legacy(tok);
         }
 
+        function isMobileLayout() {
+            return window.matchMedia("(max-width: 640px)").matches;
+        }
+
+        function applyRaceFocus(v) {
+            const b = document.body;
+            const s = String(v || "all");
+            if (s === "all") {
+                b.removeAttribute("data-focus-race");
+                return;
+            }
+            b.setAttribute("data-focus-race", s);
+        }
+
+        function initMobileSwipe() {
+            const root = document.getElementById("raceTables");
+            if (!root) return;
+
+            const mq = window.matchMedia("(max-width: 640px) and (hover: none) and (pointer: coarse)");
+            if (initMobileSwipe._bound !== true) {
+                const onChange = () => initMobileSwipe();
+                if (mq.addEventListener) mq.addEventListener("change", onChange);
+                else if (mq.addListener) mq.addListener(onChange);
+                initMobileSwipe._bound = true;
+            }
+
+            if (initMobileSwipe._abort && initMobileSwipe._abort.abort) {
+                initMobileSwipe._abort.abort();
+            }
+            initMobileSwipe._abort = null;
+
+            if (!mq.matches) return;
+
+            const ac = (typeof AbortController !== "undefined") ? new AbortController() : null;
+            initMobileSwipe._abort = ac;
+
+            let sx = 0;
+            let sy = 0;
+            let active = false;
+            let lock = false;
+
+            const start = (e) => {
+                const t = e.touches ? e.touches[0] : null;
+                if (!t) return;
+                sx = t.clientX;
+                sy = t.clientY;
+                active = true;
+                lock = false;
+            };
+
+            const move = (e) => {
+                if (!active) return;
+                if (!e.touches || e.touches.length !== 1) return;
+
+                const t = e.touches[0];
+                const dx = t.clientX - sx;
+                const dy = t.clientY - sy;
+
+                if (!lock) {
+                    if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) lock = true;
+                    else return;
+                }
+
+                e.preventDefault();
+            };
+
+            const end = (e) => {
+                if (!active) return;
+                active = false;
+
+                const t = e.changedTouches ? e.changedTouches[0] : null;
+                if (!t) return;
+
+                const dx = t.clientX - sx;
+                const dy = t.clientY - sy;
+
+                if (Math.abs(dx) < 45) return;
+                if (Math.abs(dx) <= Math.abs(dy)) return;
+
+                const cur = Number(document.body.getAttribute("data-focus-race") || "1") || 1;
+                const next = dx < 0 ? Math.min(TOTAL_RACES, cur + 1) : Math.max(1, cur - 1);
+                if (next !== cur) {
+                    if (document.body.dataset.tableMax === "1") switchRaceMaxTo(String(next));
+                    else applyRaceFocus(String(next));
+                }
+            };
+
+            root.addEventListener("touchstart", start, ac ? { passive: true, signal: ac.signal } : { passive: true });
+            root.addEventListener("touchmove", move, ac ? { passive: false, signal: ac.signal } : { passive: false });
+            root.addEventListener("touchend", end, ac ? { passive: true, signal: ac.signal } : { passive: true });
+            root.addEventListener("touchcancel", end, ac ? { passive: true, signal: ac.signal } : { passive: true });
+        }
+
+        window.addEventListener("resize", () => {
+            applyRaceFocus(isMobileLayout() ? (document.body.getAttribute("data-focus-race") || "1") : "all");
+        });
+
         function applyShareFromURL() {
             const hash = location.hash || "";
             const m = hash.match(/share=([A-Za-z0-9\-_]+)/);
@@ -2362,6 +2605,9 @@
         }
 
         createRaceTables();
+        applyRaceFocus(isMobileLayout() ? "1" : "all");
+        initMobileSwipe();
+        updateRaceMaxButtons();
         restoreState();
         applyShareFromURL();
         loadWin5Tabs();
