@@ -210,11 +210,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            line-height: 13.014px;
+            line-height: 13px;
         }
 
         .th-col .th-title {
-            font-size: 13.014px;
+            font-size: 13px;
             font-weight: 400;
             text-align: center;
             white-space: nowrap;
@@ -230,8 +230,6 @@
         }
 
         table.shutuba-table tbody td.col-no {
-            height: 45px;
-            line-height: 45px;
             text-align: center;
             font-size: 12px;
             font-feature-settings: "tnum" 1;
@@ -296,7 +294,7 @@
 
         .horse-name {
             font-weight: bold;
-            font-size: 16.8008px;
+            font-size: 16px;
             color: rgb(0, 51, 170);
             white-space: nowrap;
             overflow: hidden;
@@ -323,7 +321,7 @@
 
         .jockey-name {
             color: rgb(0, 51, 170);
-            font-size: 13.0807px;
+            font-size: 13px;
             padding: 0px 5px;
             margin: 0px 1px 1px 0px;
             border-radius: 10px;
@@ -1428,29 +1426,29 @@
 
                 const thead = document.createElement("thead");
                 thead.innerHTML = `
-                <tr>
-                    <th class="col-no sortable" data-sort-key="no">
-                    <div class="th-col">
-                        <div class="th-title">馬番</div>
-                    </div>
-                    </th>
-                    <th class="col-mark">
-                    <div class="th-col">
-                        <div class="th-title">予想印</div>
-                    </div>
-                    </th>
-                    <th class="col-info">
-                    <div class="th-col">
-                        <div class="th-title">馬名</div>
-                    </div>
-                    </th>
-                    <th class="col-odds sortable" data-sort-key="odds">
-                    <div class="th-col">
-                        <div class="th-title">オッズ</div>
-                    </div>
-                    </th>
-                </tr>
-                `;
+                    <tr>
+                        <th class="col-no sortable" data-sort-key="no">
+                        <div class="th-col">
+                            <div class="th-title">馬番</div>
+                        </div>
+                        </th>
+                        <th class="col-mark">
+                        <div class="th-col">
+                            <div class="th-title">予想印</div>
+                        </div>
+                        </th>
+                        <th class="col-info">
+                        <div class="th-col">
+                            <div class="th-title">馬名</div>
+                        </div>
+                        </th>
+                        <th class="col-odds sortable" data-sort-key="odds">
+                        <div class="th-col">
+                            <div class="th-title">オッズ</div>
+                        </div>
+                        </th>
+                    </tr>
+                    `;
                 const tbody = document.createElement("tbody");
                 for (let i = 1; i <= HORSE_MAX; i++) {
                     tbody.appendChild(createRow(r, i));
