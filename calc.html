@@ -318,7 +318,7 @@
 
         .jockey-name {
             color: rgb(0, 51, 170);
-            font-size: 12px;
+            font-size: 13px;
             padding: 0px 5px;
             margin: 0px 1px 1px 0px;
             border-radius: 10px;
@@ -620,16 +620,18 @@
         .toast {
             position: fixed;
             left: 50%;
-            top: calc(20px + env(safe-area-inset-top));
-            transform: translateX(-50%);
+            bottom: calc(16px + env(safe-area-inset-bottom));
+            transform: translate(-50%, -50%);
             opacity: 0;
-            padding: 10px 14px;
-            border-radius: 6px;
-            background: rgba(0, 0, 0, 0.82);
-            color: #fff;
-            font-size: 20px;
-            line-height: 1.2;
-            letter-spacing: .02em;
+            padding: 12px 18px;
+            border-radius: 12px;
+            background: #1e1e22;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #f7f7f7;
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.35;
+            letter-spacing: .01em;
             z-index: 9999;
             pointer-events: none;
             transition: none;
@@ -642,7 +644,7 @@
 
         .toast.show {
             opacity: 1;
-            transform: translateX(-50%);
+            transform: translate(-50%, -50%);
         }
 
         @media (max-width: 640px) {
