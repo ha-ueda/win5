@@ -25,8 +25,8 @@
             display: flex;
             gap: 8px;
             justify-content: flex-end;
-            margin-bottom: 10px;
             flex-wrap: wrap;
+            margin-bottom: 10px;
             margin-bottom: 20px;
         }
 
@@ -69,6 +69,18 @@
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+
+        .race-panel {
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            background: #f7f7f7;
+            padding: 10px;
+            margin: 12px 0 14px;
+        }
+
+        .race-panel .toggle-container {
+            margin: 0 0 8px;
         }
 
         #raceTables {
@@ -714,15 +726,17 @@
         <button class="calc-btn" onclick="openShare()">共有</button>
     </div>
 
-    <div class="toggle-container">
-        <div class="toggle-row">
-            <button id="modeToggle" class="race-clear" type="button">個別選択</button>
-            <button id="jockeyApplyBtn" class="race-clear" type="button">一括選択</button>
-            <button id="bgClearAllBtn" class="race-clear" type="button">クリア</button>
+    <div class="race-panel">
+        <div class="toggle-container">
+            <div class="toggle-row">
+                <button id="modeToggle" class="race-clear" type="button">個別選択</button>
+                <button id="jockeyApplyBtn" class="race-clear" type="button">一括選択</button>
+                <button id="bgClearAllBtn" class="race-clear" type="button">クリア</button>
+            </div>
         </div>
-    </div>
 
-    <div id="raceTables"></div>
+        <div id="raceTables"></div>
+    </div>
 
     <div class="fav-calc-row">
         <div class="fav-calc-left">
@@ -2123,6 +2137,7 @@
                 select.appendChild(op);
             });
         }
+
 
         function openShare() {
             const modal = document.getElementById("shareModal");
