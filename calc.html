@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         :root {
-            --calc-btn-width: clamp(110px, 18vw, 150px);
+            --calc-btn-width: clamp(120px, 18vw, 150px);
         }
 
         body {
@@ -35,13 +35,13 @@
         }
 
         #win5TabSelect {
-            padding: 0 10px;
+            padding: 0 clamp(14px, 2.4vw, 22px);
             font-size: clamp(16px, 1.8vw, 18px);
             border: 1px solid #cfcfcf;
             border-radius: 6px;
             background-color: #fff;
             color: #222;
-            min-width: 150px;
+            width: var(--calc-btn-width);
             min-height: 44px;
             text-align: center;
         }
