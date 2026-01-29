@@ -44,6 +44,14 @@
             width: var(--calc-btn-width);
             min-height: 44px;
             text-align: center;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: none;
+        }
+
+        #win5TabSelect::-ms-expand {
+            display: none;
         }
 
         button.calc-btn {
@@ -484,12 +492,20 @@
             font-size: 16px;
             border: 1px solid #cfcfcf;
             height: 44px;
-            padding: 0 10px;
+            padding: 0 20px;
             border-radius: 6px;
             background-color: #fff;
             color: #222;
             box-sizing: border-box;
             text-align: center;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: none;
+        }
+
+        #minFav::-ms-expand {
+            display: none;
         }
 
         .fav-calc-row {
