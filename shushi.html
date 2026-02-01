@@ -1705,9 +1705,10 @@
 
                 rebuildYearOptions();
 
-                const todayYm = new Date().toISOString().slice(0, 7);
-                const initialYm = rows.length ? (ymFromDate(rows[rows.length - 1].date) || todayYm) : todayYm;
-                setViewMonth(initialYm);
+                const today = new Date().toISOString().slice(0, 10);
+                const todayYm = today.slice(0, 7);
+                selectedDate = today;
+                setViewMonth(todayYm);
 
                 applyYearFilter();
             } catch (e) {
