@@ -930,7 +930,7 @@
     <div class="container">
 
         <div class="profit-box">
-            <select id="yearFilter"></select><span class="profit-label">収支：</span><span id="profit">¥0</span>
+            <select id="yearFilter"></select><span class="profit-label">収支：</span><span id="profit">0円</span>
         </div>
 
         <table class="summary-table">
@@ -949,23 +949,23 @@
 
             <tr>
                 <td>上田</td>
-                <td id="sumUeda"><span>¥0</span></td>
-                <td id="payUeda"><span>¥0</span></td>
-                <td id="profitUeda"><span>¥0</span></td>
+                <td id="sumUeda"><span>0円</span></td>
+                <td id="payUeda"><span>0円</span></td>
+                <td id="profitUeda"><span>0円</span></td>
             </tr>
 
             <tr>
                 <td>千葉</td>
-                <td id="sumChiba"><span>¥0</span></td>
-                <td id="payChiba"><span>¥0</span></td>
-                <td id="profitChiba"><span>¥0</span></td>
+                <td id="sumChiba"><span>0円</span></td>
+                <td id="payChiba"><span>0円</span></td>
+                <td id="profitChiba"><span>0円</span></td>
             </tr>
 
             <tr>
                 <td>合計</td>
-                <td id="sumTotal"><span>¥0</span></td>
-                <td id="sumPayout"><span>¥0</span></td>
-                <td id="profitTotal"><span>¥0</span></td>
+                <td id="sumTotal"><span>0円</span></td>
+                <td id="sumPayout"><span>0円</span></td>
+                <td id="profitTotal"><span>0円</span></td>
             </tr>
         </table>
 
@@ -993,15 +993,15 @@
         <div class="month-summary">
             <div class="month-summary-label">月間収支</div>
             <div class="month-summary-body">
-                <div class="month-profit" id="monthProfit">¥0</div>
+                <div class="month-profit" id="monthProfit">0円</div>
                 <div class="month-side">
                     <div class="ms-row">
                         <div>購入</div>
-                        <div class="ms-val" id="monthInvest">¥0</div>
+                        <div class="ms-val" id="monthInvest">0円</div>
                     </div>
                     <div class="ms-row">
                         <div>払戻</div>
-                        <div class="ms-val" id="monthRecover">¥0</div>
+                        <div class="ms-val" id="monthRecover">0円</div>
                     </div>
                 </div>
             </div>
@@ -1039,7 +1039,7 @@
                 </div>
                 <div class="editor-field">
                     <div class="editor-icon profit">収支</div>
-                    <div class="editor-profit" id="editorProfit">¥0</div>
+                    <div class="editor-profit" id="editorProfit">0円</div>
                 </div>
             </div>
 
@@ -1121,19 +1121,19 @@
 
         function formatYen(n) {
             const num = Number(n);
-            if (!isFinite(num) || num === 0) return "¥0";
-            if (num < 0) return "-¥" + Math.abs(num).toLocaleString();
-            return "¥" + num.toLocaleString();
+            if (!isFinite(num) || num === 0) return "0円";
+            if (num < 0) return "-" + Math.abs(num).toLocaleString() + "円";
+            return num.toLocaleString() + "円";
         }
 
         function formatProfitSpan(n) {
             if (n > 0) return `<span class="profit">${formatYen(n)}</span>`;
             if (n < 0) return `<span class="loss">${formatYen(n)}</span>`;
-            return `<span>¥0</span>`;
+            return `<span>0円</span>`;
         }
 
         function parseYen(s) {
-            return Number(String(s || "").replace(/[¥,]/g, "")) || 0;
+            return Number(String(s || "").replace(/[円,]/g, "")) || 0;
         }
 
         function sanitizeNumberInput(el) {
@@ -1320,7 +1320,7 @@
             if (profitElem) {
                 if (profit > 0) profitElem.innerHTML = `<span class="profit">${formatYen(profit)}</span>`;
                 else if (profit < 0) profitElem.innerHTML = `<span class="loss">${formatYen(profit)}</span>`;
-                else profitElem.innerHTML = `<span>¥0</span>`;
+                else profitElem.innerHTML = `<span>0円</span>`;
             }
 
             const monthRows = getRowsInMonth(viewMonth);
@@ -1416,7 +1416,7 @@
         const profitElem = document.getElementById("profit");
         if (profit > 0) profitElem.innerHTML = `<span class="profit">${formatYen(profit)}</span>`;
         else if (profit < 0) profitElem.innerHTML = `<span class="loss">${formatYen(profit)}</span>`;
-        else profitElem.innerHTML = `<span>¥0</span>`;
+        else profitElem.innerHTML = `<span>0円</span>`;
 
         const mp = document.getElementById("monthProfit");
         const mi = document.getElementById("monthInvest");
