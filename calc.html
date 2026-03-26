@@ -29,7 +29,6 @@
             display: flex;
             gap: 8px;
             justify-content: flex-end;
-            margin-bottom: 10px;
             flex-wrap: wrap;
             margin-bottom: 20px;
         }
@@ -107,7 +106,6 @@
             display: flex;
             gap: 10px;
             align-items: flex-start;
-            width: fit-content;
             padding-bottom: 10px;
             width: 100%;
         }
@@ -593,6 +591,7 @@
             border-radius: 6px;
             min-width: 140px;
             z-index: 999;
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
         }
 
         .menu-list a {
@@ -1445,7 +1444,11 @@
         }
 
         function restoreState() {
-            const data = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(STORAGE_KEY_OLD);
+            let data = localStorage.getItem(STORAGE_KEY);
+            if (!data) {
+                data = localStorage.getItem(STORAGE_KEY_OLD);
+                if (data) localStorage.removeItem(STORAGE_KEY_OLD);
+            }
             if (!data) return;
 
             try {
@@ -2123,46 +2126,54 @@
         }
 
         async function loadWin5Data() {
-            const idx = document.getElementById("win5TabSelect").value;
+            try {
+                const idx = document.getElementById("win5TabSelect").value;
 
-            const u = new URL(WIN5_API);
-            u.searchParams.set("tab", idx);
-            u.searchParams.set("_", String(Date.now()));
+                const u = new URL(WIN5_API);
+                u.searchParams.set("tab", idx);
+                u.searchParams.set("_", String(Date.now()));
 
-            const res = await fetch(u.toString(), { cache: "no-store" });
-            const json = await res.json();
+                const res = await fetch(u.toString(), { cache: "no-store" });
+                const json = await res.json();
 
-            if (!json.ok) return;
+                if (!json.ok) return;
 
-            applyWin5Data(json);
+                applyWin5Data(json);
 
-            showToast("取得しました");
+                showToast("取得しました");
+            } catch (e) {
+                showToast("取得に失敗しました");
+            }
         }
 
         async function loadWin5Tabs() {
-            const u = new URL(WIN5_API);
-            u.searchParams.set("_", String(Date.now()));
+            try {
+                const u = new URL(WIN5_API);
+                u.searchParams.set("_", String(Date.now()));
 
-            const res = await fetch(u.toString(), { cache: "no-store" });
-            const json = await res.json();
+                const res = await fetch(u.toString(), { cache: "no-store" });
+                const json = await res.json();
 
-            if (!json.ok) return;
+                if (!json.ok) return;
 
-            const tabs = json.tabs || [];
-            const current = json.activeTab ?? 0;
+                const tabs = json.tabs || [];
+                const current = json.activeTab ?? 0;
 
-            const select = document.getElementById("win5TabSelect");
-            if (!select) return;
+                const select = document.getElementById("win5TabSelect");
+                if (!select) return;
 
-            select.innerHTML = "";
+                select.innerHTML = "";
 
-            tabs.forEach((t, i) => {
-                const op = document.createElement("option");
-                op.value = i;
-                op.textContent = t.label;
-                if (i === current) op.selected = true;
-                select.appendChild(op);
-            });
+                tabs.forEach((t, i) => {
+                    const op = document.createElement("option");
+                    op.value = i;
+                    op.textContent = t.label;
+                    if (i === current) op.selected = true;
+                    select.appendChild(op);
+                });
+            } catch (e) {
+                showToast("タブ取得に失敗しました");
+            }
         }
 
         function openShare() {

@@ -846,14 +846,7 @@
                 display: inline-flex;
             }
         }
-    </style>
-</head>
 
-<body>
-
-    <div id="toast"></div>
-
-    <style>
         .menu-container {
             position: relative;
             margin-bottom: 20px;
@@ -904,6 +897,11 @@
             border-bottom: none;
         }
     </style>
+</head>
+
+<body>
+
+    <div id="toast"></div>
 
     <div class="menu-container">
         <div class="menu-button" onclick="toggleMenu()">
@@ -1140,6 +1138,16 @@
             el.value = el.value.replace(/[^\d]/g, "");
         }
 
+        function escapeHtml(s) {
+            return String(s ?? "").replace(/[&<>"']/g, ch => {
+                if (ch === "&") return "&amp;";
+                if (ch === "<") return "&lt;";
+                if (ch === ">") return "&gt;";
+                if (ch === '"') return "&quot;";
+                return "&#39;";
+            });
+        }
+
         function startEdit(el) {
             const v = el.value ? String(parseYen(el.value)) : "";
             el.value = v === "0" ? "" : v;
@@ -1226,40 +1234,36 @@
             return yearFilter.value || "all";
         }
 
+        function fitYearFilterWidth() {
+            if (!yearFilter) return;
+
+            const opt = yearFilter.options[yearFilter.selectedIndex];
+            const text = opt ? opt.text : "";
+
+            let meas = document.getElementById("yearMeasure");
+            if (!meas) {
+                meas = document.createElement("span");
+                meas.id = "yearMeasure";
+                meas.style.position = "absolute";
+                meas.style.visibility = "hidden";
+                meas.style.whiteSpace = "pre";
+                meas.style.pointerEvents = "none";
+                document.body.appendChild(meas);
+            }
+
+            const cs = getComputedStyle(yearFilter);
+            meas.style.font = cs.font;
+            meas.style.fontWeight = cs.fontWeight;
+            meas.textContent = text;
+
+            const w = meas.getBoundingClientRect().width;
+            yearFilter.style.width = Math.ceil(w + 2) + "px";
+        }
+
         function applyYearFilter() {
             if (!yearFilter) {
                 calc();
                 return;
-            }
-
-
-
-            function fitYearFilterWidth() {
-                if (!yearFilter) return;
-
-                const opt = yearFilter.options[yearFilter.selectedIndex];
-                const text = opt ? opt.text : "";
-
-                let meas = document.getElementById("yearMeasure");
-                if (!meas) {
-                    meas = document.createElement("span");
-                    meas.id = "yearMeasure";
-                    meas.style.position = "absolute";
-                    meas.style.visibility = "hidden";
-                    meas.style.whiteSpace = "pre";
-                    meas.style.pointerEvents = "none";
-                    document.body.appendChild(meas);
-
-                    fitYearFilterWidth();
-                }
-
-                const cs = getComputedStyle(yearFilter);
-                meas.style.font = cs.font;
-                meas.style.fontWeight = cs.fontWeight;
-                meas.textContent = text;
-
-                const w = meas.getBoundingClientRect().width;
-                yearFilter.style.width = Math.ceil(w + 2) + "px";
             }
 
             const y = getYearFilterValue();
@@ -1389,52 +1393,13 @@
                             </div>
                             <div class="ms-row">
                                 <div>買主</div>
-                                <div class="ms-val">${buyer}</div>
+                                <div class="ms-val">${escapeHtml(buyer)}</div>
                             </div>
                         </div>
                     </div>
                 `;
             }).join("");
         }
-
-        const sumTotal = sumUeda + sumChiba;
-        const sumPayout = payUeda + payChiba;
-        const profit = sumPayout - sumTotal;
-
-        const profitUeda = payUeda - sumUeda;
-        const profitChiba = payChiba - sumChiba;
-
-        document.getElementById("sumUeda").innerHTML = `<span>${formatYen(sumUeda)}</span>`;
-        document.getElementById("payUeda").innerHTML = `<span>${formatYen(payUeda)}</span>`;
-        document.getElementById("sumChiba").innerHTML = `<span>${formatYen(sumChiba)}</span>`;
-        document.getElementById("payChiba").innerHTML = `<span>${formatYen(payChiba)}</span>`;
-        document.getElementById("sumTotal").innerHTML = `<span>${formatYen(sumTotal)}</span>`;
-        document.getElementById("sumPayout").innerHTML = `<span>${formatYen(sumPayout)}</span>`;
-
-        const pu = document.getElementById("profitUeda");
-        if (pu) pu.innerHTML = formatProfitSpan(profitUeda);
-        const pc = document.getElementById("profitChiba");
-        if (pc) pc.innerHTML = formatProfitSpan(profitChiba);
-        const pt = document.getElementById("profitTotal");
-        if (pt) pt.innerHTML = formatProfitSpan(profit);
-
-        const profitElem = document.getElementById("profit");
-        if (profit > 0) profitElem.innerHTML = `<span class="profit">${formatYen(profit)}</span>`;
-        else if (profit < 0) profitElem.innerHTML = `<span class="loss">${formatYen(profit)}</span>`;
-        else profitElem.innerHTML = `<span>0円</span>`;
-
-        const mp = document.getElementById("monthProfit");
-        const mi = document.getElementById("monthInvest");
-        const mr = document.getElementById("monthRecover");
-
-        if (mp) {
-            mp.textContent = formatYen(profit);
-            mp.classList.toggle("loss", profit < 0);
-            mp.classList.toggle("profit", profit > 0);
-            if (profit === 0) { mp.classList.remove("loss"); mp.classList.remove("profit"); }
-        }
-        if (mi) mi.textContent = formatYen(sumTotal);
-        if (mr) mr.textContent = formatYen(sumPayout);
 
         function renderCalendar() {
             const y = parseInt(viewMonth.slice(0, 4), 10);
@@ -1469,7 +1434,6 @@
                 if (day < 1 || day > lastDay) {
                     cells.push(`<div class="cal-cell outside"></div>`);
                     continue;
-
                 }
 
                 const dateStr = `${viewMonth}-${pad2(day)}`;
