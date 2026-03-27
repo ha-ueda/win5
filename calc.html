@@ -86,7 +86,7 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            gap: 10px;
+            gap: 8px;
             margin: 14px 0 10px;
             font-size: 16px;
         }
@@ -95,6 +95,13 @@
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+
+        .toggle-row .race-clear {
+            width: 80px;
+            min-height: 36px;
+            text-align: center;
+            padding: 6px 0;
         }
 
         #raceTables {
@@ -732,6 +739,20 @@
                 display: none;
             }
 
+            .toggle-container {
+                align-items: stretch;
+            }
+
+            .toggle-row {
+                flex-wrap: wrap;
+            }
+
+            .toggle-row .race-clear {
+                width: auto;
+                flex: 1 1 calc(25% - 6px);
+                min-height: 40px;
+            }
+
         }
     </style>
 </head>
@@ -758,7 +779,10 @@
         <div class="toggle-row">
             <button id="modeToggle" class="race-clear" type="button">個別選択</button>
             <button id="jockeyApplyBtn" class="race-clear" type="button">一括選択</button>
-            <button id="bgClearAllBtn" class="race-clear" type="button">クリア</button>
+            <button id="bgClearAllBtn" class="race-clear" type="button">色クリア</button>
+            <button class="race-clear" type="button" onclick="clearAllMarks()">印クリア</button>
+            <button class="race-clear" type="button" onclick="sortAllRaces('no')">馬番順</button>
+            <button class="race-clear" type="button" onclick="sortAllRaces('odds')">オッズ順</button>
         </div>
     </div>
 
@@ -2540,6 +2564,22 @@
                 const base = location.href.split("#")[0];
                 history.replaceState(null, "", base);
             } catch (e) { }
+        }
+
+        function clearAllMarks() {
+            document.querySelectorAll('.custom-select:not(.is-empty)').forEach(sel => {
+                const box = sel.querySelector('.selected');
+                if (box) box.textContent = "";
+                applyMarkBackground(sel, false);
+            });
+            saveState();
+        }
+
+        function sortAllRaces(key) {
+            for (let r = 1; r <= TOTAL_RACES; r++) {
+                sortRaceTable(r, key, 1);
+                sortStateByRace[r] = { key, dir: 1 };
+            }
         }
 
         createRaceTables();
