@@ -2138,6 +2138,12 @@
 
                 if (!json.ok) return;
 
+                const races = json.races || [];
+                if (races.length === 0 || races.every(r => !r || !r.horses || r.horses.length === 0)) {
+                    showToast("レースデータがありません");
+                    return;
+                }
+
                 applyWin5Data(json);
 
                 showToast("取得しました");
