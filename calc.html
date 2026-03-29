@@ -707,10 +707,7 @@
             }
 
             #raceTables {
-                overflow-x: auto;
-                scroll-snap-type: x mandatory;
-                -webkit-overflow-scrolling: touch;
-                scroll-padding-left: 10px;
+                overflow: visible;
             }
 
             #raceTables .race-row {
@@ -722,7 +719,6 @@
             .race-card {
                 flex: 0 0 calc(100vw - 20px);
                 min-width: auto;
-                scroll-snap-align: start;
             }
 
             body[data-focus-race="1"] .race-card:not([data-race="1"]),
@@ -2467,42 +2463,6 @@
             }
         }
 
-        function fitScalable(container, inner) {
-            if (!container || !inner) return;
-            inner.style.transform = "none";
-            container.style.height = "";
-            const innerW = inner.scrollWidth;
-            const containerW = container.clientWidth;
-            if (innerW > containerW) {
-                const s = containerW / innerW;
-                inner.style.transform = "scale(" + s + ")";
-                container.style.height = (inner.offsetHeight * s) + "px";
-            }
-        }
-
-        function fitAll() {
-            fitScalable(
-                document.getElementById("raceTables"),
-                document.querySelector("#raceTables .race-row")
-            );
-            fitScalable(
-                document.querySelector(".toggle-container"),
-                document.querySelector(".toggle-row")
-            );
-        }
-
-        let fitTimer = 0;
-        function fitAllDebounced() {
-            clearTimeout(fitTimer);
-            fitTimer = setTimeout(fitAll, 30);
-        }
-
-        window.addEventListener("resize", fitAllDebounced);
-        new MutationObserver(fitAllDebounced).observe(
-            document.getElementById("raceTables"),
-            { childList: true, subtree: true, characterData: true }
-        );
-
         function isMobileLayout() {
             return window.matchMedia("(max-width: 640px)").matches;
         }
@@ -2516,6 +2476,53 @@
             }
             b.setAttribute("data-focus-race", s);
         }
+
+        function fitWithScale(container, inner) {
+            if (!container || !inner) return 1;
+            inner.style.transform = "none";
+            container.style.height = "";
+            const innerW = inner.scrollWidth;
+            const containerW = container.clientWidth;
+            if (innerW > containerW && containerW > 0) {
+                const s = containerW / innerW;
+                inner.style.transform = "scale(" + s + ")";
+                container.style.height = (inner.offsetHeight * s) + "px";
+                return s;
+            }
+            return 1;
+        }
+
+        function applyScale(container, inner, s) {
+            if (!container || !inner) return;
+            inner.style.transform = s < 1 ? "scale(" + s + ")" : "none";
+            container.style.height = s < 1 ? (inner.offsetHeight * s) + "px" : "";
+        }
+
+        function fitAll() {
+            const tc = document.querySelector(".toggle-container");
+            const tr = document.querySelector(".toggle-row");
+            const container = document.getElementById("raceTables");
+            const row = container && container.querySelector(".race-row");
+            if (isMobileLayout()) {
+                if (row) row.style.transform = "none";
+                if (container) container.style.height = "";
+                fitWithScale(tc, tr);
+                return;
+            }
+            const s = fitWithScale(container, row);
+            applyScale(tc, tr, s);
+        }
+
+        let fitTimer = 0;
+        function fitAllDebounced() {
+            clearTimeout(fitTimer);
+            fitTimer = setTimeout(fitAll, 30);
+        }
+
+        new MutationObserver(fitAllDebounced).observe(
+            document.getElementById("raceTables"),
+            { childList: true, subtree: true, characterData: true }
+        );
 
         function initMobileSwipe() {
             const root = document.getElementById("raceTables");
@@ -2579,6 +2586,7 @@
 
         window.addEventListener("resize", () => {
             applyRaceFocus(isMobileLayout() ? (document.body.getAttribute("data-focus-race") || "1") : "all");
+            fitAllDebounced();
         });
 
         createRaceTables();
