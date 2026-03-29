@@ -30,7 +30,7 @@
             gap: 8px;
             justify-content: flex-end;
             flex-wrap: wrap;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
 
         #win5TabSelect {
@@ -87,14 +87,17 @@
             flex-direction: column;
             align-items: flex-start;
             gap: 8px;
-            margin: 14px 0 10px;
+            margin: 10px 0;
             font-size: 16px;
+            overflow: hidden;
         }
 
         .toggle-row {
             display: flex;
             align-items: center;
             gap: 8px;
+            white-space: nowrap;
+            transform-origin: top left;
         }
 
         .toggle-row .race-clear {
@@ -106,7 +109,7 @@
 
         #raceTables {
             width: 100%;
-            overflow-x: auto;
+            overflow: hidden;
         }
 
         #raceTables .race-row {
@@ -114,17 +117,20 @@
             gap: 10px;
             align-items: flex-start;
             padding-bottom: 10px;
-            width: 100%;
+            width: max-content;
+            min-width: 100%;
+            flex-wrap: nowrap;
+            transform-origin: top left;
         }
 
         .race-card {
             background: #fff;
             border: 1px solid #d9d9d9;
-            border-bottom-color: rgb(227, 229, 235);
+            border-radius: 6px;
             overflow: hidden;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
             flex: 1 1 0;
-            min-width: 360px;
+            min-width: max-content;
         }
 
         .race-head {
@@ -151,8 +157,6 @@
             font-size: 16px;
             line-height: 1.1;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .race-sub {
@@ -160,8 +164,6 @@
             font-size: 12px;
             color: #666;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .race-sub .surf-dirt {
@@ -192,14 +194,12 @@
 
         .shutuba-wrap {
             width: 100%;
-            overflow: visible;
         }
 
         table.shutuba-table {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
-            table-layout: fixed;
             font-size: 14px;
         }
 
@@ -326,8 +326,6 @@
             font-size: 16px;
             color: rgb(0, 51, 170);
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
             display: block;
             padding: 0px 5px;
         }
@@ -707,52 +705,6 @@
             .top-bar-right>* {
                 flex: 1 1 0;
             }
-
-            #raceTables {
-                overflow-x: auto;
-                scroll-snap-type: x mandatory;
-                -webkit-overflow-scrolling: touch;
-                scroll-padding-left: 10px;
-            }
-
-            .race-card {
-                flex: 0 0 calc(100vw - 20px);
-            }
-
-            body[data-focus-race="1"] .race-card:not([data-race="1"]) {
-                display: none;
-            }
-
-            body[data-focus-race="2"] .race-card:not([data-race="2"]) {
-                display: none;
-            }
-
-            body[data-focus-race="3"] .race-card:not([data-race="3"]) {
-                display: none;
-            }
-
-            body[data-focus-race="4"] .race-card:not([data-race="4"]) {
-                display: none;
-            }
-
-            body[data-focus-race="5"] .race-card:not([data-race="5"]) {
-                display: none;
-            }
-
-            .toggle-container {
-                align-items: stretch;
-            }
-
-            .toggle-row {
-                flex-wrap: wrap;
-            }
-
-            .toggle-row .race-clear {
-                width: auto;
-                flex: 1 1 calc(25% - 6px);
-                min-height: 40px;
-            }
-
         }
     </style>
 </head>
@@ -2457,101 +2409,6 @@
             return legacy(tok);
         }
 
-        function isMobileLayout() {
-            return window.matchMedia("(max-width: 640px)").matches;
-        }
-
-        function applyRaceFocus(v) {
-            const b = document.body;
-            const s = String(v || "all");
-            if (s === "all") {
-                b.removeAttribute("data-focus-race");
-                return;
-            }
-            b.setAttribute("data-focus-race", s);
-        }
-
-        function initMobileSwipe() {
-            const root = document.getElementById("raceTables");
-            if (!root) return;
-
-            const mq = window.matchMedia("(max-width: 640px) and (hover: none) and (pointer: coarse)");
-            if (initMobileSwipe._bound !== true) {
-                const onChange = () => initMobileSwipe();
-                if (mq.addEventListener) mq.addEventListener("change", onChange);
-                else if (mq.addListener) mq.addListener(onChange);
-                initMobileSwipe._bound = true;
-            }
-
-            if (initMobileSwipe._abort && initMobileSwipe._abort.abort) {
-                initMobileSwipe._abort.abort();
-            }
-            initMobileSwipe._abort = null;
-
-            if (!mq.matches) return;
-
-            const ac = (typeof AbortController !== "undefined") ? new AbortController() : null;
-            initMobileSwipe._abort = ac;
-
-            let sx = 0;
-            let sy = 0;
-            let active = false;
-            let lock = false;
-
-            const start = (e) => {
-                const t = e.touches ? e.touches[0] : null;
-                if (!t) return;
-                sx = t.clientX;
-                sy = t.clientY;
-                active = true;
-                lock = false;
-            };
-
-            const move = (e) => {
-                if (!active) return;
-                if (!e.touches || e.touches.length !== 1) return;
-
-                const t = e.touches[0];
-                const dx = t.clientX - sx;
-                const dy = t.clientY - sy;
-
-                if (!lock) {
-                    if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) lock = true;
-                    else return;
-                }
-
-                e.preventDefault();
-            };
-
-            const end = (e) => {
-                if (!active) return;
-                active = false;
-
-                const t = e.changedTouches ? e.changedTouches[0] : null;
-                if (!t) return;
-
-                const dx = t.clientX - sx;
-                const dy = t.clientY - sy;
-
-                if (Math.abs(dx) < 45) return;
-                if (Math.abs(dx) <= Math.abs(dy)) return;
-
-                const cur = Number(document.body.getAttribute("data-focus-race") || "1") || 1;
-                const next = dx < 0 ? Math.min(TOTAL_RACES, cur + 1) : Math.max(1, cur - 1);
-                if (next !== cur) {
-                    applyRaceFocus(String(next));
-                }
-            };
-
-            root.addEventListener("touchstart", start, ac ? { passive: true, signal: ac.signal } : { passive: true });
-            root.addEventListener("touchmove", move, ac ? { passive: false, signal: ac.signal } : { passive: false });
-            root.addEventListener("touchend", end, ac ? { passive: true, signal: ac.signal } : { passive: true });
-            root.addEventListener("touchcancel", end, ac ? { passive: true, signal: ac.signal } : { passive: true });
-        }
-
-        window.addEventListener("resize", () => {
-            applyRaceFocus(isMobileLayout() ? (document.body.getAttribute("data-focus-race") || "1") : "all");
-        });
 
         function applyShareFromURL() {
             const hash = location.hash || "";
@@ -2582,12 +2439,47 @@
             }
         }
 
+        function fitScalable(container, inner) {
+            if (!container || !inner) return;
+            inner.style.transform = "none";
+            container.style.height = "";
+            const innerW = inner.scrollWidth;
+            const containerW = container.clientWidth;
+            if (innerW > containerW) {
+                const s = containerW / innerW;
+                inner.style.transform = "scale(" + s + ")";
+                container.style.height = (inner.offsetHeight * s) + "px";
+            }
+        }
+
+        function fitAll() {
+            fitScalable(
+                document.getElementById("raceTables"),
+                document.querySelector("#raceTables .race-row")
+            );
+            fitScalable(
+                document.querySelector(".toggle-container"),
+                document.querySelector(".toggle-row")
+            );
+        }
+
+        let fitTimer = 0;
+        function fitAllDebounced() {
+            clearTimeout(fitTimer);
+            fitTimer = setTimeout(fitAll, 30);
+        }
+
+        window.addEventListener("resize", fitAllDebounced);
+        new MutationObserver(fitAllDebounced).observe(
+            document.getElementById("raceTables"),
+            { childList: true, subtree: true, characterData: true }
+        );
+
         createRaceTables();
-        applyRaceFocus(isMobileLayout() ? "1" : "all");
-        initMobileSwipe();
         restoreState();
         applyShareFromURL();
         loadWin5Tabs();
+        fitAll();
     </script>
     <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
 </body>
