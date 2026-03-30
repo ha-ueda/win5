@@ -1099,6 +1099,10 @@
         let viewMonth = "";
         let selectedDate = "";
 
+        function todayJST() {
+            return new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+        }
+
         function pad2(n) { return String(n).padStart(2, "0"); }
 
         function ymFromDate(d) { return d && d.length >= 7 ? d.slice(0, 7) : ""; }
@@ -1190,7 +1194,7 @@
             monthPicker.value = ym;
 
             if (!selectedDate || ymFromDate(selectedDate) !== ym) {
-                const today = new Date().toISOString().slice(0, 10);
+                const today = todayJST();
                 selectedDate = ymFromDate(today) === ym ? today : `${ym}-01`;
             }
 
@@ -1636,7 +1640,7 @@
         }
 
         function openEditorFromFab() {
-            const today = new Date().toISOString().slice(0, 10);
+            const today = todayJST();
             const d = selectedDate || (ymFromDate(today) === viewMonth ? today : (viewMonth ? `${viewMonth}-01` : today));
             selectedDate = d;
             ensureSelectedInMonth();
@@ -1645,7 +1649,7 @@
         }
 
         function addRow() {
-            const today = new Date().toISOString().slice(0, 10);
+            const today = todayJST();
             const d = selectedDate || (ymFromDate(today) === viewMonth ? today : (viewMonth ? `${viewMonth}-01` : today));
             selectedDate = d;
             ensureSelectedInMonth();
@@ -1674,7 +1678,7 @@
 
                 rebuildYearOptions();
 
-                const today = new Date().toISOString().slice(0, 10);
+                const today = todayJST();
                 const todayYm = today.slice(0, 7);
                 selectedDate = today;
                 setViewMonth(todayYm);
@@ -1682,7 +1686,7 @@
                 applyYearFilter();
             } catch (e) {
                 showToast("読み込みに失敗しました");
-                const todayYm = new Date().toISOString().slice(0, 7);
+                const todayYm = todayJST().slice(0, 7);
                 setViewMonth(todayYm);
             }
         }
