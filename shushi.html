@@ -253,34 +253,36 @@
             margin: auto;
         }
 
-        #toast {
+        .ns-toast {
             position: fixed;
             left: 50%;
             top: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%) scale(0.95);
             opacity: 0;
-            padding: 30px 40px;
-            border-radius: 6px;
-            background: #1e1e22;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: #f7f7f7;
+            padding: 20px 36px;
+            border-radius: 14px;
+            background: rgba(20, 20, 20, 0.88);
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
             font-size: 22px;
-            font-weight: bold;
-            line-height: 1.35;
+            font-weight: 600;
+            line-height: 1.3;
             letter-spacing: .01em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             z-index: 2147483647;
             pointer-events: none;
-            transition: none;
-            -webkit-backdrop-filter: blur(6px);
-            backdrop-filter: blur(6px);
-            max-width: min(94vw, 520px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            backdrop-filter: saturate(180%) blur(20px);
+            max-width: min(90vw, 400px);
             text-align: center;
-            white-space: nowrap;
+            box-shadow: 0 4px 24px rgba(0,0,0,.18), 0 0 0 0.5px rgba(0,0,0,.12);
+            transition: opacity .15s ease, transform .15s ease;
         }
-
-        #toast.show {
-            visibility: visible;
+        .ns-toast[data-visible="1"] {
             opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
         }
 
         .delete-btn {
@@ -901,7 +903,6 @@
 
 <body>
 
-    <div id="toast"></div>
 
     <div class="menu-container">
         <div class="menu-button" onclick="toggleMenu()">
@@ -1164,11 +1165,37 @@
             el.value = n ? formatYen(n) : "";
         }
 
-        function showToast(msg) {
-            const t = document.getElementById("toast");
-            t.innerText = msg;
-            t.className = "show";
-            setTimeout(() => (t.className = t.className.replace("show", "")), 2000);
+        let toastHideTimer = null;
+        let toastFadeTimer = null;
+        const LOADING_TIMEOUT = 30000;
+
+        function showToast(message, { type = "info", duration = 1200 } = {}) {
+            let el = document.querySelector(".ns-toast");
+            if (toastHideTimer) { clearTimeout(toastHideTimer); toastHideTimer = null; }
+            if (toastFadeTimer) { clearTimeout(toastFadeTimer); toastFadeTimer = null; }
+
+            if (!el) {
+                el = document.createElement("div");
+                el.className = "ns-toast";
+                document.body.appendChild(el);
+            }
+
+            el.setAttribute("role", type === "error" ? "alert" : "status");
+            el.setAttribute("aria-live", type === "error" ? "assertive" : "polite");
+
+            el.dataset.type = type;
+            el.dataset.visible = "0";
+            el.textContent = message;
+
+            requestAnimationFrame(() => {
+                el.dataset.visible = "1";
+            });
+
+            const effectiveDuration = type === "loading" ? LOADING_TIMEOUT : duration;
+            toastHideTimer = setTimeout(() => {
+                el.dataset.visible = "0";
+                toastFadeTimer = setTimeout(() => el.remove(), 200);
+            }, effectiveDuration);
         }
 
         function setDeleteMode(on) {
@@ -1635,7 +1662,7 @@
             rebuildYearOptions();
             applyYearFilter();
 
-            const ok = await saveData();
+            const ok = await saveData({ message: "削除しました" });
             if (ok) closeEditor();
         }
 
@@ -1691,7 +1718,7 @@
             }
         }
 
-        async function saveData() {
+        async function saveData({ message = "保存しました" } = {}) {
             const payload = rows.map(r => ({
                 date: r.date,
                 amount: Number(r.amount) || 0,
@@ -1705,7 +1732,7 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
-                showToast("保存しました");
+                showToast(message);
                 return true;
             } catch {
                 showToast("保存に失敗しました");
