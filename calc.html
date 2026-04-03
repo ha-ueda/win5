@@ -619,48 +619,98 @@
             justify-content: center;
             z-index: 20000;
             padding: 14px;
+            background: rgba(0,0,0,0.35);
         }
 
         .modal-card {
-            width: min(720px, 100%);
+            width: min(480px, 100%);
             background: #fff;
-            border-radius: 6px;
-            border: 1px solid #d7d7d7;
+            border-radius: 12px;
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
-            padding: 10px;
+            padding: 16px 18px;
+            animation: modalIn 0.18s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(8px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
         }
 
         .modal-title {
             font-size: 18px;
             font-weight: bold;
-            margin-bottom: 7px;
         }
 
-        .modal-textarea {
-            width: 100%;
-            min-height: 120px;
-            font-size: 13px;
-            padding: 10px;
-            border: 1px solid #ccc;
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: #888;
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
             border-radius: 6px;
-            box-sizing: border-box;
-            resize: vertical;
+        }
+
+        .modal-close-btn:active {
+            background: #f0f0f0;
+        }
+
+        .share-url-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f5f6f8;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 14px;
+        }
+
+        .share-url-text {
+            flex: 1;
+            font-size: 13px;
+            color: #333;
+            word-break: break-all;
+            line-height: 1.4;
             user-select: text !important;
             -webkit-user-select: text !important;
         }
 
-        .modal-actions {
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-            margin-top: 7px;
-            flex-wrap: wrap;
+        .share-bottom-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 14px;
         }
 
-        .modal-actions .calc-btn {
-            font-size: 16px;
-            padding: 8px 12px;
+        .share-bottom-actions button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 14px 6px;
+            background: #fff;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
         }
+
+        .share-bottom-actions button:active {
+            background: #f3f4f6;
+        }
+
 
         .ns-toast {
             position: fixed;
@@ -789,12 +839,18 @@
 
     <div id="shareModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="印共有">
         <div class="modal-card" onclick="event.stopPropagation()">
-            <div class="modal-title">印を共有</div>
-            <textarea id="shareText" class="modal-textarea" spellcheck="false"></textarea>
-            <div class="modal-actions">
-                <button id="copyShareBtn" class="calc-btn" type="button" onclick="copyShareText()">コピー</button>
-                <button class="calc-btn" onclick="importShareText()">読み込み</button>
-                <button class="calc-btn" onclick="closeShare()">閉じる</button>
+            <div class="modal-header">
+                <div class="modal-title">共有</div>
+                <button class="modal-close-btn" onclick="closeShare()" aria-label="閉じる">&times;</button>
+            </div>
+
+            <div class="share-url-box">
+                <span id="shareUrlText" class="share-url-text"></span>
+            </div>
+
+            <div class="share-bottom-actions">
+                <button onclick="copyShareUrl()">コピー</button>
+                <button onclick="importShareText()">読み込み</button>
             </div>
         </div>
     </div>
@@ -2225,18 +2281,18 @@
             }
         }
 
+        let currentShareUrl = "";
+
         function openShare() {
             const modal = document.getElementById("shareModal");
-            const ta = document.getElementById("shareText");
-            if (!modal || !ta) return;
+            if (!modal) return;
 
             const payload = buildSharePayload();
             const token = encodeSharePayload(payload);
-
             const base = location.href.split("#")[0];
-            const url = `${base}#share=${token}`;
+            currentShareUrl = `${base}#share=${token}`;
 
-            ta.value = url;
+            document.getElementById("shareUrlText").textContent = currentShareUrl;
 
             modal.style.display = "flex";
             document.body.style.overflow = "hidden";
@@ -2249,37 +2305,44 @@
             document.body.style.overflow = "";
         }
 
-        async function copyShareText() {
-            const ta = document.getElementById("shareText");
-            if (!ta) return;
-            const txt = ta.value || "";
-            if (!txt) return;
-
-            let ok = false;
-
+        async function copyToClipboard(text) {
             try {
-                await navigator.clipboard.writeText(txt);
-                ok = true;
+                await navigator.clipboard.writeText(text);
+                return true;
             } catch (e) {
-                const isCoarse = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-                if (!isCoarse) {
+                try {
+                    const ta = document.createElement("textarea");
+                    ta.value = text;
+                    ta.style.cssText = "position:fixed;opacity:0";
+                    document.body.appendChild(ta);
                     ta.focus();
                     ta.select();
-                }
-                try {
-                    ok = document.execCommand("copy");
+                    const ok = document.execCommand("copy");
+                    document.body.removeChild(ta);
+                    return ok;
                 } catch (e2) {
-                    ok = false;
+                    return false;
                 }
             }
+        }
 
+        async function copyShareUrl() {
+            if (!currentShareUrl) return;
+            const ok = await copyToClipboard(currentShareUrl);
             if (ok) showToast("コピーしました");
         }
 
-        async function importShareText() {
-            const ta = document.getElementById("shareText");
-            if (!ta) return;
+        function hasExistingMarks() {
+            return Array.from(document.querySelectorAll(".custom-select:not(.is-empty)")).some(sel => {
+                const box = sel.querySelector(".selected");
+                if (!box) return false;
+                const mark = (box.textContent || "").trim();
+                const bg = (box.dataset.bg || "none").trim();
+                return mark || (bg && bg !== "none");
+            });
+        }
 
+        async function importShareText() {
             let token = null;
 
             try {
@@ -2288,23 +2351,23 @@
                 if (t) token = t;
             } catch (e) { }
 
-            const base = location.href.split("#")[0];
-            const currentUrl = `${base}#share=${encodeSharePayload(buildSharePayload())}`;
-
             if (!token) {
-                const raw = (ta.value || "").trim();
-                if (!raw) return;
-                if (raw === currentUrl) return;
-                token = extractShareToken(raw);
+                showToast("クリップボードに共有URLがありません", { type: "error" });
+                return;
             }
 
-            if (!token) return;
+            if (hasExistingMarks()) {
+                if (!confirm("現在の印が上書きされます。よろしいですか？")) return;
+            }
 
             try {
                 const payload = decodeSharePayload(token);
                 applySharePayload(payload);
                 closeShare();
-            } catch (e) { }
+                showToast("読み込みました");
+            } catch (e) {
+                showToast("読み込み失敗", { type: "error" });
+            }
         }
 
         function extractShareToken(txt) {
