@@ -2211,9 +2211,6 @@
         }
 
         function confirmAndLoad() {
-            if (hasExistingData()) {
-                if (!confirm("既存のデータが上書きされます。データを取得しますか？")) return;
-            }
             loadWin5Data();
         }
 
