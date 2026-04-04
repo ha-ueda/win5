@@ -503,6 +503,7 @@
             width: 100%;
         }
 
+
         #minFav {
             font-size: 16px;
             border: 1px solid #cfcfcf;
@@ -833,7 +834,7 @@
 
     <div id="result"></div>
     <div id="copyBetsRow" class="button-row" style="display:none;">
-        <button id="copyBetsBtn" class="calc-btn" type="button">UMACA</button>
+        <button id="copyBetsBtn" class="calc-btn" type="button">IPAT</button>
     </div>
     <div id="combos"></div>
 
@@ -1947,9 +1948,9 @@
         }
 
         function openIpatTab() {
-            const url = "https://www.ipat.jra.go.jp/sp/umaca/";
+            const url = "https://www.ipat.jra.go.jp/sp/index.cgi";
             try {
-                window.open(url, "_blank", "noopener");
+                window.open(url, "_blank");
             } catch (e) {
                 window.location.href = url;
             }
