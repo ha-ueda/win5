@@ -1948,9 +1948,13 @@
         }
 
         function openIpatTab() {
+            const blocks = window.__lastDisplayBlocks;
+            const text = blocks && blocks.length ? buildBetsCopyTextFromBlocks(blocks) : '';
+            const betsName = text ? 'tm_bets:' + text : '';
             const url = "https://www.ipat.jra.go.jp/sp/index.cgi";
             try {
-                window.open(url, "_blank");
+                // window.open の第2引数(name)はタブの window.name になり、ページ遷移後も保持される
+                window.open(url, betsName || "_blank");
             } catch (e) {
                 window.location.href = url;
             }
