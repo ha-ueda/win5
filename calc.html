@@ -30,7 +30,7 @@
             gap: 8px;
             justify-content: flex-end;
             flex-wrap: wrap;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
         }
 
         #win5TabSelect {
@@ -107,12 +107,7 @@
             padding: 6px 0;
         }
 
-        .toggle-sep {
-            width: 1px;
-            height: 24px;
-            background: #d0d0d0;
-            flex: 0 0 auto;
-        }
+
 
 
         #raceTables {
@@ -209,6 +204,9 @@
         .sort-option {
             padding: 6px 12px;
             font-size: 14px;
+            font-weight: 400;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
             color: #333;
             background: #f7f7f7;
             border: 1px solid #d0d0d0;
@@ -859,7 +857,6 @@
                 <span class="sort-option active" data-key="no">馬番順</span>
                 <span class="sort-option" data-key="odds">オッズ順</span>
             </div>
-            <span class="toggle-sep"></span>
             <button id="bgClearAllBtn" class="race-clear" type="button">色クリア</button>
             <button class="race-clear" type="button" onclick="if(confirm('印をすべてクリアしますか？'))clearAllMarks()">印クリア</button>
         </div>
