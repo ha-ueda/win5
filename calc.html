@@ -107,6 +107,14 @@
             padding: 6px 0;
         }
 
+        .toggle-sep {
+            width: 1px;
+            height: 24px;
+            background: #d0d0d0;
+            flex: 0 0 auto;
+        }
+
+
         #raceTables {
             width: 100%;
             overflow: hidden;
@@ -191,6 +199,42 @@
             color: #fff;
             border-color: #3251BC;
         }
+
+        .sort-switch {
+            display: inline-flex;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sort-option {
+            padding: 6px 12px;
+            font-size: 14px;
+            color: #333;
+            background: #f7f7f7;
+            border: 1px solid #d0d0d0;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .sort-option:first-child {
+            border-radius: 12px 0 0 12px;
+        }
+
+        .sort-option:last-child {
+            border-radius: 0 12px 12px 0;
+            margin-left: -1px;
+        }
+
+        .sort-option.active {
+            background: #3251BC;
+            color: #fff;
+            border-color: #3251BC;
+            z-index: 1;
+            position: relative;
+        }
+
 
         .shutuba-wrap {
             width: 100%;
@@ -549,17 +593,6 @@
 
         .fav-calc-row .calc-btn {
             padding: 0 clamp(14px, 2.4vw, 22px);
-            font-size: clamp(16px, 1.8vw, 18px);
-            min-height: 44px;
-            background: #3150BB;
-            color: #fff;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 6px;
-            cursor: pointer;
-            white-space: nowrap;
-            font-weight: bold;
-            -webkit-appearance: none;
-            appearance: none;
         }
 
         .menu-container {
@@ -759,6 +792,21 @@
                 flex: 1 1 0;
             }
 
+            .toggle-row {
+                width: 100%;
+            }
+
+            .toggle-row .race-clear,
+            .toggle-row .sort-switch {
+                flex: 1 1 0;
+                width: auto;
+            }
+
+            .toggle-row .sort-option {
+                flex: 1 1 0;
+                justify-content: center;
+            }
+
             #raceTables {
                 overflow: visible;
             }
@@ -799,19 +847,21 @@
 
     <div class="top-bar-right">
         <select id="win5TabSelect"></select>
-        <button class="calc-btn" onclick="confirmAndLoad()">データ取得</button>
+        <button class="calc-btn" onclick="handleLoad()">データ取得</button>
         <button class="calc-btn" onclick="confirmAndClear()">クリア</button>
         <button class="calc-btn" onclick="openShare()">共有</button>
     </div>
 
     <div class="toggle-container">
         <div class="toggle-row">
-            <button id="modeToggle" class="race-clear" type="button">個別選択</button>
-            <button id="jockeyApplyBtn" class="race-clear" type="button">一括選択</button>
+            <button id="modeToggle" class="race-clear" type="button">背景選択</button>
+            <div id="sortToggle" class="sort-switch">
+                <span class="sort-option active" data-key="no">馬番順</span>
+                <span class="sort-option" data-key="odds">オッズ順</span>
+            </div>
+            <span class="toggle-sep"></span>
             <button id="bgClearAllBtn" class="race-clear" type="button">色クリア</button>
-            <button class="race-clear" type="button" onclick="clearAllMarks()">印クリア</button>
-            <button class="race-clear" type="button" onclick="sortAllRaces('no')">馬番順</button>
-            <button class="race-clear" type="button" onclick="sortAllRaces('odds')">オッズ順</button>
+            <button class="race-clear" type="button" onclick="if(confirm('印をすべてクリアしますか？'))clearAllMarks()">印クリア</button>
         </div>
     </div>
 
@@ -912,116 +962,11 @@
         const STORAGE_KEY = 'win5_state_v9';
         const STORAGE_KEY_OLD = 'win5_state_v8';
         const WIN5_API = "https://win5.cooopew.workers.dev/";
+        const BG_COLORS = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4"];
 
         let backgroundMode = false;
         const modeBtn = document.getElementById("modeToggle");
 
-        let jockeyLinkMode = false;
-        const jockeyBtn = document.getElementById("jockeyApplyBtn");
-
-        const bgClearAllBtn = document.getElementById("bgClearAllBtn");
-
-        const AUTO_JOCKEY_COLORS = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4", "#ffd8a8", "#c2f0ff", "#d7ffd6", "#ffe3f1", "#e7e1ff"];
-        let stableJockeyColorMap = new Map();
-        let stableJockeyUsedColors = new Set();
-
-        function getStableJockeyColor(j) {
-            const key = normJockey(j);
-            if (!key) return null;
-            const ex = stableJockeyColorMap.get(key);
-            if (ex) return ex;
-
-            let c = null;
-            for (let i = 0; i < AUTO_JOCKEY_COLORS.length; i++) {
-                const cand = AUTO_JOCKEY_COLORS[i];
-                if (!stableJockeyUsedColors.has(cand)) { c = cand; break; }
-            }
-            if (!c) {
-                let i = stableJockeyUsedColors.size;
-                while (true) {
-                    const cand = `hsl(${(i * 137.508) % 360} 70% 85%)`;
-                    if (!stableJockeyUsedColors.has(cand)) { c = cand; break; }
-                    i++;
-                }
-            }
-            stableJockeyColorMap.set(key, c);
-            stableJockeyUsedColors.add(c);
-            return c;
-        }
-
-
-        function normJockey(s) {
-            return String(s ?? "").replace(/\s+/g, "").trim();
-        }
-
-        function refreshJockeyAutoBg() {
-            const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty)'));
-
-            if (!jockeyLinkMode) {
-                rows.forEach(r => {
-                    if (r) delete r.dataset.jockeyAutoBg;
-                    const box = r?.querySelector(".selected");
-                    const manual = box?.dataset?.bg;
-                    if (manual && manual !== "none") applyBg(r, manual);
-                    else applyBg(r, "none");
-                });
-                return;
-            }
-
-            const markedRows = rows.filter(r => r.classList.contains("has-mark"));
-            const counts = new Map();
-            markedRows.forEach(r => {
-                const j = normJockey(r.querySelector(".jockey-name")?.textContent);
-                if (!j) return;
-                counts.set(j, (counts.get(j) || 0) + 1);
-            });
-
-            const dupJockeys = [];
-            const seen = new Set();
-            markedRows.forEach(r => {
-                const j = normJockey(r.querySelector(".jockey-name")?.textContent);
-                if (!j || seen.has(j)) return;
-                seen.add(j);
-                if ((counts.get(j) || 0) >= 2) dupJockeys.push(j);
-            });
-
-            const colorMap = new Map();
-            for (let i = 0; i < dupJockeys.length; i++) {
-                const j = dupJockeys[i];
-                colorMap.set(j, getStableJockeyColor(j));
-            }
-
-            rows.forEach(r => {
-                const box = r?.querySelector(".selected");
-                const manual = box?.dataset?.bg;
-                const locked = r?.dataset?.bgLock === "1";
-                if (locked) {
-                    delete r.dataset.jockeyAutoBg;
-                    if (manual && manual !== "none") applyBg(r, manual);
-                    else applyBg(r, "none");
-                    return;
-                }
-                if (manual && manual !== "none") {
-                    delete r.dataset.jockeyAutoBg;
-                    applyBg(r, manual);
-                    return;
-                }
-
-                const j = normJockey(r.querySelector(".jockey-name")?.textContent);
-                const shouldAuto = r.classList.contains("has-mark") && j && ((counts.get(j) || 0) >= 2);
-
-                if (shouldAuto) {
-                    const c = colorMap.get(j);
-                    r.dataset.jockeyAutoBg = c;
-                    applyBg(r, c);
-                } else {
-                    delete r.dataset.jockeyAutoBg;
-                    applyBg(r, "none");
-                }
-            });
-
-            saveState();
-        }
 
         function updateSwitch() {
             if (!modeBtn) return;
@@ -1040,11 +985,8 @@
         updateSwitch();
 
         function clearAllRowBackgrounds() {
-            jockeyLinkMode = false;
             document.querySelectorAll('.custom-select:not(.is-empty)').forEach(r => {
                 if (!r) return;
-                delete r.dataset.jockeyAutoBg;
-                delete r.dataset.bgLock;
                 const box = r.querySelector(".selected");
                 if (box) box.dataset.bg = "none";
                 applyBg(r, "none");
@@ -1052,21 +994,14 @@
             saveState();
         }
 
+        const bgClearAllBtn = document.getElementById("bgClearAllBtn");
         if (bgClearAllBtn) {
             bgClearAllBtn.addEventListener("click", () => {
+                if (!confirm("背景色をすべてクリアしますか？")) return;
                 clearAllRowBackgrounds();
             });
         }
 
-        if (jockeyBtn) {
-            jockeyBtn.addEventListener("click", () => {
-                document.querySelectorAll(".custom-select").forEach(sel => {
-                    if (sel) delete sel.dataset.bgLock;
-                });
-                jockeyLinkMode = true;
-                refreshJockeyAutoBg();
-            });
-        }
 
         function toCircleNumber(num) {
             return CIRCLES[num - 1] || String(num);
@@ -1085,14 +1020,14 @@
             const m = s.match(/Waku([1-8])/i);
             const w = m ? Number(m[1]) : Number(s);
             if (!Number.isFinite(w) || w < 1 || w > 8) return null;
-            if (w === 1) return { bg: "rgb(255, 255, 255)", fg: "rgb(85, 85, 85)", br: "#bdbdbd" };
-            if (w === 2) return { bg: "rgb(34, 34, 34)", fg: "rgb(255, 255, 255)", br: "rgb(34, 34, 34)" };
-            if (w === 3) return { bg: "rgb(220, 60, 60)", fg: "rgb(255, 255, 255)", br: "rgb(220, 60, 60)" };
-            if (w === 4) return { bg: "rgb(44, 83, 169)", fg: "rgb(255, 255, 255)", br: "rgb(44, 83, 169)" };
-            if (w === 5) return { bg: "rgb(228, 202, 59)", fg: "rgb(255, 255, 255)", br: "rgb(228, 202, 59)" };
-            if (w === 6) return { bg: "rgb(88, 175, 74)", fg: "rgb(255, 255, 255)", br: "rgb(88, 175, 74)" };
-            if (w === 7) return { bg: "rgb(222, 138, 38)", fg: "rgb(255, 255, 255)", br: "rgb(222, 138, 38)" };
-            return { bg: "rgb(220, 97, 121)", fg: "rgb(255, 255, 255)", br: "rgb(220, 97, 121)" };
+            if (w === 1) return { bg: "rgb(255, 255, 255)", fg: "rgb(85, 85, 85)" };
+            if (w === 2) return { bg: "rgb(34, 34, 34)", fg: "rgb(255, 255, 255)" };
+            if (w === 3) return { bg: "rgb(220, 60, 60)", fg: "rgb(255, 255, 255)" };
+            if (w === 4) return { bg: "rgb(44, 83, 169)", fg: "rgb(255, 255, 255)" };
+            if (w === 5) return { bg: "rgb(228, 202, 59)", fg: "rgb(255, 255, 255)" };
+            if (w === 6) return { bg: "rgb(88, 175, 74)", fg: "rgb(255, 255, 255)" };
+            if (w === 7) return { bg: "rgb(222, 138, 38)", fg: "rgb(255, 255, 255)" };
+            return { bg: "rgb(220, 97, 121)", fg: "rgb(255, 255, 255)" };
         }
 
         function setNoBox(el, waku, umaban) {
@@ -1210,10 +1145,6 @@
             const applyColorToRow = (row, color) => {
                 const b = row?.querySelector(".selected");
                 if (b) b.dataset.bg = color;
-                if (row) {
-                    row.dataset.bgLock = "1";
-                    delete row.dataset.jockeyAutoBg;
-                }
                 applyBg(row, color);
             };
 
@@ -1228,14 +1159,16 @@
             palette.style.position = "absolute";
             palette.style.zIndex = 9999;
             palette.style.display = "flex";
+            palette.style.flexWrap = "wrap";
             palette.style.gap = "10px";
             palette.style.background = "#fff";
             palette.style.border = "1px solid #999";
             palette.style.padding = "10px";
             palette.style.borderRadius = "12px";
             palette.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
+            palette.style.maxWidth = Math.min(window.innerWidth - 20, 400) + "px";
 
-            const colors = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4"];
+            const colors = BG_COLORS;
             colors.forEach(c => {
                 const btn = document.createElement("div");
                 btn.style.width = "36px";
@@ -1269,12 +1202,14 @@
             const ph = rect.height;
             const vw = window.innerWidth;
             const vh = window.innerHeight;
+            const sx = window.scrollX;
+            const sy = window.scrollY;
 
-            let left = e.pageX;
-            let top = e.pageY;
+            let left = e.clientX + sx;
+            let top = e.clientY + sy;
 
-            if (left + pw > vw - 10) left = vw - pw - 10;
-            if (top + ph > vh - 10) top = vh - ph - 10;
+            if (e.clientX + pw > vw - 10) left = vw - pw - 10 + sx;
+            if (e.clientY + ph > vh - 10) top = vh - ph - 10 + sy;
 
             palette.style.left = left + "px";
             palette.style.top = top + "px";
@@ -1352,7 +1287,6 @@
                 const cur = MARKS.indexOf(selected.textContent);
                 selected.textContent = MARKS[(cur + 1) % MARKS.length];
                 applyMarkBackground(tr, selected.textContent !== "");
-                if (jockeyLinkMode) refreshJockeyAutoBg();
                 saveState();
             };
 
@@ -1477,8 +1411,6 @@
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
                 raceCourses: window.raceCourses || ["", "", "", "", ""],
-                jockeyLinkMode: !!jockeyLinkMode,
-                jockeyColorMap: Array.from(stableJockeyColorMap.entries())
             };
 
             for (let r = 1; r <= TOTAL_RACES; r++) {
@@ -1503,8 +1435,6 @@
                     state.races[`r${r}`][sel.dataset.horse] = {
                         mark: (box?.textContent || "").trim(),
                         bg: (box?.dataset.bg || "none").trim(),
-                        jbg: (sel.dataset.jockeyAutoBg || null),
-                        bgLock: (sel.dataset.bgLock === "1") ? 1 : 0,
                         name: isEmpty ? null : name,
                         jockey: jockey || null,
                         odds: odds || null,
@@ -1537,15 +1467,6 @@
                 if (state.raceTimes) window.raceTimes = state.raceTimes;
                 if (state.raceCourses) window.raceCourses = state.raceCourses;
 
-                if (Array.isArray(state.jockeyColorMap)) {
-                    stableJockeyColorMap = new Map(state.jockeyColorMap);
-                    stableJockeyUsedColors = new Set(Array.from(stableJockeyColorMap.values()));
-                }
-
-                if (typeof state.jockeyLinkMode === "boolean") {
-                    jockeyLinkMode = !!state.jockeyLinkMode;
-                }
-
                 updateRaceHeaders(window.raceInfo || ["", "", "", "", ""]);
 
                 if (state.minFav) document.getElementById('minFav').value = state.minFav;
@@ -1566,14 +1487,6 @@
                         const noEl = sel.querySelector('td.col-no');
                         const m = (val.mark || "").toString();
                         const b = (val.bg || "none").toString();
-                        const jbg = (val.jbg || "").toString();
-                        const lock = !!val.bgLock;
-
-                        if (lock) sel.dataset.bgLock = "1";
-                        else delete sel.dataset.bgLock;
-
-                        if (jbg) sel.dataset.jockeyAutoBg = jbg;
-                        else delete sel.dataset.jockeyAutoBg;
 
                         if (box) {
                             box.textContent = m;
@@ -1581,7 +1494,7 @@
                         }
 
                         applyMarkBackground(sel, !!m);
-                        const effBg = (b && b !== "none") ? b : (lock ? "none" : ((jockeyLinkMode && jbg) ? jbg : "none"));
+                        const effBg = (b && b !== "none") ? b : "none";
                         applyBg(sel, effBg);
                         const name = val.name;
                         if (name === null) {
@@ -1603,8 +1516,6 @@
                                 box.textContent = "";
                                 box.dataset.bg = "none";
                             }
-                            delete sel.dataset.jockeyAutoBg;
-                            delete sel.dataset.bgLock;
                             applyMarkBackground(sel, false);
                             applyBg(sel, "none");
                             return;
@@ -1626,7 +1537,9 @@
                         sel.dataset.ninki = (val.ninki || "") ? String(val.ninki).trim() : "";
                     });
                 }
-            } catch (e) { }
+            } catch (e) {
+                console.warn("restoreState: 保存データの復元に失敗しました", e);
+            }
         }
 
         function clearColumn(colNum) {
@@ -1636,8 +1549,6 @@
                     box.textContent = "";
                     box.dataset.bg = "none";
                 }
-                delete sel.dataset.jockeyAutoBg;
-                delete sel.dataset.bgLock;
                 applyMarkBackground(sel, false);
                 applyBg(sel, "none");
             });
@@ -1673,8 +1584,6 @@
                     box.textContent = "";
                     box.dataset.bg = "none";
                 }
-                delete sel.dataset.jockeyAutoBg;
-                delete sel.dataset.bgLock;
                 applyMarkBackground(sel, false);
                 applyBg(sel, "none");
             });
@@ -1695,10 +1604,6 @@
                 const v = (box?.textContent || "").trim();
 
                 let bg = (box?.dataset.bg || "none").trim();
-                if ((!bg || bg === "none") && jockeyLinkMode && sel.dataset.bgLock !== "1") {
-                    const auto = (sel.dataset.jockeyAutoBg || "").trim();
-                    if (auto) bg = auto;
-                }
 
                 const num = Number(sel.dataset.horse);
                 colorMap[num] = bg;
@@ -1925,26 +1830,8 @@
             const text = buildBetsCopyTextFromBlocks(blocks);
             if (!text) return;
 
-            const btn = document.getElementById("copyBetsBtn");
-            let ok = false;
-
-            try {
-                await navigator.clipboard.writeText(text);
-                ok = true;
-            } catch (e) {
-                const ta = document.createElement("textarea");
-                ta.value = text;
-                ta.style.position = "fixed";
-                ta.style.left = "-9999px";
-                ta.style.top = "0";
-                document.body.appendChild(ta);
-                ta.focus();
-                ta.select();
-                try { document.execCommand("copy"); ok = true; } catch (e2) { }
-                ta.remove();
-            }
-
-            void ok;
+            const ok = await copyToClipboard(text);
+            if (!ok) showToast("コピーに失敗しました", { type: "error" });
         }
 
         function openIpatTab() {
@@ -2195,8 +2082,6 @@
                             box.textContent = "";
                             box.dataset.bg = "none";
                         }
-                        delete sel.dataset.bgLock;
-                        delete sel.dataset.jockeyAutoBg;
                         applyMarkBackground(sel, false);
                         applyBg(sel, "none");
                     }
@@ -2211,7 +2096,7 @@
                 .some(el => el.textContent.trim() !== "");
         }
 
-        function confirmAndLoad() {
+        function handleLoad() {
             loadWin5Data();
         }
 
@@ -2233,7 +2118,10 @@
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
 
-                if (!json.ok) return;
+                if (!json.ok) {
+                    showToast("取得に失敗しました", { type: "error" });
+                    return;
+                }
 
                 const races = json.races || [];
                 if (races.length === 0 || races.every(r => !r || !r.horses || r.horses.length === 0)) {
@@ -2401,8 +2289,6 @@
                 if (!box) return;
                 box.textContent = "";
                 box.dataset.bg = "none";
-                delete sel.dataset.jockeyAutoBg;
-                delete sel.dataset.bgLock;
                 applyMarkBackground(sel, false);
                 applyBg(sel, "none");
             });
@@ -2439,13 +2325,8 @@
 
             if (!obj || obj.v !== 1 || !Array.isArray(obj.items) || obj.items.length === 0) return legacy();
 
-            const SHARE_BG_COLORS = [
-                null,
-                "#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4",
-                "#ffd8a8", "#c2f0ff", "#d7ffd6", "#ffe3f1", "#e7e1ff"
-            ];
             const colorToId = new Map();
-            for (let i = 1; i < SHARE_BG_COLORS.length; i++) colorToId.set(SHARE_BG_COLORS[i], i);
+            for (let i = 0; i < BG_COLORS.length; i++) colorToId.set(BG_COLORS[i], i + 1);
 
             const markToId = (m) => {
                 if (m === "") return 0;
@@ -2506,11 +2387,6 @@
                     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
                     if (bytes.length % 2 !== 0) return legacy(tok);
 
-                    const SHARE_BG_COLORS = [
-                        null,
-                        "#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4",
-                        "#ffd8a8", "#c2f0ff", "#d7ffd6", "#ffe3f1", "#e7e1ff"
-                    ];
                     const idToMark = ["", "✓", "◎", ""];
                     const items = [];
 
@@ -2524,7 +2400,7 @@
                         if (r < 1 || r > 5 || h < 1 || h > 18) return legacy(tok);
 
                         const mark = idToMark[mid] ?? "";
-                        const bg = bid === 0 ? "none" : (SHARE_BG_COLORS[bid] || "none");
+                        const bg = bid === 0 ? "none" : (BG_COLORS[bid - 1] || "none");
                         items.push([r, h, mark, bg]);
                     }
 
@@ -2555,7 +2431,6 @@
             document.querySelectorAll('.custom-select:not(.is-empty)').forEach(sel => {
                 const box = sel.querySelector('.selected');
                 if (box) box.textContent = "";
-                delete sel.dataset.jockeyAutoBg;
                 applyMarkBackground(sel, false);
                 const manual = box?.dataset?.bg;
                 if (!manual || manual === "none") applyBg(sel, "none");
@@ -2563,12 +2438,24 @@
             saveState();
         }
 
+        let currentSortKey = 'no';
+        const sortToggleEl = document.getElementById("sortToggle");
+        const sortOptions = sortToggleEl.querySelectorAll(".sort-option");
+
         function sortAllRaces(key) {
             for (let r = 1; r <= TOTAL_RACES; r++) {
                 sortRaceTable(r, key, 1);
                 sortStateByRace[r] = { key, dir: 1 };
             }
         }
+
+        sortToggleEl.addEventListener("click", (e) => {
+            const opt = e.target.closest(".sort-option");
+            if (!opt || opt.dataset.key === currentSortKey) return;
+            currentSortKey = opt.dataset.key;
+            sortAllRaces(currentSortKey);
+            sortOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentSortKey));
+        });
 
         function isMobileLayout() {
             return window.matchMedia("(max-width: 640px)").matches;
@@ -2579,9 +2466,9 @@
             const s = String(v || "all");
             if (s === "all") {
                 b.removeAttribute("data-focus-race");
-                return;
+            } else {
+                b.setAttribute("data-focus-race", s);
             }
-            b.setAttribute("data-focus-race", s);
         }
 
         function fitWithScale(container, inner) {
