@@ -89,7 +89,6 @@
             gap: 8px;
             margin: 10px 0;
             font-size: 16px;
-            overflow: hidden;
         }
 
         .toggle-row {
@@ -97,7 +96,6 @@
             align-items: center;
             gap: 8px;
             white-space: nowrap;
-            transform-origin: top left;
         }
 
         .toggle-row .race-clear {
@@ -112,7 +110,6 @@
 
         #raceTables {
             width: 100%;
-            overflow: hidden;
         }
 
         #raceTables .race-row {
@@ -123,7 +120,6 @@
             width: max-content;
             min-width: 100%;
             flex-wrap: nowrap;
-            transform-origin: top left;
         }
 
         .race-card {
@@ -813,7 +809,7 @@
             #raceTables .race-row {
                 width: auto;
                 min-width: auto;
-                transform: none !important;
+                zoom: 1 !important;
             }
 
             .race-card {
@@ -2471,14 +2467,12 @@
 
         function fitWithScale(container, inner) {
             if (!container || !inner) return 1;
-            inner.style.transform = "none";
-            container.style.height = "";
+            inner.style.zoom = "";
             const innerW = inner.scrollWidth;
             const containerW = container.clientWidth;
             if (innerW > containerW && containerW > 0) {
                 const s = containerW / innerW;
-                inner.style.transform = "scale(" + s + ")";
-                container.style.height = (inner.offsetHeight * s) + "px";
+                inner.style.zoom = s;
                 return s;
             }
             return 1;
@@ -2486,8 +2480,7 @@
 
         function applyScale(container, inner, s) {
             if (!container || !inner) return;
-            inner.style.transform = s < 1 ? "scale(" + s + ")" : "none";
-            container.style.height = s < 1 ? (inner.offsetHeight * s) + "px" : "";
+            inner.style.zoom = s < 1 ? s : "";
         }
 
         function fitAll() {
@@ -2496,8 +2489,7 @@
             const container = document.getElementById("raceTables");
             const row = container && container.querySelector(".race-row");
             if (isMobileLayout()) {
-                if (row) row.style.transform = "none";
-                if (container) container.style.height = "";
+                if (row) row.style.zoom = "";
                 fitWithScale(tc, tr);
                 return;
             }
