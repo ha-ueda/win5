@@ -107,7 +107,7 @@
             padding: 6px 0;
         }
 
-        .toggle-row-clear {
+        .toggle-row-sp-2 {
             display: none;
         }
 
@@ -192,7 +192,8 @@
             flex: 0 0 auto;
         }
 
-        #modeToggle.on {
+        #modeToggle.on,
+        #modeToggleSp.on {
             background: #3251BC;
             color: #fff;
             box-shadow: inset 0 0 0 1px #3251BC;
@@ -803,8 +804,15 @@
                 flex: 1 1 0;
             }
 
+            .toggle-container {
+                overflow: visible !important;
+                height: auto !important;
+                transform: none !important;
+            }
+
             .toggle-row {
                 width: 100%;
+                transform: none !important;
             }
 
             .toggle-row .race-clear,
@@ -822,13 +830,27 @@
                 display: none !important;
             }
 
-            .toggle-row-clear {
-                display: flex;
-                gap: 8px;
-                width: 100%;
+            #statsToggle {
+                display: none !important;
             }
 
-            .toggle-row-clear .race-clear {
+            .toggle-row-sp-2 {
+                display: flex;
+                width: 100%;
+                position: relative;
+                z-index: 1;
+            }
+
+            .toggle-row-sp-2 .sort-switch {
+                flex: 1 1 0;
+            }
+
+            .toggle-row-sp-2 .sort-option {
+                flex: 1 1 0;
+                justify-content: center;
+            }
+
+            .toggle-row-sp-2 .race-clear {
                 flex: 1 1 0;
                 width: auto;
             }
@@ -894,7 +916,15 @@
             <button id="bgClearAllBtn" class="race-clear clear-pc" type="button">色クリア</button>
             <button class="race-clear clear-pc" type="button" onclick="if(confirm('印をすべてクリアしますか？'))clearAllMarks()">印クリア</button>
         </div>
-        <div class="toggle-row toggle-row-clear">
+        <div class="toggle-row toggle-row-sp-2">
+            <div id="statsToggleSp" class="sort-switch">
+                <span class="sort-option" data-key="win5">WIN5</span>
+                <span class="sort-option active" data-key="venue">競馬場</span>
+                <span class="sort-option" data-key="distance">距離</span>
+                <span class="sort-option" data-key="course">コース</span>
+            </div>
+        </div>
+        <div class="toggle-row toggle-row-sp-2">
             <button id="modeToggleSp" class="race-clear" type="button">背景選択</button>
             <button class="race-clear" type="button" onclick="document.getElementById('bgClearAllBtn').click()">色クリア</button>
             <button class="race-clear" type="button" onclick="if(confirm('印をすべてクリアしますか？'))clearAllMarks()">印クリア</button>
@@ -1534,7 +1564,7 @@
                 if (state.minFav) document.getElementById('minFav').value = state.minFav;
                 if (state.statsMode) {
                     currentStatsMode = state.statsMode;
-                    statsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsMode));
+                    allStatsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsMode));
                 }
 
                 for (let r = 1; r <= TOTAL_RACES; r++) {
@@ -2567,13 +2597,14 @@
 
         function fitAll() {
             const tc = document.querySelector(".toggle-container");
-            const tr = document.querySelector(".toggle-row");
+            const tr = document.querySelector(".toggle-row:not(.toggle-row-sp-2)");
             const container = document.getElementById("raceTables");
             const row = container && container.querySelector(".race-row");
             if (isMobileLayout()) {
                 if (row) row.style.transform = "none";
                 if (container) container.style.height = "";
-                fitWithScale(tc, tr);
+                if (tr) { tr.style.transform = "none"; }
+                if (tc) tc.style.height = "";
                 return;
             }
             const s = fitWithScale(container, row);
@@ -2694,14 +2725,28 @@
 
         let currentStatsMode = 'venue';
         const statsToggleEl = document.getElementById("statsToggle");
-        const statsOptions = statsToggleEl.querySelectorAll(".sort-option");
+        const statsToggleSpEl = document.getElementById("statsToggleSp");
+        const allStatsOptions = [
+            ...statsToggleEl.querySelectorAll(".sort-option"),
+            ...statsToggleSpEl.querySelectorAll(".sort-option"),
+        ];
+
+        function syncStatsToggle(key) {
+            currentStatsMode = key;
+            allStatsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsMode));
+            if (hasExistingData()) fetchAndApplyJockeyStats();
+        }
 
         statsToggleEl.addEventListener("click", (e) => {
             const opt = e.target.closest(".sort-option");
             if (!opt || opt.dataset.key === currentStatsMode) return;
-            currentStatsMode = opt.dataset.key;
-            statsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsMode));
-            if (hasExistingData()) fetchAndApplyJockeyStats();
+            syncStatsToggle(opt.dataset.key);
+        });
+
+        statsToggleSpEl.addEventListener("click", (e) => {
+            const opt = e.target.closest(".sort-option");
+            if (!opt || opt.dataset.key === currentStatsMode) return;
+            syncStatsToggle(opt.dataset.key);
         });
 
         async function fetchAndApplyJockeyStats() {
