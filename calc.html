@@ -2669,8 +2669,8 @@
                         const statsEl = sel.querySelector(".jockey-stats");
                         if (!statsEl || !jockey) return;
 
-                        const s = findJockeyStats(statsMap, jockey) || [0,0,0,0,0];
-                        statsEl.textContent = `(${s[0]}-${s[1]}-${s[2]}-${s[3]}/${s[4]})`;
+                        const s = findJockeyStats(statsMap, jockey) || [0,0,0,0];
+                        statsEl.textContent = `(${s[0]}-${s[1]}-${s[2]}-${s[3]})`;
                     });
                 }
                 saveState();
