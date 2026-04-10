@@ -107,6 +107,11 @@
             padding: 6px 0;
         }
 
+        .toggle-row-clear {
+            display: none;
+        }
+
+
         #raceTables {
             width: 100%;
             overflow: hidden;
@@ -813,6 +818,21 @@
                 justify-content: center;
             }
 
+            .clear-pc {
+                display: none !important;
+            }
+
+            .toggle-row-clear {
+                display: flex;
+                gap: 8px;
+                width: 100%;
+            }
+
+            .toggle-row-clear .race-clear {
+                flex: 1 1 0;
+                width: auto;
+            }
+
             #raceTables {
                 overflow: visible;
             }
@@ -860,12 +880,22 @@
 
     <div class="toggle-container">
         <div class="toggle-row">
-            <button id="modeToggle" class="race-clear" type="button">背景選択</button>
             <div id="sortToggle" class="sort-switch">
                 <span class="sort-option active" data-key="no">馬番順</span>
                 <span class="sort-option" data-key="odds">オッズ順</span>
             </div>
-            <button id="bgClearAllBtn" class="race-clear" type="button">色クリア</button>
+            <div id="statsToggle" class="sort-switch">
+                <span class="sort-option" data-key="win5">WIN5</span>
+                <span class="sort-option active" data-key="venue">競馬場</span>
+                <span class="sort-option" data-key="course">コース</span>
+            </div>
+            <button id="modeToggle" class="race-clear clear-pc" type="button">背景選択</button>
+            <button id="bgClearAllBtn" class="race-clear clear-pc" type="button">色クリア</button>
+            <button class="race-clear clear-pc" type="button" onclick="if(confirm('印をすべてクリアしますか？'))clearAllMarks()">印クリア</button>
+        </div>
+        <div class="toggle-row toggle-row-clear">
+            <button id="modeToggleSp" class="race-clear" type="button">背景選択</button>
+            <button class="race-clear" type="button" onclick="document.getElementById('bgClearAllBtn').click()">色クリア</button>
             <button class="race-clear" type="button" onclick="if(confirm('印をすべてクリアしますか？'))clearAllMarks()">印クリア</button>
         </div>
     </div>
@@ -982,12 +1012,29 @@
             }
         }
 
+        function updateSwitchAll() {
+            updateSwitch();
+            const sp = document.getElementById("modeToggleSp");
+            if (sp) {
+                if (backgroundMode) sp.classList.add("on");
+                else sp.classList.remove("on");
+            }
+        }
+
         modeBtn.addEventListener("click", () => {
             backgroundMode = !backgroundMode;
-            updateSwitch();
+            updateSwitchAll();
         });
 
-        updateSwitch();
+        const modeBtnSp = document.getElementById("modeToggleSp");
+        if (modeBtnSp) {
+            modeBtnSp.addEventListener("click", () => {
+                backgroundMode = !backgroundMode;
+                updateSwitchAll();
+            });
+        }
+
+        updateSwitchAll();
 
         function clearAllRowBackgrounds() {
             document.querySelectorAll('.custom-select:not(.is-empty)').forEach(r => {
@@ -1416,6 +1463,7 @@
         function saveState() {
             const state = {
                 races: {},
+                statsMode: currentStatsMode,
                 minFav: document.getElementById('minFav').value,
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
@@ -1483,6 +1531,10 @@
                 updateRaceHeaders(window.raceInfo || ["", "", "", "", ""]);
 
                 if (state.minFav) document.getElementById('minFav').value = state.minFav;
+                if (state.statsMode) {
+                    currentStatsMode = state.statsMode;
+                    statsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsMode));
+                }
 
                 for (let r = 1; r <= TOTAL_RACES; r++) {
                     const race = state.races?.[`r${r}`];
@@ -2639,28 +2691,53 @@
             return null;
         }
 
+        let currentStatsMode = 'venue';
+        const statsToggleEl = document.getElementById("statsToggle");
+        const statsOptions = statsToggleEl.querySelectorAll(".sort-option");
+
+        statsToggleEl.addEventListener("click", (e) => {
+            const opt = e.target.closest(".sort-option");
+            if (!opt || opt.dataset.key === currentStatsMode) return;
+            currentStatsMode = opt.dataset.key;
+            statsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsMode));
+            if (hasExistingData()) fetchAndApplyJockeyStats();
+        });
+
         async function fetchAndApplyJockeyStats() {
             const raceInfo = window.raceInfo || [];
+            const raceCourses = window.raceCourses || [];
+            const mode = currentStatsMode;
 
-            const venuePerRace = [];
-            for (let i = 0; i < TOTAL_RACES; i++) {
-                venuePerRace.push(extractVenue(raceInfo[i]));
+            let keysPerRace = [];
+            if (mode === 'win5') {
+                keysPerRace = Array(TOTAL_RACES).fill('win5');
+            } else if (mode === 'course') {
+                for (let i = 0; i < TOTAL_RACES; i++) {
+                    const venue = extractVenue(raceInfo[i]);
+                    const course = extractCourse(raceCourses[i]);
+                    keysPerRace.push((venue && course) ? `${venue}:${course}` : "");
+                }
+            } else {
+                for (let i = 0; i < TOTAL_RACES; i++) {
+                    keysPerRace.push(extractVenue(raceInfo[i]));
+                }
             }
 
-            const validVenues = [...new Set(venuePerRace.filter(v => v))];
-            if (validVenues.length === 0) return;
+            const validKeys = [...new Set(keysPerRace.filter(k => k))];
+            if (validKeys.length === 0) return;
 
             try {
                 const u = new URL("jockey-stats", WIN5_API);
-                u.searchParams.set("q", validVenues.join(","));
+                u.searchParams.set("mode", mode);
+                if (mode !== 'win5') u.searchParams.set("q", validKeys.join(","));
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
                 if (!json.ok || !json.stats) return;
 
                 for (let r = 0; r < TOTAL_RACES; r++) {
-                    const venue = venuePerRace[r];
-                    if (!venue) continue;
-                    const statsMap = json.stats[venue];
+                    const key = keysPerRace[r];
+                    if (!key) continue;
+                    const statsMap = json.stats[key];
                     if (!statsMap) continue;
 
                     document.querySelectorAll(`.custom-select[data-race="${r + 1}"]`).forEach(sel => {
