@@ -2641,29 +2641,26 @@
 
         async function fetchAndApplyJockeyStats() {
             const raceInfo = window.raceInfo || [];
-            const raceCourses = window.raceCourses || [];
 
-            const pairs = [];
+            const venuePerRace = [];
             for (let i = 0; i < TOTAL_RACES; i++) {
-                const venue = extractVenue(raceInfo[i]);
-                const course = extractCourse(raceCourses[i]);
-                pairs.push((venue && course) ? `${venue}:${course}` : "");
+                venuePerRace.push(extractVenue(raceInfo[i]));
             }
 
-            const validPairs = [...new Set(pairs.filter(p => p))];
-            if (validPairs.length === 0) return;
+            const validVenues = [...new Set(venuePerRace.filter(v => v))];
+            if (validVenues.length === 0) return;
 
             try {
                 const u = new URL("jockey-stats", WIN5_API);
-                u.searchParams.set("q", validPairs.join(","));
+                u.searchParams.set("q", validVenues.join(","));
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
                 if (!json.ok || !json.stats) return;
 
                 for (let r = 0; r < TOTAL_RACES; r++) {
-                    const key = pairs[r];
-                    if (!key) continue;
-                    const statsMap = json.stats[key];
+                    const venue = venuePerRace[r];
+                    if (!venue) continue;
+                    const statsMap = json.stats[venue];
                     if (!statsMap) continue;
 
                     document.querySelectorAll(`.custom-select[data-race="${r + 1}"]`).forEach(sel => {
