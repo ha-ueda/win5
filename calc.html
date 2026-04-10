@@ -887,6 +887,7 @@
             <div id="statsToggle" class="sort-switch">
                 <span class="sort-option" data-key="win5">WIN5</span>
                 <span class="sort-option active" data-key="venue">競馬場</span>
+                <span class="sort-option" data-key="distance">距離</span>
                 <span class="sort-option" data-key="course">コース</span>
             </div>
             <button id="modeToggle" class="race-clear clear-pc" type="button">背景選択</button>
@@ -2711,6 +2712,11 @@
             let keysPerRace = [];
             if (mode === 'win5') {
                 keysPerRace = Array(TOTAL_RACES).fill('win5');
+            } else if (mode === 'distance') {
+                for (let i = 0; i < TOTAL_RACES; i++) {
+                    const course = extractCourse(raceCourses[i]);
+                    keysPerRace.push(course || "");
+                }
             } else if (mode === 'course') {
                 for (let i = 0; i < TOTAL_RACES; i++) {
                     const venue = extractVenue(raceInfo[i]);
