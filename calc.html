@@ -385,7 +385,7 @@
         .jockey-wrap {
             display: inline-flex;
             align-items: baseline;
-            gap: 8px;
+            gap: 0;
             white-space: nowrap;
             flex: 0 0 auto;
         }
@@ -434,6 +434,13 @@
             color: #7a7a7a;
             white-space: nowrap;
             text-align: center;
+        }
+
+        .jockey-stats {
+            font-size: 11px;
+            color: #888;
+            font-weight: normal;
+            white-space: nowrap;
         }
 
         .is-empty {
@@ -1264,6 +1271,10 @@
             jName.className = "jockey-name";
             jName.textContent = "";
             jWrap.appendChild(jName);
+            const jStats = document.createElement("span");
+            jStats.className = "jockey-stats";
+            jStats.textContent = "";
+            jWrap.appendChild(jStats);
 
             bottom.appendChild(jWrap);
 
@@ -1430,6 +1441,9 @@
                     const waku = (noEl?.dataset.waku || "").trim();
                     const umaban = (noEl?.textContent || "").trim();
 
+                    const jsEl = sel.querySelector('.jockey-stats');
+                    const jstats = (jsEl?.textContent || "").trim();
+
                     state.races[`r${r}`][sel.dataset.horse] = {
                         mark: (box?.textContent || "").trim(),
                         bg: (box?.dataset.bg || "none").trim(),
@@ -1438,7 +1452,8 @@
                         odds: odds || null,
                         ninki: ninki || null,
                         waku: waku || null,
-                        umaban: umaban || null
+                        umaban: umaban || null,
+                        jstats: jstats || null
                     };
                 });
             }
@@ -1533,6 +1548,8 @@
                         sel.dataset.jockey = (val.jockey || "") ? String(val.jockey).trim() : "";
                         sel.dataset.odds = (val.odds || "") ? String(val.odds).trim() : "";
                         sel.dataset.ninki = (val.ninki || "") ? String(val.ninki).trim() : "";
+                        const jsEl = sel.querySelector('.jockey-stats');
+                        if (jsEl) jsEl.textContent = (val.jstats || "") ? String(val.jstats) : "";
                     });
                 }
             } catch (e) {
@@ -1566,6 +1583,8 @@
 
                 if (nameEl) nameEl.textContent = "";
                 if (jEl) jEl.textContent = "";
+                const jsEl = sel.querySelector('.jockey-stats');
+                if (jsEl) jsEl.textContent = "";
                 if (oEl) {
                     oEl.textContent = "";
                     setOddsHot(oEl, "");
@@ -2007,6 +2026,8 @@
             window.raceCourses = json.raceCourses || ((json.races || []).map(r => (r && (r.courseInfo || r.course || r.courseText)) ? String(r.courseInfo || r.course || r.courseText) : ""));
             updateRaceHeaders(window.raceInfo);
 
+            document.querySelectorAll('.jockey-stats').forEach(el => { el.textContent = ""; });
+
             const races = json.races || [];
 
             for (let r = 0; r < TOTAL_RACES; r++) {
@@ -2128,6 +2149,7 @@
                 }
 
                 applyWin5Data(json);
+                await fetchAndApplyJockeyStats();
 
                 showToast("取得しました");
             } catch (e) {
@@ -2580,6 +2602,85 @@
             applyRaceFocus(isMobileLayout() ? (document.body.getAttribute("data-focus-race") || "1") : "all");
             fitAllDebounced();
         });
+
+        function extractVenue(raceInfoText) {
+            const t = String(raceInfoText || "").trim();
+            const m1 = t.match(/\d+回(.+?)\d+日/);
+            if (m1) return m1[1];
+            const venues = ['札幌', '函館', '福島', '新潟', '東京', '中山', '中京', '京都', '阪神', '小倉'];
+            for (const v of venues) {
+                if (t.startsWith(v)) return v;
+            }
+            return "";
+        }
+
+        function extractCourse(courseInfoText) {
+            return String(courseInfoText || "").replace(/m$/, "").trim();
+        }
+
+        function stripJockeyInitials(s) {
+            return s.replace(/^[Ａ-Ｚａ-ｚA-Za-z]+[．.・]\s*/g, '');
+        }
+
+        function findJockeyStats(statsMap, jockeyName) {
+            const name = jockeyName.replace(/\s+/g, '');
+            if (statsMap[name]) return statsMap[name];
+            if (statsMap[jockeyName]) return statsMap[jockeyName];
+
+            const stripped = stripJockeyInitials(name);
+
+            for (const [key, val] of Object.entries(statsMap)) {
+                const k = key.replace(/\s+/g, '');
+                const ks = stripJockeyInitials(k);
+                if (k.startsWith(name) || name.startsWith(k)) return val;
+                if (stripped && (ks.startsWith(stripped) || stripped.startsWith(ks))) return val;
+                if (stripped && (k.startsWith(stripped) || stripped.startsWith(k))) return val;
+            }
+            return null;
+        }
+
+        async function fetchAndApplyJockeyStats() {
+            const raceInfo = window.raceInfo || [];
+            const raceCourses = window.raceCourses || [];
+
+            const pairs = [];
+            for (let i = 0; i < TOTAL_RACES; i++) {
+                const venue = extractVenue(raceInfo[i]);
+                const course = extractCourse(raceCourses[i]);
+                pairs.push((venue && course) ? `${venue}:${course}` : "");
+            }
+
+            const validPairs = [...new Set(pairs.filter(p => p))];
+            if (validPairs.length === 0) return;
+
+            try {
+                const u = new URL("jockey-stats", WIN5_API);
+                u.searchParams.set("q", validPairs.join(","));
+                const res = await fetch(u.toString(), { cache: "no-store" });
+                const json = await res.json();
+                if (!json.ok || !json.stats) return;
+
+                for (let r = 0; r < TOTAL_RACES; r++) {
+                    const key = pairs[r];
+                    if (!key) continue;
+                    const statsMap = json.stats[key];
+                    if (!statsMap) continue;
+
+                    document.querySelectorAll(`.custom-select[data-race="${r + 1}"]`).forEach(sel => {
+                        if (sel.classList.contains("is-empty")) return;
+                        const jockey = (sel.dataset.jockey || "").trim();
+                        const statsEl = sel.querySelector(".jockey-stats");
+                        if (!statsEl || !jockey) return;
+
+                        const s = findJockeyStats(statsMap, jockey) || [0,0,0,0,0];
+                        statsEl.textContent = `(${s[0]}-${s[1]}-${s[2]}-${s[3]}/${s[4]})`;
+                    });
+                }
+                saveState();
+            } catch (e) {
+                console.warn("fetchAndApplyJockeyStats:", e);
+            }
+        }
 
         createRaceTables();
         applyRaceFocus(isMobileLayout() ? "1" : "all");
