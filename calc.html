@@ -830,7 +830,7 @@
                 display: none !important;
             }
 
-            #statsToggle {
+            #statsToggle, #yearsToggle {
                 display: none !important;
             }
 
@@ -843,11 +843,25 @@
 
             .toggle-row-sp-2 .sort-switch {
                 flex: 1 1 0;
+                min-width: 0;
+            }
+
+            .toggle-row-sp-2 .sort-switch[id^="yearsToggle"] {
+                flex: 0 0 35%;
             }
 
             .toggle-row-sp-2 .sort-option {
                 flex: 1 1 0;
+                min-width: 0;
+                padding: 8px 6px;
+                font-size: 13px;
+                min-height: 38px;
                 justify-content: center;
+            }
+
+            .toggle-row-sp-2 .sort-switch[id^="yearsToggle"] .sort-option {
+                flex: 1 1 0;
+                padding: 8px 6px;
             }
 
             .toggle-row-sp-2 .race-clear {
@@ -912,6 +926,10 @@
                 <span class="sort-option" data-key="distance">距離</span>
                 <span class="sort-option" data-key="course">コース</span>
             </div>
+            <div id="yearsToggle" class="sort-switch">
+                <span class="sort-option" data-key="1">1年</span>
+                <span class="sort-option active" data-key="3">3年</span>
+            </div>
             <button id="modeToggle" class="race-clear clear-pc" type="button">背景選択</button>
             <button id="bgClearAllBtn" class="race-clear clear-pc" type="button">色クリア</button>
             <button class="race-clear clear-pc" type="button" onclick="if(confirm('印をすべてクリアしますか？'))clearAllMarks()">印クリア</button>
@@ -922,6 +940,10 @@
                 <span class="sort-option active" data-key="venue">競馬場</span>
                 <span class="sort-option" data-key="distance">距離</span>
                 <span class="sort-option" data-key="course">コース</span>
+            </div>
+            <div id="yearsToggleSp" class="sort-switch">
+                <span class="sort-option" data-key="1">1年</span>
+                <span class="sort-option active" data-key="3">3年</span>
             </div>
         </div>
         <div class="toggle-row toggle-row-sp-2">
@@ -1495,6 +1517,7 @@
             const state = {
                 races: {},
                 statsMode: currentStatsMode,
+                statsYears: currentStatsYears,
                 minFav: document.getElementById('minFav').value,
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
@@ -1565,6 +1588,10 @@
                 if (state.statsMode) {
                     currentStatsMode = state.statsMode;
                     allStatsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsMode));
+                }
+                if (state.statsYears) {
+                    currentStatsYears = state.statsYears;
+                    allYearsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsYears));
                 }
 
                 for (let r = 1; r <= TOTAL_RACES; r++) {
@@ -2724,16 +2751,29 @@
         }
 
         let currentStatsMode = 'venue';
+        let currentStatsYears = '3';
         const statsToggleEl = document.getElementById("statsToggle");
         const statsToggleSpEl = document.getElementById("statsToggleSp");
+        const yearsToggleEl = document.getElementById("yearsToggle");
+        const yearsToggleSpEl = document.getElementById("yearsToggleSp");
         const allStatsOptions = [
             ...statsToggleEl.querySelectorAll(".sort-option"),
             ...statsToggleSpEl.querySelectorAll(".sort-option"),
+        ];
+        const allYearsOptions = [
+            ...yearsToggleEl.querySelectorAll(".sort-option"),
+            ...yearsToggleSpEl.querySelectorAll(".sort-option"),
         ];
 
         function syncStatsToggle(key) {
             currentStatsMode = key;
             allStatsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsMode));
+            if (hasExistingData()) fetchAndApplyJockeyStats();
+        }
+
+        function syncYearsToggle(key) {
+            currentStatsYears = key;
+            allYearsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsYears));
             if (hasExistingData()) fetchAndApplyJockeyStats();
         }
 
@@ -2747,6 +2787,18 @@
             const opt = e.target.closest(".sort-option");
             if (!opt || opt.dataset.key === currentStatsMode) return;
             syncStatsToggle(opt.dataset.key);
+        });
+
+        yearsToggleEl.addEventListener("click", (e) => {
+            const opt = e.target.closest(".sort-option");
+            if (!opt || opt.dataset.key === currentStatsYears) return;
+            syncYearsToggle(opt.dataset.key);
+        });
+
+        yearsToggleSpEl.addEventListener("click", (e) => {
+            const opt = e.target.closest(".sort-option");
+            if (!opt || opt.dataset.key === currentStatsYears) return;
+            syncYearsToggle(opt.dataset.key);
         });
 
         async function fetchAndApplyJockeyStats() {
@@ -2780,6 +2832,7 @@
             try {
                 const u = new URL("jockey-stats", WIN5_API);
                 u.searchParams.set("mode", mode);
+                u.searchParams.set("years", currentStatsYears);
                 if (mode !== 'win5') u.searchParams.set("q", validKeys.join(","));
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
