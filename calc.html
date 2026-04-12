@@ -920,6 +920,10 @@
                 <span class="sort-option active" data-key="no">馬番順</span>
                 <span class="sort-option" data-key="odds">オッズ順</span>
             </div>
+            <div id="personToggle" class="sort-switch">
+                <span class="sort-option active" data-key="jockey">騎手</span>
+                <span class="sort-option" data-key="trainer">調教師</span>
+            </div>
             <div id="statsToggle" class="sort-switch">
                 <span class="sort-option" data-key="win5">WIN5</span>
                 <span class="sort-option active" data-key="venue">競馬場</span>
@@ -1337,6 +1341,9 @@
             tr.dataset.umaban = "";
             tr.dataset.name = "";
             tr.dataset.jockey = "";
+            tr.dataset.trainer = "";
+            tr.dataset.jstats = "";
+            tr.dataset.tstats = "";
             tr.dataset.odds = "";
             tr.dataset.ninki = "";
 
@@ -1518,6 +1525,7 @@
                 races: {},
                 statsMode: currentStatsMode,
                 statsYears: currentStatsYears,
+                person: currentPerson,
                 minFav: document.getElementById('minFav').value,
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
@@ -1529,33 +1537,34 @@
                 document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
                     const box = sel.querySelector('.selected');
                     const nameEl = sel.querySelector('.horse-name');
-                    const jEl = sel.querySelector('.jockey-name');
                     const oEl = sel.querySelector('.odds-top');
                     const pEl = sel.querySelector('.odds-bottom');
                     const noEl = sel.querySelector('td.col-no');
 
-
                     const name = (nameEl?.textContent || "").trim();
                     const isEmpty = sel.classList.contains("is-empty");
-                    const jockey = (jEl?.textContent || "").trim();
+                    const jockey = (sel.dataset.jockey || "").trim();
+                    const trainer = (sel.dataset.trainer || "").trim();
                     const odds = (oEl?.textContent || "").trim();
                     const ninki = (pEl?.textContent || "").trim().replace("人気", "");
                     const waku = (noEl?.dataset.waku || "").trim();
                     const umaban = (noEl?.textContent || "").trim();
 
-                    const jsEl = sel.querySelector('.jockey-stats');
-                    const jstats = (jsEl?.textContent || "").trim();
+                    const jstats = (sel.dataset.jstats || "").trim();
+                    const tstats = (sel.dataset.tstats || "").trim();
 
                     state.races[`r${r}`][sel.dataset.horse] = {
                         mark: (box?.textContent || "").trim(),
                         bg: (box?.dataset.bg || "none").trim(),
                         name: isEmpty ? null : name,
                         jockey: jockey || null,
+                        trainer: trainer || null,
                         odds: odds || null,
                         ninki: ninki || null,
                         waku: waku || null,
                         umaban: umaban || null,
-                        jstats: jstats || null
+                        jstats: jstats || null,
+                        tstats: tstats || null
                     };
                 });
             }
@@ -1592,6 +1601,10 @@
                 if (state.statsYears) {
                     currentStatsYears = state.statsYears;
                     allYearsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsYears));
+                }
+                if (state.person) {
+                    currentPerson = state.person === 'trainer' ? 'trainer' : 'jockey';
+                    allPersonOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentPerson));
                 }
 
                 for (let r = 1; r <= TOTAL_RACES; r++) {
@@ -1633,6 +1646,9 @@
                             sel.dataset.umaban = "";
                             sel.dataset.name = "";
                             sel.dataset.jockey = "";
+                            sel.dataset.trainer = "";
+                            sel.dataset.jstats = "";
+                            sel.dataset.tstats = "";
                             sel.dataset.odds = "";
                             sel.dataset.ninki = "";
                             if (box) {
@@ -1646,7 +1662,6 @@
 
                         sel.classList.remove("is-empty");
                         if (nameEl) nameEl.textContent = String(name);
-                        if (jEl) jEl.textContent = (val.jockey || "") ? String(val.jockey) : "";
                         if (oEl) {
                             oEl.textContent = (val.odds || "") ? String(val.odds) : "";
                             setOddsHot(oEl, oEl.textContent);
@@ -1656,12 +1671,14 @@
                         sel.dataset.umaban = (val.umaban || "") ? String(val.umaban).trim() : "";
                         sel.dataset.name = String(name || "").trim();
                         sel.dataset.jockey = (val.jockey || "") ? String(val.jockey).trim() : "";
+                        sel.dataset.trainer = (val.trainer || "") ? String(val.trainer).trim() : "";
+                        sel.dataset.jstats = (val.jstats || "") ? String(val.jstats).trim() : "";
+                        sel.dataset.tstats = (val.tstats || "") ? String(val.tstats).trim() : "";
                         sel.dataset.odds = (val.odds || "") ? String(val.odds).trim() : "";
                         sel.dataset.ninki = (val.ninki || "") ? String(val.ninki).trim() : "";
-                        const jsEl = sel.querySelector('.jockey-stats');
-                        if (jsEl) jsEl.textContent = (val.jstats || "") ? String(val.jstats) : "";
                     });
                 }
+                applyPersonDisplay();
             } catch (e) {
                 console.warn("restoreState: 保存データの復元に失敗しました", e);
             }
@@ -1704,6 +1721,9 @@
                 sel.dataset.umaban = "";
                 sel.dataset.name = "";
                 sel.dataset.jockey = "";
+                sel.dataset.trainer = "";
+                sel.dataset.jstats = "";
+                sel.dataset.tstats = "";
                 sel.dataset.odds = "";
                 sel.dataset.ninki = "";
 
@@ -2137,12 +2157,17 @@
             updateRaceHeaders(window.raceInfo);
 
             document.querySelectorAll('.jockey-stats').forEach(el => { el.textContent = ""; });
+            document.querySelectorAll('.custom-select').forEach(sel => {
+                sel.dataset.jstats = "";
+                sel.dataset.tstats = "";
+            });
 
             const races = json.races || [];
 
             for (let r = 0; r < TOTAL_RACES; r++) {
                 const horses = (races[r] && races[r].horses) ? races[r].horses : [];
                 const jockeys = (races[r] && races[r].jockeys) ? races[r].jockeys : [];
+                const trainers = (races[r] && races[r].trainers) ? races[r].trainers : [];
                 const oddsArr = (races[r] && races[r].odds) ? races[r].odds : [];
                 const ninkiArr = (races[r] && races[r].ninki) ? races[r].ninki : [];
                 const wakubans = (races[r] && races[r].wakubans) ? races[r].wakubans : [];
@@ -2155,6 +2180,7 @@
 
                     const name = horses[i - 1] || "";
                     const jockey = jockeys[i - 1] || "";
+                    const trainer = trainers[i - 1] || "";
                     const odds = oddsArr[i - 1];
                     const ninki = ninkiArr[i - 1];
                     const wakuClass = wakuClasses[i - 1] || "";
@@ -2174,7 +2200,6 @@
                     if (name) {
                         sel.classList.remove("is-empty");
                         if (nameEl) nameEl.textContent = String(name);
-                        if (jEl) jEl.textContent = String(jockey || "");
                         if (oEl) {
                             const oTxt = (odds === undefined || odds === null) ? "" : String(odds);
                             oEl.textContent = oTxt;
@@ -2188,6 +2213,7 @@
                         sel.dataset.umaban = String(umaban || "").trim();
                         sel.dataset.name = String(name || "").trim();
                         sel.dataset.jockey = String(jockey || "").trim();
+                        sel.dataset.trainer = String(trainer || "").trim();
                         sel.dataset.odds = (odds === undefined || odds === null) ? "" : String(odds).trim();
                         sel.dataset.ninki = (ninki === undefined || ninki === null) ? "" : String(ninki).trim();
                     } else {
@@ -2204,6 +2230,9 @@
                         sel.dataset.umaban = "";
                         sel.dataset.name = "";
                         sel.dataset.jockey = "";
+                        sel.dataset.trainer = "";
+                        sel.dataset.jstats = "";
+                        sel.dataset.tstats = "";
                         sel.dataset.odds = "";
                         sel.dataset.ninki = "";
 
@@ -2217,6 +2246,7 @@
                 }
             }
 
+            applyPersonDisplay();
             saveState();
         }
 
@@ -2752,10 +2782,12 @@
 
         let currentStatsMode = 'venue';
         let currentStatsYears = '3';
+        let currentPerson = 'jockey';
         const statsToggleEl = document.getElementById("statsToggle");
         const statsToggleSpEl = document.getElementById("statsToggleSp");
         const yearsToggleEl = document.getElementById("yearsToggle");
         const yearsToggleSpEl = document.getElementById("yearsToggleSp");
+        const personToggleEl = document.getElementById("personToggle");
         const allStatsOptions = [
             ...statsToggleEl.querySelectorAll(".sort-option"),
             ...statsToggleSpEl.querySelectorAll(".sort-option"),
@@ -2764,6 +2796,21 @@
             ...yearsToggleEl.querySelectorAll(".sort-option"),
             ...yearsToggleSpEl.querySelectorAll(".sort-option"),
         ];
+        const allPersonOptions = [
+            ...personToggleEl.querySelectorAll(".sort-option"),
+        ];
+
+        function applyPersonDisplay() {
+            document.querySelectorAll('.custom-select').forEach(sel => {
+                const nameEl = sel.querySelector('.jockey-name');
+                const statsEl = sel.querySelector('.jockey-stats');
+                if (!nameEl || !statsEl) return;
+                const name = (currentPerson === 'trainer' ? sel.dataset.trainer : sel.dataset.jockey) || "";
+                const stats = (currentPerson === 'trainer' ? sel.dataset.tstats : sel.dataset.jstats) || "";
+                nameEl.textContent = name;
+                statsEl.textContent = stats;
+            });
+        }
 
         function syncStatsToggle(key) {
             currentStatsMode = key;
@@ -2775,6 +2822,14 @@
             currentStatsYears = key;
             allYearsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsYears));
             if (hasExistingData()) fetchAndApplyJockeyStats();
+        }
+
+        function syncPersonToggle(key) {
+            currentPerson = key;
+            allPersonOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentPerson));
+            applyPersonDisplay();
+            if (hasExistingData()) fetchAndApplyJockeyStats();
+            saveState();
         }
 
         statsToggleEl.addEventListener("click", (e) => {
@@ -2801,10 +2856,18 @@
             syncYearsToggle(opt.dataset.key);
         });
 
+        personToggleEl.addEventListener("click", (e) => {
+            const opt = e.target.closest(".sort-option");
+            if (!opt || opt.dataset.key === currentPerson) return;
+            syncPersonToggle(opt.dataset.key);
+        });
+
         async function fetchAndApplyJockeyStats() {
             const raceInfo = window.raceInfo || [];
             const raceCourses = window.raceCourses || [];
             const mode = currentStatsMode;
+            const person = currentPerson;
+            const personAtFetch = person;
 
             let keysPerRace = [];
             if (mode === 'win5') {
@@ -2833,10 +2896,14 @@
                 const u = new URL("jockey-stats", WIN5_API);
                 u.searchParams.set("mode", mode);
                 u.searchParams.set("years", currentStatsYears);
+                u.searchParams.set("person", personAtFetch);
                 if (mode !== 'win5') u.searchParams.set("q", validKeys.join(","));
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
                 if (!json.ok || !json.stats) return;
+
+                const datasetKey = personAtFetch === 'trainer' ? 'tstats' : 'jstats';
+                const nameKey = personAtFetch === 'trainer' ? 'trainer' : 'jockey';
 
                 for (let r = 0; r < TOTAL_RACES; r++) {
                     const key = keysPerRace[r];
@@ -2846,14 +2913,14 @@
 
                     document.querySelectorAll(`.custom-select[data-race="${r + 1}"]`).forEach(sel => {
                         if (sel.classList.contains("is-empty")) return;
-                        const jockey = (sel.dataset.jockey || "").trim();
-                        const statsEl = sel.querySelector(".jockey-stats");
-                        if (!statsEl || !jockey) return;
+                        const name = (sel.dataset[nameKey] || "").trim();
+                        if (!name) return;
 
-                        const s = findJockeyStats(statsMap, jockey) || [0,0,0,0];
-                        statsEl.textContent = `(${s[0]}-${s[1]}-${s[2]}-${s[3]})`;
+                        const s = findJockeyStats(statsMap, name) || [0,0,0,0];
+                        sel.dataset[datasetKey] = `(${s[0]}-${s[1]}-${s[2]}-${s[3]})`;
                     });
                 }
+                if (personAtFetch === currentPerson) applyPersonDisplay();
                 saveState();
             } catch (e) {
                 console.warn("fetchAndApplyJockeyStats:", e);
