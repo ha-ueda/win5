@@ -2813,73 +2813,25 @@
             return s.replace(/^[Ａ-Ｚａ-ｚA-Za-z]+[．.・]\s*/g, '');
         }
 
-        function findPersonStats(statsMap, personName, person, totalsMap) {
-            // CSV シードは騎手/調教師をフルネーム (例「坂井瑠星」) で保存しているが、
-            // cron (parseResultJockeys) は netkeiba の結果ページから短縮姓 (例「坂井」) を取るため、
-            // 同一人物が異なるキーとして statsMap に並存しうる。
-            //
-            // ここでは出馬表から渡される短縮姓を受けて:
-            //   1) 完全一致したキーの統計を取得
-            //   2) 前方一致する他キー候補 (「坂井瑠星」) の中で最も活動量の多いものを選ぶ
-            //   3) 両方存在すれば同一人物と見なして合算
-            // これにより CSV シードと cron 追加分が分裂していても合計値が得られる。
-            //
-            // 完全一致が無い場合 (最初期の調教師問題のように、出馬表「堀」と CSV 「堀宣行」のみ)
-            // は前方一致のベストだけを返す。複数の前方一致候補があるときは totalsMap で曖昧解決。
+        function findPersonStats(statsMap, personName, person) {
+            // seed (scripts/rebuild-seed.js) も cron (worker.js) も同じ netkeiba 結果ページから
+            // 名前を取得しているので、基本は完全一致で済む。外国人騎手の頭文字 (例: "C.ルメール")
+            // が付いたり外れたりする稀なケースだけ救済する。
 
             const name = personName.replace(/\s+/g, '');
 
-            // 1. 完全一致 (空白正規化あり/なし両方試す)
-            const exactKey = statsMap[name] ? name : (statsMap[personName] ? personName : null);
-            const exactVal = exactKey ? statsMap[exactKey] : null;
+            if (statsMap[name]) return statsMap[name];
+            if (statsMap[personName]) return statsMap[personName];
 
-            // 2. 前方一致候補 (exactKey は除く) を収集
-            const prefixCandidates = [];
-            for (const [key, val] of Object.entries(statsMap)) {
-                if (key === exactKey) continue;
-                const k = key.replace(/\s+/g, '');
-                if (k.startsWith(name) || name.startsWith(k)) {
-                    prefixCandidates.push({ key, val });
-                }
-            }
-
-            // 騎手専用: 頭文字 (C.ルメール など) を除去した形での前方一致も救う
             if (person === 'jockey') {
                 const stripped = stripJockeyInitials(name);
-                if (stripped) {
-                    for (const [key, val] of Object.entries(statsMap)) {
-                        if (key === exactKey || prefixCandidates.some(c => c.key === key)) continue;
-                        const k = key.replace(/\s+/g, '');
-                        const ks = stripJockeyInitials(k);
-                        if ((ks.startsWith(stripped) || stripped.startsWith(ks)) ||
-                            (k.startsWith(stripped) || stripped.startsWith(k))) {
-                            prefixCandidates.push({ key, val });
-                        }
-                    }
+                for (const [key, val] of Object.entries(statsMap)) {
+                    const k = key.replace(/\s+/g, '');
+                    const ks = stripJockeyInitials(k);
+                    if (k === stripped || ks === name || ks === stripped) return val;
                 }
             }
 
-            // 3. 前方一致候補から最も活動量の多いものを選ぶ (totalsMap 優先)
-            let bestPrefix = null;
-            if (prefixCandidates.length > 0) {
-                const scoreOf = (c) => (totalsMap && totalsMap[c.key]) ?? (c.val[0] + c.val[1] + c.val[2] + c.val[3]);
-                bestPrefix = prefixCandidates[0];
-                for (const c of prefixCandidates.slice(1)) {
-                    if (scoreOf(c) > scoreOf(bestPrefix)) bestPrefix = c;
-                }
-            }
-
-            // 4. 完全一致と前方一致ベストがあれば合算 (同一人物と仮定)
-            if (exactVal && bestPrefix) {
-                return [
-                    exactVal[0] + bestPrefix.val[0],
-                    exactVal[1] + bestPrefix.val[1],
-                    exactVal[2] + bestPrefix.val[2],
-                    exactVal[3] + bestPrefix.val[3],
-                ];
-            }
-            if (exactVal) return exactVal;
-            if (bestPrefix) return bestPrefix.val;
             return null;
         }
 
@@ -3019,7 +2971,6 @@
                 const json = await res.json();
                 if (!json.ok || !json.stats) return;
 
-                const totalsMap = json.totals || {};
                 const datasetKey = personAtFetch === 'trainer' ? 'tstats' : 'jstats';
                 const nameKey = personAtFetch === 'trainer' ? 'trainer' : 'jockey';
 
@@ -3034,7 +2985,7 @@
                         const name = (sel.dataset[nameKey] || "").trim();
                         if (!name) return;
 
-                        const s = findPersonStats(statsMap, name, personAtFetch, totalsMap) || [0,0,0,0];
+                        const s = findPersonStats(statsMap, name, personAtFetch) || [0,0,0,0];
                         sel.dataset[datasetKey] = `(${s[0]}-${s[1]}-${s[2]}-${s[3]})`;
                     });
                 }
