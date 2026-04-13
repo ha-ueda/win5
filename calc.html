@@ -462,6 +462,10 @@
             border-radius: 1em;
         }
 
+        .person-stats.hot {
+            background-color: #fff080;
+        }
+
         .col-odds {
             width: 67px;
             font-feature-settings: "tnum" 1;
@@ -3019,6 +3023,14 @@
             if (e.key === "Escape" && statsModal.style.display === "flex") closeStatsModal();
         });
 
+        function isHotPerson(stats) {
+            const m = /\((\d+)-(\d+)-(\d+)-(\d+)\)/.exec(stats || "");
+            if (!m) return false;
+            const w = +m[1], runs = +m[1] + +m[2] + +m[3] + +m[4];
+            if (runs === 0) return false;
+            return w / runs >= 0.05;
+        }
+
         function applyPersonDisplay() {
             document.querySelectorAll('.custom-select').forEach(sel => {
                 const nameEl = sel.querySelector('.person-name');
@@ -3028,6 +3040,7 @@
                 const stats = (currentPerson === 'trainer' ? sel.dataset.tstats : sel.dataset.jstats) || "";
                 nameEl.textContent = name;
                 statsEl.textContent = stats;
+                statsEl.classList.toggle('hot', isHotPerson(stats));
             });
         }
 
