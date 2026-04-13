@@ -298,6 +298,37 @@
             padding: 8px 6px;
         }
 
+        .hot-threshold-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #333;
+            flex: 1 1 0;
+        }
+
+
+        .hot-threshold-row {
+            justify-content: space-between;
+        }
+
+        .hot-threshold-row.is-disabled .hot-threshold-label {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        #hotEnableBtn {
+            flex: 1 1 0;
+            min-height: 36px;
+        }
+
+        #hotEnableBtn.on {
+            background: #3251BC;
+            color: #fff;
+            box-shadow: inset 0 0 0 1px #3251BC;
+        }
+
 
         .shutuba-wrap {
             width: 100%;
@@ -462,8 +493,9 @@
             border-radius: 1em;
         }
 
-        .person-stats.hot {
-            background-color: #fff080;
+        .person-name.hot {
+            color: #c62828;
+            font-weight: 700;
         }
 
         .col-odds {
@@ -656,7 +688,8 @@
         }
 
         #minFav,
-        #minPayout {
+        #minPayout,
+        #hotThresholdSelect {
             font-size: 16px;
             border: 1px solid #cfcfcf;
             height: 44px;
@@ -674,7 +707,8 @@
             background-image: none;
         }
 
-        #minFav option {
+        #minFav option,
+        #hotThresholdSelect option {
             text-align: center;
         }
 
@@ -684,14 +718,17 @@
             margin: 0;
         }
 
-        #minFav::-ms-expand {
+        #minFav::-ms-expand,
+        #hotThresholdSelect::-ms-expand {
             display: none;
         }
 
         #minFav:focus,
         #minFav:focus-visible,
         #minPayout:focus,
-        #minPayout:focus-visible {
+        #minPayout:focus-visible,
+        #hotThresholdSelect:focus,
+        #hotThresholdSelect:focus-visible {
             outline: none;
             box-shadow: none;
             border-color: #cfcfcf;
@@ -1085,14 +1122,12 @@
                 <button class="modal-close-btn" onclick="closeStatsModal()" aria-label="閉じる">&times;</button>
             </div>
             <div class="stats-modal-row">
-                <span class="stats-modal-heading">対象</span>
                 <div id="personToggle" class="sort-switch">
                     <span class="sort-option active" data-key="jockey">騎手</span>
                     <span class="sort-option" data-key="trainer">調教師</span>
                 </div>
             </div>
             <div class="stats-modal-row">
-                <span class="stats-modal-heading">集計</span>
                 <div id="statsToggle" class="sort-switch">
                     <span class="sort-option" data-key="win5">WIN5</span>
                     <span class="sort-option active" data-key="venue">競馬場</span>
@@ -1101,11 +1136,24 @@
                 </div>
             </div>
             <div class="stats-modal-row">
-                <span class="stats-modal-heading">期間</span>
                 <div id="yearsToggle" class="sort-switch">
                     <span class="sort-option" data-key="1">1年</span>
                     <span class="sort-option active" data-key="3">3年</span>
                 </div>
+            </div>
+            <div class="stats-modal-row hot-threshold-row">
+                <button id="hotEnableBtn" class="race-clear on" type="button">色付け</button>
+                <span class="hot-threshold-label">勝率
+                    <select id="hotThresholdSelect">
+                        <option value="3">3</option>
+                        <option value="5" selected>5</option>
+                        <option value="7">7</option>
+                        <option value="10">10</option>
+                        <option value="15">15</option>
+                        <option value="20">20</option>
+                    </select>
+                    % 以上
+                </span>
             </div>
         </div>
     </div>
@@ -1638,6 +1686,8 @@
                 statsMode: currentStatsMode,
                 statsYears: currentStatsYears,
                 person: currentPerson,
+                hotEnabled: hotEnabled,
+                hotThresholdPct: hotThresholdPct,
                 minFav: document.getElementById('minFav').value,
                 minPayout: document.getElementById('minPayout').value,
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
@@ -1720,6 +1770,11 @@
                     currentPerson = state.person === 'trainer' ? 'trainer' : 'jockey';
                     allPersonOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentPerson));
                 }
+                if (typeof state.hotEnabled === 'boolean') hotEnabled = state.hotEnabled;
+                if (Number.isFinite(state.hotThresholdPct)) {
+                    hotThresholdPct = Math.min(100, Math.max(0, state.hotThresholdPct));
+                }
+                syncHotUi();
 
                 for (let r = 1; r <= TOTAL_RACES; r++) {
                     const race = state.races?.[`r${r}`];
@@ -2983,9 +3038,14 @@
         let currentStatsMode = 'venue';
         let currentStatsYears = '3';
         let currentPerson = 'jockey';
+        let hotEnabled = true;
+        let hotThresholdPct = 5;
         const statsToggleEl = document.getElementById("statsToggle");
         const yearsToggleEl = document.getElementById("yearsToggle");
         const personToggleEl = document.getElementById("personToggle");
+        const hotEnableBtnEl = document.getElementById("hotEnableBtn");
+        const hotThresholdSelectEl = document.getElementById("hotThresholdSelect");
+        const hotThresholdRowEl = document.querySelector(".hot-threshold-row");
         const statsPopBtn = document.getElementById("statsPopBtn");
         const statsModal = document.getElementById("statsModal");
         const statsPopLabel = document.getElementById("statsPopLabel");
@@ -3024,11 +3084,18 @@
         });
 
         function isHotPerson(stats) {
+            if (!hotEnabled) return false;
             const m = /\((\d+)-(\d+)-(\d+)-(\d+)\)/.exec(stats || "");
             if (!m) return false;
             const w = +m[1], runs = +m[1] + +m[2] + +m[3] + +m[4];
             if (runs === 0) return false;
-            return w / runs >= 0.05;
+            return w / runs >= hotThresholdPct / 100;
+        }
+
+        function syncHotUi() {
+            if (hotEnableBtnEl) hotEnableBtnEl.classList.toggle('on', hotEnabled);
+            if (hotThresholdRowEl) hotThresholdRowEl.classList.toggle('is-disabled', !hotEnabled);
+            if (hotThresholdSelectEl) hotThresholdSelectEl.value = String(hotThresholdPct);
         }
 
         function applyPersonDisplay() {
@@ -3040,7 +3107,7 @@
                 const stats = (currentPerson === 'trainer' ? sel.dataset.tstats : sel.dataset.jstats) || "";
                 nameEl.textContent = name;
                 statsEl.textContent = stats;
-                statsEl.classList.toggle('hot', isHotPerson(stats));
+                nameEl.classList.toggle('hot', isHotPerson(stats));
             });
         }
 
@@ -3090,6 +3157,21 @@
             const opt = e.target.closest(".sort-option");
             if (!opt || opt.dataset.key === currentPerson) return;
             syncPersonToggle(opt.dataset.key);
+        });
+
+        hotEnableBtnEl.addEventListener("click", () => {
+            hotEnabled = !hotEnabled;
+            syncHotUi();
+            applyPersonDisplay();
+            saveState();
+        });
+
+        hotThresholdSelectEl.addEventListener("change", () => {
+            const next = Number(hotThresholdSelectEl.value);
+            if (!Number.isFinite(next)) return;
+            hotThresholdPct = next;
+            applyPersonDisplay();
+            saveState();
         });
 
         async function fetchAndApplyJockeyStats() {
@@ -3161,6 +3243,7 @@
         applyRaceFocus(isMobileLayout() ? "1" : "all");
         initMobileSwipe();
         restoreState();
+        syncHotUi();
         updateStatsPopLabel();
         applyShareFromURL();
         loadWin5Tabs();
