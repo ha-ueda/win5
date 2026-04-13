@@ -459,7 +459,7 @@
             flex: 0 0 auto;
         }
 
-        .jockey-name {
+        .person-name {
             color: rgb(0, 51, 170);
             font-size: 13px;
             padding: 0px 5px;
@@ -505,7 +505,7 @@
             text-align: center;
         }
 
-        .jockey-stats {
+        .person-stats {
             font-size: 13px;
             color: #888;
             font-weight: normal;
@@ -1285,7 +1285,7 @@
         }
 
         function applyBg(rowEl, bg) {
-            const el = rowEl?.querySelector(".jockey-name");
+            const el = rowEl?.querySelector(".person-name");
             if (!el) return;
             if (bg && bg !== "none") el.style.backgroundColor = bg;
             else el.style.backgroundColor = "";
@@ -1428,11 +1428,11 @@
             const jWrap = document.createElement("span");
             jWrap.className = "jockey-wrap";
             const jName = document.createElement("span");
-            jName.className = "jockey-name";
+            jName.className = "person-name";
             jName.textContent = "";
             jWrap.appendChild(jName);
             const jStats = document.createElement("span");
-            jStats.className = "jockey-stats";
+            jStats.className = "person-stats";
             jStats.textContent = "";
             jWrap.appendChild(jStats);
 
@@ -2205,10 +2205,10 @@
         function applyWin5Data(json) {
             window.raceInfo = json.raceInfo || [];
             window.raceTimes = json.raceTimes || ((json.races || []).map(r => (r && r.startTime) ? String(r.startTime) : ""));
-            window.raceCourses = json.raceCourses || ((json.races || []).map(r => (r && (r.courseInfo || r.course || r.courseText)) ? String(r.courseInfo || r.course || r.courseText) : ""));
+            window.raceCourses = json.raceCourses || ((json.races || []).map(r => (r && r.courseInfo) ? String(r.courseInfo) : ""));
             updateRaceHeaders(window.raceInfo);
 
-            document.querySelectorAll('.jockey-stats').forEach(el => { el.textContent = ""; });
+            document.querySelectorAll('.person-stats').forEach(el => { el.textContent = ""; });
             document.querySelectorAll('.custom-select').forEach(sel => {
                 sel.dataset.jstats = "";
                 sel.dataset.tstats = "";
@@ -2222,7 +2222,6 @@
                 const trainers = (races[r] && races[r].trainers) ? races[r].trainers : [];
                 const oddsArr = (races[r] && races[r].odds) ? races[r].odds : [];
                 const ninkiArr = (races[r] && races[r].ninki) ? races[r].ninki : [];
-                const wakubans = (races[r] && races[r].wakubans) ? races[r].wakubans : [];
                 const wakuClasses = (races[r] && races[r].wakuClasses) ? races[r].wakuClasses : [];
                 const umabans = (races[r] && races[r].umabans) ? races[r].umabans : [];
 
@@ -2236,7 +2235,7 @@
                     const odds = oddsArr[i - 1];
                     const ninki = ninkiArr[i - 1];
                     const wakuClass = wakuClasses[i - 1] || "";
-                    const waku = wakuClass || (wakubans[i - 1] || "");
+                    const waku = wakuClass || "";
                     const umaban = umabans[i - 1] || String(i);
 
                     const sel = document.querySelector(`.custom-select[data-race="${raceNum}"][data-horse="${horseNum}"]`);
@@ -2809,29 +2808,20 @@
             return String(courseInfoText || "").replace(/m$/, "").trim();
         }
 
-        function stripJockeyInitials(s) {
-            return s.replace(/^[Ａ-Ｚａ-ｚA-Za-z]+[．.・]\s*/g, '');
-        }
-
-        function findPersonStats(statsMap, personName, person) {
-            // seed (scripts/rebuild-seed.js) も cron (worker.js) も同じ netkeiba 結果ページから
-            // 名前を取得しているので、基本は完全一致で済む。外国人騎手の頭文字 (例: "C.ルメール")
-            // が付いたり外れたりする稀なケースだけ救済する。
-
+        function findPersonStats(statsMap, personName) {
+            // seed / cron は netkeiba の結果ページ表記で統一されているが、現レース card の
+            // データソースは shutuba ページで、外国人騎手だけ文字数が違うことがある
+            // (例: result 「ルメー」3 文字 / shutuba 「ルメール」4 文字)。
+            // そのため完全一致の後、shutuba 側が結果ページキーより長い場合の前方一致を救う。
+            // 日本人騎手は両ページとも同じ 3 文字表記なので exact で即返す。
             const name = personName.replace(/\s+/g, '');
-
             if (statsMap[name]) return statsMap[name];
             if (statsMap[personName]) return statsMap[personName];
 
-            if (person === 'jockey') {
-                const stripped = stripJockeyInitials(name);
-                for (const [key, val] of Object.entries(statsMap)) {
-                    const k = key.replace(/\s+/g, '');
-                    const ks = stripJockeyInitials(k);
-                    if (k === stripped || ks === name || ks === stripped) return val;
-                }
+            for (const [key, val] of Object.entries(statsMap)) {
+                const k = key.replace(/\s+/g, '');
+                if (k && name.length > k.length && name.startsWith(k)) return val;
             }
-
             return null;
         }
 
@@ -2880,8 +2870,8 @@
 
         function applyPersonDisplay() {
             document.querySelectorAll('.custom-select').forEach(sel => {
-                const nameEl = sel.querySelector('.jockey-name');
-                const statsEl = sel.querySelector('.jockey-stats');
+                const nameEl = sel.querySelector('.person-name');
+                const statsEl = sel.querySelector('.person-stats');
                 if (!nameEl || !statsEl) return;
                 const name = (currentPerson === 'trainer' ? sel.dataset.trainer : sel.dataset.jockey) || "";
                 const stats = (currentPerson === 'trainer' ? sel.dataset.tstats : sel.dataset.jstats) || "";
@@ -2890,18 +2880,25 @@
             });
         }
 
+        // toggle から fetchAndApplyJockeyStats を起動する際の共通ラッパ。
+        // UI 応答性のため await はせず fire-and-forget だが、エラーは握り潰さずログに出す。
+        function kickStatsFetch() {
+            if (!hasExistingData()) return;
+            fetchAndApplyJockeyStats().catch(e => console.warn("fetchAndApplyJockeyStats:", e));
+        }
+
         function syncStatsToggle(key) {
             currentStatsMode = key;
             allStatsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsMode));
             updateStatsPopLabel();
-            if (hasExistingData()) fetchAndApplyJockeyStats();
+            kickStatsFetch();
         }
 
         function syncYearsToggle(key) {
             currentStatsYears = key;
             allYearsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsYears));
             updateStatsPopLabel();
-            if (hasExistingData()) fetchAndApplyJockeyStats();
+            kickStatsFetch();
         }
 
         function syncPersonToggle(key) {
@@ -2909,7 +2906,7 @@
             allPersonOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentPerson));
             updateStatsPopLabel();
             applyPersonDisplay();
-            if (hasExistingData()) fetchAndApplyJockeyStats();
+            kickStatsFetch();
             saveState();
         }
 
@@ -2962,7 +2959,7 @@
             if (validKeys.length === 0) return;
 
             try {
-                const u = new URL("jockey-stats", WIN5_API);
+                const u = new URL("stats", WIN5_API);
                 u.searchParams.set("mode", mode);
                 u.searchParams.set("years", currentStatsYears);
                 u.searchParams.set("person", personAtFetch);
@@ -2985,7 +2982,7 @@
                         const name = (sel.dataset[nameKey] || "").trim();
                         if (!name) return;
 
-                        const s = findPersonStats(statsMap, name, personAtFetch) || [0,0,0,0];
+                        const s = findPersonStats(statsMap, name) || [0,0,0,0];
                         sel.dataset[datasetKey] = `(${s[0]}-${s[1]}-${s[2]}-${s[3]})`;
                     });
                 }
