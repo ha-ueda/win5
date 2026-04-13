@@ -513,7 +513,7 @@
 
         .combo-grid {
             display: grid;
-            grid-template-columns: 32px repeat(5, max-content) max-content;
+            grid-template-columns: 32px repeat(5, max-content) max-content max-content max-content max-content;
             column-gap: 0;
             row-gap: 2px;
             padding: 4px 0;
@@ -545,6 +545,39 @@
             padding: 0 12px 0 8px;
             font-size: 16px;
             color: #7a7a7a;
+        }
+
+        .combo-payout-lo,
+        .combo-payout-sep,
+        .combo-payout-hi {
+            min-height: 32px;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            font-size: 16px;
+            color: #7a7a7a;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .combo-payout-lo {
+            justify-content: flex-end;
+            padding: 0 0 0 8px;
+        }
+
+        .combo-payout-sep {
+            justify-content: center;
+            padding: 0 6px;
+        }
+
+        .combo-payout-hi {
+            justify-content: flex-end;
+            padding: 0 12px 0 0;
+        }
+
+        .combo-row.checked .combo-payout-lo,
+        .combo-row.checked .combo-payout-sep,
+        .combo-row.checked .combo-payout-hi {
+            background-color: #fff0f0;
         }
 
         .combo-check-wrap {
@@ -1961,8 +1994,13 @@
             }
 
             const displayBlocks = fullyMergeBlocksStableBit(blocks);
+            const supportRates = buildRaceSupportRates();
+            const sales = window.win5Sales || null;
             comboList.push('<div class="combo-grid">');
-            for (const b of displayBlocks) comboList.push(blockToLineBit(b));
+            for (const b of displayBlocks) {
+                const range = computeBlockPayoutRange(b, supportRates, sales);
+                comboList.push(blockToLineBit(b, range));
+            }
             comboList.push('</div>');
 
             total = count;
@@ -2115,7 +2153,83 @@
             return blocks;
         }
 
-        function blockToLineBit(block) {
+        function buildRaceSupportRates() {
+            const result = Array.from({ length: TOTAL_RACES }, () => new Array(HORSE_MAX).fill(0));
+            for (let r = 0; r < TOTAL_RACES; r++) {
+                const inv = new Array(HORSE_MAX).fill(0);
+                let sum = 0;
+                for (let h = 1; h <= HORSE_MAX; h++) {
+                    const sel = document.querySelector(`.custom-select[data-race="${r + 1}"][data-horse="${h}"]`);
+                    if (!sel) continue;
+                    const o = parseFloat((sel.dataset.odds || "").trim());
+                    if (!Number.isFinite(o) || o <= 0) continue;
+                    inv[h - 1] = 1 / o;
+                    sum += inv[h - 1];
+                }
+                if (sum > 0) {
+                    for (let i = 0; i < HORSE_MAX; i++) result[r][i] = inv[i] / sum;
+                }
+            }
+            return result;
+        }
+
+        function virtualPayout(productS, sales) {
+            if (!productS || productS <= 0) return null;
+            const tickets = Number(sales?.tickets) || 0;
+            const amount = Number(sales?.amount) || 0;
+            const carry = Number(sales?.carryOver) || 0;
+            let p;
+            if (tickets > 0 && amount > 0) {
+                const pool = amount * 0.7 + carry;
+                const hits = tickets * productS;
+                p = hits < 1 ? pool : pool / hits;
+            } else {
+                p = 70 / productS;
+            }
+            return Math.min(p, 600000000);
+        }
+
+        function computeBlockPayoutRange(block, supportRates, sales) {
+            let maxProd = 1;
+            let minProd = 1;
+            for (let r = 0; r < TOTAL_RACES; r++) {
+                const mask = block[r] >>> 0;
+                let maxS = 0;
+                let minS = Infinity;
+                for (let i = 0; i < HORSE_MAX; i++) {
+                    if (!(mask & (1 << i))) continue;
+                    const s = supportRates[r][i];
+                    if (!(s > 0)) continue;
+                    if (s > maxS) maxS = s;
+                    if (s < minS) minS = s;
+                }
+                if (maxS <= 0) return null;
+                maxProd *= maxS;
+                minProd *= (minS === Infinity ? maxS : minS);
+            }
+            return {
+                minPayout: virtualPayout(maxProd, sales),
+                maxPayout: virtualPayout(minProd, sales),
+            };
+        }
+
+        function formatPayoutCells(range) {
+            if (!range || range.minPayout == null || range.maxPayout == null) {
+                return { lo: "", sep: "", hi: "" };
+            }
+            const lo = Math.round(range.minPayout);
+            const hi = Math.round(range.maxPayout);
+            if (lo === hi) {
+                return { lo: `${lo.toLocaleString()}円`, sep: "", hi: "" };
+            }
+            return {
+                lo: `${lo.toLocaleString()}円`,
+                sep: "〜",
+                hi: `${hi.toLocaleString()}円`,
+            };
+        }
+
+        function blockToLineBit(block, payoutRange) {
             const bitCount = (m) => {
                 let x = (m >>> 0);
                 let c = 0;
@@ -2140,6 +2254,7 @@
                 return nums.join('');
             });
             const cells = parts.map(p => `<span class="combo-cell">${p}</span>`).join('');
+            const payout = formatPayoutCells(payoutRange);
             return (
                 '<div class="combo-row">' +
                 '<label class="combo-check-wrap">' +
@@ -2148,6 +2263,9 @@
                 '</label>' +
                 cells +
                 `<span class="combo-count">${countLabel}組</span>` +
+                `<span class="combo-payout-lo">${payout.lo}</span>` +
+                `<span class="combo-payout-sep">${payout.sep}</span>` +
+                `<span class="combo-payout-hi">${payout.hi}</span>` +
                 '</div>'
             );
         }
@@ -2200,6 +2318,7 @@
             window.raceInfo = json.raceInfo || [];
             window.raceTimes = json.raceTimes || ((json.races || []).map(r => (r && r.startTime) ? String(r.startTime) : ""));
             window.raceCourses = json.raceCourses || ((json.races || []).map(r => (r && r.courseInfo) ? String(r.courseInfo) : ""));
+            window.win5Sales = json.sales || null;
             updateRaceHeaders(window.raceInfo);
 
             document.querySelectorAll('.person-stats').forEach(el => { el.textContent = ""; });
