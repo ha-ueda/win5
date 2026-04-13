@@ -651,11 +651,13 @@
             width: 100%;
         }
 
-        #minFav {
+        #minFav,
+        #minPayout {
             font-size: 16px;
             border: 1px solid #cfcfcf;
             height: 44px;
-            padding: 0 20px;
+            width: 60px;
+            padding: 0 10px;
             border-radius: 6px;
             background-color: #fff;
             color: #222;
@@ -667,12 +669,20 @@
             background-image: none;
         }
 
+        #minPayout::-webkit-outer-spin-button,
+        #minPayout::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
         #minFav::-ms-expand {
             display: none;
         }
 
         #minFav:focus,
-        #minFav:focus-visible {
+        #minFav:focus-visible,
+        #minPayout:focus,
+        #minPayout:focus-visible {
             outline: none;
             box-shadow: none;
             border-color: #cfcfcf;
@@ -680,18 +690,24 @@
 
         .fav-calc-row {
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             justify-content: space-between;
             gap: 10px;
             width: 100%;
-            margin-top: 10px;
         }
 
         .fav-calc-left {
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            align-items: flex-start;
             gap: 8px;
             font-size: 20px;
+        }
+
+        .fav-calc-left-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .fav-calc-row .calc-btn {
@@ -1009,15 +1025,22 @@
 
     <div class="fav-calc-row">
         <div class="fav-calc-left">
-            <span class="fav-label">本命</span>
-            <select id="minFav">
-                <option value="1" selected>1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-            </select>
-            <span class="fav-suffix">勝</span>
+            <div class="fav-calc-left-row">
+                <span class="fav-label">本命</span>
+                <select id="minFav">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+                <span class="fav-suffix">勝</span>
+            </div>
+            <div class="fav-calc-left-row">
+                <span class="fav-label">最低</span>
+                <input id="minPayout" type="number" inputmode="numeric" min="0" step="10" value="0">
+                <span class="fav-suffix">万</span>
+            </div>
         </div>
         <button class="calc-btn" onclick="calc()">計算</button>
     </div>
@@ -1607,6 +1630,7 @@
                 statsYears: currentStatsYears,
                 person: currentPerson,
                 minFav: document.getElementById('minFav').value,
+                minPayout: document.getElementById('minPayout').value,
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
                 raceCourses: window.raceCourses || ["", "", "", "", ""],
@@ -1674,6 +1698,7 @@
                 updateRaceHeaders(window.raceInfo || ["", "", "", "", ""]);
 
                 if (state.minFav) document.getElementById('minFav').value = state.minFav;
+                if (state.minPayout != null) document.getElementById('minPayout').value = state.minPayout;
                 if (state.statsMode) {
                     currentStatsMode = state.statsMode;
                     allStatsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsMode));
@@ -1965,12 +1990,14 @@
             }
 
             const minFav = Number(document.getElementById('minFav').value);
+            const minPayoutYen = (Number(document.getElementById('minPayout').value) || 0) * 10000;
+            const supportRates = buildRaceSupportRates();
+            const sales = window.win5Sales || null;
             let total = 0;
             const comboList = [];
 
             const k = minFav;
             const masks = getMasks(k);
-            let count = 0;
             let blocks = [];
 
             for (let m = 0; m < masks.length; m++) {
@@ -1986,16 +2013,22 @@
                 if (!valid) continue;
 
                 const res = countCombosDFS(candidates);
-                count += res.count;
 
                 for (let i = 0; i < res.blocks.length; i++) {
                     blocks.push(res.blocks[i]);
                 }
             }
 
+            if (minPayoutYen > 0) {
+                blocks = blocks.filter(b => {
+                    const range = computeBlockPayoutRange(b, supportRates, sales);
+                    if (!range || range.minPayout == null) return true;
+                    return range.minPayout >= minPayoutYen;
+                });
+            }
+
+            const count = blocks.length;
             const displayBlocks = fullyMergeBlocksStableBit(blocks);
-            const supportRates = buildRaceSupportRates();
-            const sales = window.win5Sales || null;
             comboList.push('<div class="combo-grid">');
             for (const b of displayBlocks) {
                 const range = computeBlockPayoutRange(b, supportRates, sales);
