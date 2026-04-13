@@ -240,6 +240,69 @@
             position: relative;
         }
 
+        .stats-pop-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border: none;
+            box-shadow: inset 0 0 0 1px #d0d0d0;
+            background: #f7f7f7;
+            color: #333;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 400;
+            min-height: 36px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        .stats-pop-btn:hover {
+            background: #eef;
+        }
+
+        .stats-pop-label-lead {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .stats-pop-arrow {
+            font-size: 9px;
+            opacity: 0.7;
+        }
+
+        .stats-modal-card {
+            width: min(420px, 100%);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .stats-modal-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats-modal-row > .stats-modal-heading {
+            flex: 0 0 44px;
+            font-size: 13px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .stats-modal-row > .sort-switch {
+            flex: 1 1 0;
+        }
+
+        .stats-modal-row > .sort-switch .sort-option {
+            flex: 1 1 0;
+            width: auto;
+            min-width: 0;
+            padding: 8px 6px;
+        }
+
 
         .shutuba-wrap {
             width: 100%;
@@ -830,8 +893,10 @@
                 display: none !important;
             }
 
-            #statsToggle, #yearsToggle {
-                display: none !important;
+            .stats-pop-btn {
+                flex: 1 1 0;
+                width: auto;
+                justify-content: center;
             }
 
             .toggle-row-sp-2 {
@@ -839,29 +904,6 @@
                 width: 100%;
                 position: relative;
                 z-index: 1;
-            }
-
-            .toggle-row-sp-2 .sort-switch {
-                flex: 1 1 0;
-                min-width: 0;
-            }
-
-            .toggle-row-sp-2 .sort-switch[id^="yearsToggle"] {
-                flex: 0 0 35%;
-            }
-
-            .toggle-row-sp-2 .sort-option {
-                flex: 1 1 0;
-                min-width: 0;
-                padding: 8px 6px;
-                font-size: 13px;
-                min-height: 38px;
-                justify-content: center;
-            }
-
-            .toggle-row-sp-2 .sort-switch[id^="yearsToggle"] .sort-option {
-                flex: 1 1 0;
-                padding: 8px 6px;
             }
 
             .toggle-row-sp-2 .race-clear {
@@ -920,35 +962,14 @@
                 <span class="sort-option active" data-key="no">馬番順</span>
                 <span class="sort-option" data-key="odds">オッズ順</span>
             </div>
-            <div id="personToggle" class="sort-switch">
-                <span class="sort-option active" data-key="jockey">騎手</span>
-                <span class="sort-option" data-key="trainer">調教師</span>
-            </div>
-            <div id="statsToggle" class="sort-switch">
-                <span class="sort-option" data-key="win5">WIN5</span>
-                <span class="sort-option active" data-key="venue">競馬場</span>
-                <span class="sort-option" data-key="distance">距離</span>
-                <span class="sort-option" data-key="course">コース</span>
-            </div>
-            <div id="yearsToggle" class="sort-switch">
-                <span class="sort-option" data-key="1">1年</span>
-                <span class="sort-option active" data-key="3">3年</span>
-            </div>
+            <button id="statsPopBtn" class="stats-pop-btn" type="button" aria-haspopup="dialog" aria-controls="statsModal">
+                <span class="stats-pop-label-lead">成績</span>
+                <span id="statsPopLabel">騎手・競馬場・3年</span>
+                <span class="stats-pop-arrow">▼</span>
+            </button>
             <button id="modeToggle" class="race-clear clear-pc" type="button">背景選択</button>
             <button id="bgClearAllBtn" class="race-clear clear-pc" type="button">色クリア</button>
             <button class="race-clear clear-pc" type="button" onclick="if(confirm('印をすべてクリアしますか？'))clearAllMarks()">印クリア</button>
-        </div>
-        <div class="toggle-row toggle-row-sp-2">
-            <div id="statsToggleSp" class="sort-switch">
-                <span class="sort-option" data-key="win5">WIN5</span>
-                <span class="sort-option active" data-key="venue">競馬場</span>
-                <span class="sort-option" data-key="distance">距離</span>
-                <span class="sort-option" data-key="course">コース</span>
-            </div>
-            <div id="yearsToggleSp" class="sort-switch">
-                <span class="sort-option" data-key="1">1年</span>
-                <span class="sort-option active" data-key="3">3年</span>
-            </div>
         </div>
         <div class="toggle-row toggle-row-sp-2">
             <button id="modeToggleSp" class="race-clear" type="button">背景選択</button>
@@ -994,6 +1015,38 @@
             <div class="share-bottom-actions">
                 <button onclick="copyShareUrl()">コピー</button>
                 <button onclick="importShareText()">読み込み</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="statsModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="成績表示設定">
+        <div class="modal-card stats-modal-card" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">成績表示設定</div>
+                <button class="modal-close-btn" onclick="closeStatsModal()" aria-label="閉じる">&times;</button>
+            </div>
+            <div class="stats-modal-row">
+                <span class="stats-modal-heading">対象</span>
+                <div id="personToggle" class="sort-switch">
+                    <span class="sort-option active" data-key="jockey">騎手</span>
+                    <span class="sort-option" data-key="trainer">調教師</span>
+                </div>
+            </div>
+            <div class="stats-modal-row">
+                <span class="stats-modal-heading">集計</span>
+                <div id="statsToggle" class="sort-switch">
+                    <span class="sort-option" data-key="win5">WIN5</span>
+                    <span class="sort-option active" data-key="venue">競馬場</span>
+                    <span class="sort-option" data-key="distance">距離</span>
+                    <span class="sort-option" data-key="course">コース</span>
+                </div>
+            </div>
+            <div class="stats-modal-row">
+                <span class="stats-modal-heading">期間</span>
+                <div id="yearsToggle" class="sort-switch">
+                    <span class="sort-option" data-key="1">1年</span>
+                    <span class="sort-option active" data-key="3">3年</span>
+                </div>
             </div>
         </div>
     </div>
@@ -1617,7 +1670,6 @@
 
                         const box = sel.querySelector('.selected');
                         const nameEl = sel.querySelector('.horse-name');
-                        const jEl = sel.querySelector('.jockey-name');
                         const oEl = sel.querySelector('.odds-top');
                         const pEl = sel.querySelector('.odds-bottom');
                         const noEl = sel.querySelector('td.col-no');
@@ -1636,7 +1688,6 @@
                         if (name === null) {
                             sel.classList.add("is-empty");
                             if (nameEl) nameEl.textContent = "";
-                            if (jEl) jEl.textContent = "";
                             if (oEl) {
                                 oEl.textContent = "";
                                 setOddsHot(oEl, "");
@@ -1679,6 +1730,10 @@
                     });
                 }
                 applyPersonDisplay();
+                // 復元直後のDOM状態を lastState に反映しておく。
+                // これをしないと次の saveState で必ず書き込みが走り、
+                // 別タブが行った最新の変更を上書きしてしまう可能性がある。
+                lastState = data;
             } catch (e) {
                 console.warn("restoreState: 保存データの復元に失敗しました", e);
             }
@@ -1702,16 +1757,12 @@
                 sel.classList.remove("is-empty");
 
                 const nameEl = sel.querySelector('.horse-name');
-                const jEl = sel.querySelector('.jockey-name');
                 const oEl = sel.querySelector('.odds-top');
                 const pEl = sel.querySelector('.odds-bottom');
                 const noEl = sel.querySelector('td.col-no');
                 const box = sel.querySelector('.selected');
 
                 if (nameEl) nameEl.textContent = "";
-                if (jEl) jEl.textContent = "";
-                const jsEl = sel.querySelector('.jockey-stats');
-                if (jsEl) jsEl.textContent = "";
                 if (oEl) {
                     oEl.textContent = "";
                     setOddsHot(oEl, "");
@@ -1734,6 +1785,7 @@
                 applyMarkBackground(sel, false);
                 applyBg(sel, "none");
             });
+            applyPersonDisplay();
 
             window.raceInfo = ["", "", "", "", ""];
             window.raceTimes = ["", "", "", "", ""];
@@ -2191,7 +2243,6 @@
                     if (!sel) continue;
 
                     const nameEl = sel.querySelector(".horse-name");
-                    const jEl = sel.querySelector(".jockey-name");
                     const oEl = sel.querySelector(".odds-top");
                     const pEl = sel.querySelector(".odds-bottom");
                     const noEl = sel.querySelector("td.col-no");
@@ -2220,7 +2271,6 @@
                         sel.classList.add("is-empty");
 
                         if (nameEl) nameEl.textContent = "";
-                        if (jEl) jEl.textContent = "";
                         if (oEl) {
                             oEl.textContent = "";
                             setOddsHot(oEl, "");
@@ -2763,20 +2813,73 @@
             return s.replace(/^[Ａ-Ｚａ-ｚA-Za-z]+[．.・]\s*/g, '');
         }
 
-        function findJockeyStats(statsMap, jockeyName) {
-            const name = jockeyName.replace(/\s+/g, '');
-            if (statsMap[name]) return statsMap[name];
-            if (statsMap[jockeyName]) return statsMap[jockeyName];
+        function findPersonStats(statsMap, personName, person, totalsMap) {
+            // CSV シードは騎手/調教師をフルネーム (例「坂井瑠星」) で保存しているが、
+            // cron (parseResultJockeys) は netkeiba の結果ページから短縮姓 (例「坂井」) を取るため、
+            // 同一人物が異なるキーとして statsMap に並存しうる。
+            //
+            // ここでは出馬表から渡される短縮姓を受けて:
+            //   1) 完全一致したキーの統計を取得
+            //   2) 前方一致する他キー候補 (「坂井瑠星」) の中で最も活動量の多いものを選ぶ
+            //   3) 両方存在すれば同一人物と見なして合算
+            // これにより CSV シードと cron 追加分が分裂していても合計値が得られる。
+            //
+            // 完全一致が無い場合 (最初期の調教師問題のように、出馬表「堀」と CSV 「堀宣行」のみ)
+            // は前方一致のベストだけを返す。複数の前方一致候補があるときは totalsMap で曖昧解決。
 
-            const stripped = stripJockeyInitials(name);
+            const name = personName.replace(/\s+/g, '');
 
+            // 1. 完全一致 (空白正規化あり/なし両方試す)
+            const exactKey = statsMap[name] ? name : (statsMap[personName] ? personName : null);
+            const exactVal = exactKey ? statsMap[exactKey] : null;
+
+            // 2. 前方一致候補 (exactKey は除く) を収集
+            const prefixCandidates = [];
             for (const [key, val] of Object.entries(statsMap)) {
+                if (key === exactKey) continue;
                 const k = key.replace(/\s+/g, '');
-                const ks = stripJockeyInitials(k);
-                if (k.startsWith(name) || name.startsWith(k)) return val;
-                if (stripped && (ks.startsWith(stripped) || stripped.startsWith(ks))) return val;
-                if (stripped && (k.startsWith(stripped) || stripped.startsWith(k))) return val;
+                if (k.startsWith(name) || name.startsWith(k)) {
+                    prefixCandidates.push({ key, val });
+                }
             }
+
+            // 騎手専用: 頭文字 (C.ルメール など) を除去した形での前方一致も救う
+            if (person === 'jockey') {
+                const stripped = stripJockeyInitials(name);
+                if (stripped) {
+                    for (const [key, val] of Object.entries(statsMap)) {
+                        if (key === exactKey || prefixCandidates.some(c => c.key === key)) continue;
+                        const k = key.replace(/\s+/g, '');
+                        const ks = stripJockeyInitials(k);
+                        if ((ks.startsWith(stripped) || stripped.startsWith(ks)) ||
+                            (k.startsWith(stripped) || stripped.startsWith(k))) {
+                            prefixCandidates.push({ key, val });
+                        }
+                    }
+                }
+            }
+
+            // 3. 前方一致候補から最も活動量の多いものを選ぶ (totalsMap 優先)
+            let bestPrefix = null;
+            if (prefixCandidates.length > 0) {
+                const scoreOf = (c) => (totalsMap && totalsMap[c.key]) ?? (c.val[0] + c.val[1] + c.val[2] + c.val[3]);
+                bestPrefix = prefixCandidates[0];
+                for (const c of prefixCandidates.slice(1)) {
+                    if (scoreOf(c) > scoreOf(bestPrefix)) bestPrefix = c;
+                }
+            }
+
+            // 4. 完全一致と前方一致ベストがあれば合算 (同一人物と仮定)
+            if (exactVal && bestPrefix) {
+                return [
+                    exactVal[0] + bestPrefix.val[0],
+                    exactVal[1] + bestPrefix.val[1],
+                    exactVal[2] + bestPrefix.val[2],
+                    exactVal[3] + bestPrefix.val[3],
+                ];
+            }
+            if (exactVal) return exactVal;
+            if (bestPrefix) return bestPrefix.val;
             return null;
         }
 
@@ -2784,21 +2887,44 @@
         let currentStatsYears = '3';
         let currentPerson = 'jockey';
         const statsToggleEl = document.getElementById("statsToggle");
-        const statsToggleSpEl = document.getElementById("statsToggleSp");
         const yearsToggleEl = document.getElementById("yearsToggle");
-        const yearsToggleSpEl = document.getElementById("yearsToggleSp");
         const personToggleEl = document.getElementById("personToggle");
-        const allStatsOptions = [
-            ...statsToggleEl.querySelectorAll(".sort-option"),
-            ...statsToggleSpEl.querySelectorAll(".sort-option"),
-        ];
-        const allYearsOptions = [
-            ...yearsToggleEl.querySelectorAll(".sort-option"),
-            ...yearsToggleSpEl.querySelectorAll(".sort-option"),
-        ];
-        const allPersonOptions = [
-            ...personToggleEl.querySelectorAll(".sort-option"),
-        ];
+        const statsPopBtn = document.getElementById("statsPopBtn");
+        const statsModal = document.getElementById("statsModal");
+        const statsPopLabel = document.getElementById("statsPopLabel");
+        const allStatsOptions = [...statsToggleEl.querySelectorAll(".sort-option")];
+        const allYearsOptions = [...yearsToggleEl.querySelectorAll(".sort-option")];
+        const allPersonOptions = [...personToggleEl.querySelectorAll(".sort-option")];
+
+        const STATS_LABEL = {
+            win5: 'WIN5', venue: '競馬場', distance: '距離', course: 'コース',
+        };
+        const PERSON_LABEL = { jockey: '騎手', trainer: '調教師' };
+
+        function updateStatsPopLabel() {
+            const parts = [
+                PERSON_LABEL[currentPerson] || '騎手',
+                STATS_LABEL[currentStatsMode] || '競馬場',
+                `${currentStatsYears}年`,
+            ];
+            statsPopLabel.textContent = parts.join('・');
+        }
+
+        function openStatsModal() {
+            statsModal.style.display = "flex";
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeStatsModal() {
+            statsModal.style.display = "none";
+            document.body.style.overflow = "";
+        }
+
+        statsPopBtn.addEventListener("click", openStatsModal);
+        statsModal.addEventListener("click", closeStatsModal);
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && statsModal.style.display === "flex") closeStatsModal();
+        });
 
         function applyPersonDisplay() {
             document.querySelectorAll('.custom-select').forEach(sel => {
@@ -2815,18 +2941,21 @@
         function syncStatsToggle(key) {
             currentStatsMode = key;
             allStatsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsMode));
+            updateStatsPopLabel();
             if (hasExistingData()) fetchAndApplyJockeyStats();
         }
 
         function syncYearsToggle(key) {
             currentStatsYears = key;
             allYearsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsYears));
+            updateStatsPopLabel();
             if (hasExistingData()) fetchAndApplyJockeyStats();
         }
 
         function syncPersonToggle(key) {
             currentPerson = key;
             allPersonOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentPerson));
+            updateStatsPopLabel();
             applyPersonDisplay();
             if (hasExistingData()) fetchAndApplyJockeyStats();
             saveState();
@@ -2838,19 +2967,7 @@
             syncStatsToggle(opt.dataset.key);
         });
 
-        statsToggleSpEl.addEventListener("click", (e) => {
-            const opt = e.target.closest(".sort-option");
-            if (!opt || opt.dataset.key === currentStatsMode) return;
-            syncStatsToggle(opt.dataset.key);
-        });
-
         yearsToggleEl.addEventListener("click", (e) => {
-            const opt = e.target.closest(".sort-option");
-            if (!opt || opt.dataset.key === currentStatsYears) return;
-            syncYearsToggle(opt.dataset.key);
-        });
-
-        yearsToggleSpEl.addEventListener("click", (e) => {
             const opt = e.target.closest(".sort-option");
             if (!opt || opt.dataset.key === currentStatsYears) return;
             syncYearsToggle(opt.dataset.key);
@@ -2902,6 +3019,7 @@
                 const json = await res.json();
                 if (!json.ok || !json.stats) return;
 
+                const totalsMap = json.totals || {};
                 const datasetKey = personAtFetch === 'trainer' ? 'tstats' : 'jstats';
                 const nameKey = personAtFetch === 'trainer' ? 'trainer' : 'jockey';
 
@@ -2916,7 +3034,7 @@
                         const name = (sel.dataset[nameKey] || "").trim();
                         if (!name) return;
 
-                        const s = findJockeyStats(statsMap, name) || [0,0,0,0];
+                        const s = findPersonStats(statsMap, name, personAtFetch, totalsMap) || [0,0,0,0];
                         sel.dataset[datasetKey] = `(${s[0]}-${s[1]}-${s[2]}-${s[3]})`;
                     });
                 }
@@ -2931,6 +3049,7 @@
         applyRaceFocus(isMobileLayout() ? "1" : "all");
         initMobileSwipe();
         restoreState();
+        updateStatsPopLabel();
         applyShareFromURL();
         loadWin5Tabs();
         fitAll();
