@@ -102,9 +102,19 @@
 
         .toggle-row .race-clear {
             width: 80px;
-            min-height: 36px;
+            min-height: 44px;
             text-align: center;
             padding: 6px 0;
+        }
+
+        .toggle-row > #sortToggle,
+        .toggle-row > #statsPopBtn {
+            width: 200px;
+        }
+
+        #sortToggle .sort-option {
+            flex: 1 1 0;
+            min-width: 0;
         }
 
         .toggle-row-sp-2 {
@@ -121,7 +131,6 @@
             display: flex;
             gap: 10px;
             align-items: flex-start;
-            padding-bottom: 10px;
             width: max-content;
             min-width: 100%;
             flex-wrap: nowrap;
@@ -224,6 +233,10 @@
             transition: background 0.15s, color 0.15s;
         }
 
+        #sortToggle .sort-option {
+            min-height: 44px;
+        }
+
         .sort-option:first-child {
             border-radius: 12px 0 0 12px;
         }
@@ -243,6 +256,7 @@
         .stats-pop-btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             padding: 6px 14px;
             border: none;
@@ -252,14 +266,10 @@
             border-radius: 12px;
             font-size: 14px;
             font-weight: 400;
-            min-height: 36px;
+            min-height: 44px;
             cursor: pointer;
             white-space: nowrap;
             font-family: inherit;
-        }
-
-        .stats-pop-btn:hover {
-            background: #eef;
         }
 
         .stats-pop-arrow {
@@ -269,9 +279,6 @@
 
         .stats-modal-card {
             width: min(420px, 100%);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
         }
 
         .stats-modal-row {
@@ -297,38 +304,6 @@
             min-width: 0;
             padding: 8px 6px;
         }
-
-        .hot-threshold-label {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-size: 13px;
-            color: #333;
-            flex: 1 1 0;
-        }
-
-
-        .hot-threshold-row {
-            justify-content: space-between;
-        }
-
-        .hot-threshold-row.is-disabled .hot-threshold-label {
-            opacity: 0.4;
-            pointer-events: none;
-        }
-
-        #hotEnableBtn {
-            flex: 1 1 0;
-            min-height: 36px;
-        }
-
-        #hotEnableBtn.on {
-            background: #3251BC;
-            color: #fff;
-            box-shadow: inset 0 0 0 1px #3251BC;
-        }
-
 
         .shutuba-wrap {
             width: 100%;
@@ -549,7 +524,7 @@
 
         .combo-grid {
             display: grid;
-            grid-template-columns: 32px repeat(5, max-content) max-content max-content max-content max-content;
+            grid-template-columns: 32px repeat(5, max-content) max-content;
             column-gap: 0;
             row-gap: 2px;
             padding: 4px 0;
@@ -579,41 +554,36 @@
             justify-content: flex-end;
             white-space: nowrap;
             padding: 0 12px 0 8px;
-            font-size: 16px;
             color: #7a7a7a;
         }
 
-        .combo-payout-lo,
-        .combo-payout-sep,
-        .combo-payout-hi {
-            min-height: 32px;
+        .combo-expansion {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 4px 12px 8px 40px;
+        }
+
+        .combo-bet {
             display: flex;
             align-items: center;
-            white-space: nowrap;
-            font-size: 16px;
-            color: #7a7a7a;
-            font-variant-numeric: tabular-nums;
+            gap: 12px;
         }
 
-        .combo-payout-lo {
-            justify-content: flex-end;
-            padding: 0 0 0 8px;
+        .combo-bet-cells {
+            display: flex;
         }
 
-        .combo-payout-sep {
-            justify-content: center;
+        .combo-bet-cell {
             padding: 0 6px;
         }
 
-        .combo-payout-hi {
-            justify-content: flex-end;
-            padding: 0 12px 0 0;
-        }
-
-        .combo-row.checked .combo-payout-lo,
-        .combo-row.checked .combo-payout-sep,
-        .combo-row.checked .combo-payout-hi {
-            background-color: #fff0f0;
+        .combo-bet-payout {
+            margin-left: auto;
+            font-variant-numeric: tabular-nums;
+            color: #7a7a7a;
+            white-space: nowrap;
         }
 
         .combo-check-wrap {
@@ -655,7 +625,7 @@
         }
 
         #result {
-            margin-top: 16px;
+            margin-top: 10px;
             font-weight: bold;
             font-size: 18px;
         }
@@ -687,13 +657,11 @@
             width: 100%;
         }
 
-        #minFav,
-        #minPayout,
-        #hotThresholdSelect {
+        #minFav {
             font-size: 16px;
             border: 1px solid #cfcfcf;
             height: 44px;
-            width: 60px;
+            width: 50px;
             padding: 0 10px;
             border-radius: 6px;
             background-color: #fff;
@@ -707,28 +675,16 @@
             background-image: none;
         }
 
-        #minFav option,
-        #hotThresholdSelect option {
+        #minFav option {
             text-align: center;
         }
 
-        #minPayout::-webkit-outer-spin-button,
-        #minPayout::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        #minFav::-ms-expand,
-        #hotThresholdSelect::-ms-expand {
+        #minFav::-ms-expand {
             display: none;
         }
 
         #minFav:focus,
-        #minFav:focus-visible,
-        #minPayout:focus,
-        #minPayout:focus-visible,
-        #hotThresholdSelect:focus,
-        #hotThresholdSelect:focus-visible {
+        #minFav:focus-visible {
             outline: none;
             box-shadow: none;
             border-color: #cfcfcf;
@@ -736,24 +692,18 @@
 
         .fav-calc-row {
             display: flex;
-            align-items: flex-end;
+            align-items: center;
             justify-content: space-between;
             gap: 10px;
             width: 100%;
+            margin-top: 10px;
         }
 
         .fav-calc-left {
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
-            font-size: 20px;
-        }
-
-        .fav-calc-left-row {
-            display: flex;
             align-items: center;
             gap: 8px;
+            font-size: 20px;
         }
 
         .fav-calc-row .calc-btn {
@@ -827,6 +777,9 @@
             border-radius: 12px;
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
             padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
             animation: modalIn 0.18s ease;
         }
 
@@ -839,7 +792,6 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 12px;
         }
 
         .modal-title {
@@ -870,7 +822,6 @@
             border: 1px solid #ddd;
             border-radius: 8px;
             padding: 10px 12px;
-            margin-bottom: 14px;
         }
 
         .share-url-text {
@@ -887,7 +838,6 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-top: 14px;
         }
 
         .share-bottom-actions button {
@@ -949,7 +899,6 @@
                 gap: 8px;
                 flex-wrap: nowrap;
                 overflow-x: auto;
-                padding-bottom: 4px;
                 width: 100%;
             }
 
@@ -968,15 +917,29 @@
                 transform: none !important;
             }
 
+            .toggle-row:not(.toggle-row-sp-2) {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+
+            .toggle-row:not(.toggle-row-sp-2) > #sortToggle,
+            .toggle-row:not(.toggle-row-sp-2) > #statsPopBtn {
+                width: auto;
+            }
+
             .toggle-row .race-clear,
             .toggle-row .sort-switch {
                 flex: 1 1 0;
                 width: auto;
+                min-width: 0;
             }
 
             .toggle-row .sort-option {
                 flex: 1 1 0;
                 justify-content: center;
+                width: auto;
+                min-width: 0;
             }
 
             .clear-pc {
@@ -986,7 +949,14 @@
             .stats-pop-btn {
                 flex: 1 1 0;
                 width: auto;
+                min-width: 0;
                 justify-content: center;
+            }
+
+            #statsPopLabel {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
 
             .toggle-row-sp-2 {
@@ -1071,22 +1041,15 @@
 
     <div class="fav-calc-row">
         <div class="fav-calc-left">
-            <div class="fav-calc-left-row">
-                <span class="fav-label">本命</span>
-                <select id="minFav">
-                    <option value="1" selected>1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                </select>
-                <span class="fav-suffix">勝</span>
-            </div>
-            <div class="fav-calc-left-row">
-                <span class="fav-label">最低</span>
-                <input id="minPayout" type="number" inputmode="numeric" min="0" step="10" value="0">
-                <span class="fav-suffix">万</span>
-            </div>
+            <span class="fav-label">本命</span>
+            <select id="minFav">
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+            <span class="fav-suffix">勝</span>
         </div>
         <button class="calc-btn" onclick="calc()">計算</button>
     </div>
@@ -1131,6 +1094,7 @@
                 <div id="statsToggle" class="sort-switch">
                     <span class="sort-option" data-key="win5">WIN5</span>
                     <span class="sort-option active" data-key="venue">競馬場</span>
+                    <span class="sort-option" data-key="surface">芝/ダ</span>
                     <span class="sort-option" data-key="distance">距離</span>
                     <span class="sort-option" data-key="course">コース</span>
                 </div>
@@ -1140,20 +1104,6 @@
                     <span class="sort-option" data-key="1">1年</span>
                     <span class="sort-option active" data-key="3">3年</span>
                 </div>
-            </div>
-            <div class="stats-modal-row hot-threshold-row">
-                <button id="hotEnableBtn" class="race-clear on" type="button">色付け</button>
-                <span class="hot-threshold-label">勝率
-                    <select id="hotThresholdSelect">
-                        <option value="3">3</option>
-                        <option value="5" selected>5</option>
-                        <option value="7">7</option>
-                        <option value="10">10</option>
-                        <option value="15">15</option>
-                        <option value="20">20</option>
-                    </select>
-                    % 以上
-                </span>
             </div>
         </div>
     </div>
@@ -1686,10 +1636,7 @@
                 statsMode: currentStatsMode,
                 statsYears: currentStatsYears,
                 person: currentPerson,
-                hotEnabled: hotEnabled,
-                hotThresholdPct: hotThresholdPct,
                 minFav: document.getElementById('minFav').value,
-                minPayout: document.getElementById('minPayout').value,
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
                 raceCourses: window.raceCourses || ["", "", "", "", ""],
@@ -1757,7 +1704,6 @@
                 updateRaceHeaders(window.raceInfo || ["", "", "", "", ""]);
 
                 if (state.minFav) document.getElementById('minFav').value = state.minFav;
-                if (state.minPayout != null) document.getElementById('minPayout').value = state.minPayout;
                 if (state.statsMode) {
                     currentStatsMode = state.statsMode;
                     allStatsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsMode));
@@ -1770,12 +1716,6 @@
                     currentPerson = state.person === 'trainer' ? 'trainer' : 'jockey';
                     allPersonOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentPerson));
                 }
-                if (typeof state.hotEnabled === 'boolean') hotEnabled = state.hotEnabled;
-                if (Number.isFinite(state.hotThresholdPct)) {
-                    hotThresholdPct = Math.min(100, Math.max(0, state.hotThresholdPct));
-                }
-                syncHotUi();
-
                 for (let r = 1; r <= TOTAL_RACES; r++) {
                     const race = state.races?.[`r${r}`];
                     if (!race) continue;
@@ -1950,8 +1890,22 @@
                 chk.addEventListener('change', () => {
                     const row = chk.closest('.combo-row');
                     if (!row) return;
-                    if (chk.checked) row.classList.add('checked');
-                    else row.classList.remove('checked');
+                    if (chk.checked) {
+                        row.classList.add('checked');
+                        const idx = Number(row.dataset.idx);
+                        const blocks = window.__lastDisplayBlocks || [];
+                        const ctx = window.__payoutCtx;
+                        if (Number.isFinite(idx) && blocks[idx] && ctx) {
+                            const html = buildComboExpansion(blocks[idx], ctx.supportRates, ctx.sales);
+                            row.insertAdjacentHTML('afterend', html);
+                        }
+                    } else {
+                        row.classList.remove('checked');
+                        const next = row.nextElementSibling;
+                        if (next && next.classList.contains('combo-expansion')) {
+                            next.remove();
+                        }
+                    }
                 });
             });
         }
@@ -2053,16 +2007,14 @@
                 return { count, blocks };
             }
 
-            const minFav = Number(document.getElementById('minFav').value);
-            const minPayoutYen = (Number(document.getElementById('minPayout').value) || 0) * 10000;
             const supportRates = buildRaceSupportRates();
             const sales = window.win5Sales || null;
             let total = 0;
             const comboList = [];
 
-            const k = minFav;
-            const masks = getMasks(k);
-            let blocks = [];
+            const minFav = Number(document.getElementById('minFav').value);
+            const masks = getMasks(minFav);
+            const blocks = [];
 
             for (let m = 0; m < masks.length; m++) {
                 const maskArr = masks[m];
@@ -2083,26 +2035,18 @@
                 }
             }
 
-            if (minPayoutYen > 0) {
-                blocks = blocks.filter(b => {
-                    const range = computeBlockPayoutRange(b, supportRates, sales);
-                    if (!range || range.minPayout == null) return true;
-                    return range.minPayout >= minPayoutYen;
-                });
-            }
-
             const count = blocks.length;
             const displayBlocks = fullyMergeBlocksStableBit(blocks);
             comboList.push('<div class="combo-grid">');
-            for (const b of displayBlocks) {
-                const range = computeBlockPayoutRange(b, supportRates, sales);
-                comboList.push(blockToLineBit(b, range));
+            for (let i = 0; i < displayBlocks.length; i++) {
+                comboList.push(blockToLineBit(displayBlocks[i], i));
             }
             comboList.push('</div>');
 
             total = count;
 
             window.__lastDisplayBlocks = displayBlocks;
+            window.__payoutCtx = { supportRates, sales };
             const copyRow = document.getElementById('copyBetsRow');
             if (copyRow) copyRow.style.display = (total > 0 && displayBlocks.length) ? 'flex' : 'none';
 
@@ -2286,47 +2230,66 @@
             return Math.min(p, 600000000);
         }
 
-        function computeBlockPayoutRange(block, supportRates, sales) {
-            let maxProd = 1;
-            let minProd = 1;
+        function enumerateBlockBets(block) {
+            const races = [];
             for (let r = 0; r < TOTAL_RACES; r++) {
                 const mask = block[r] >>> 0;
-                let maxS = 0;
-                let minS = Infinity;
+                const nums = [];
                 for (let i = 0; i < HORSE_MAX; i++) {
-                    if (!(mask & (1 << i))) continue;
-                    const s = supportRates[r][i];
-                    if (!(s > 0)) continue;
-                    if (s > maxS) maxS = s;
-                    if (s < minS) minS = s;
+                    if (mask & (1 << i)) nums.push(i + 1);
                 }
-                if (maxS <= 0) return null;
-                maxProd *= maxS;
-                minProd *= (minS === Infinity ? maxS : minS);
+                races.push(nums);
             }
-            return {
-                minPayout: virtualPayout(maxProd, sales),
-                maxPayout: virtualPayout(minProd, sales),
-            };
+            let result = [[]];
+            for (const race of races) {
+                const next = [];
+                for (const combo of result) {
+                    for (const n of race) next.push([...combo, n]);
+                }
+                result = next;
+            }
+            return result;
         }
 
-        function formatPayoutCells(range) {
-            if (!range || range.minPayout == null || range.maxPayout == null) {
-                return { lo: "", sep: "", hi: "" };
+        function computeBetPayout(horses, supportRates, sales) {
+            let prod = 1;
+            for (let r = 0; r < TOTAL_RACES; r++) {
+                const s = supportRates[r][horses[r] - 1];
+                if (!(s > 0)) return null;
+                prod *= s;
             }
-            const lo = Math.round(range.minPayout);
-            const hi = Math.round(range.maxPayout);
-            if (lo === hi) {
-                return { lo: `${lo.toLocaleString()}円`, sep: "", hi: "" };
-            }
-            return {
-                lo: `${lo.toLocaleString()}円`,
-                sep: "〜",
-                hi: `${hi.toLocaleString()}円`,
-            };
+            return virtualPayout(prod, sales);
         }
 
-        function blockToLineBit(block, payoutRange) {
+        function buildComboExpansion(block, supportRates, sales) {
+            const bets = enumerateBlockBets(block);
+            bets.sort((a, b) => {
+                for (let i = 0; i < a.length; i++) {
+                    if (a[i] !== b[i]) return a[i] - b[i];
+                }
+                return 0;
+            });
+            const lines = ['<div class="combo-expansion">'];
+            for (const horses of bets) {
+                const cells = horses
+                    .map(n => `<span class="combo-bet-cell">${toCircleNumber(n)}</span>`)
+                    .join('');
+                const payout = computeBetPayout(horses, supportRates, sales);
+                const payoutText = payout != null
+                    ? `${Math.round(payout).toLocaleString()}円`
+                    : '';
+                lines.push(
+                    '<div class="combo-bet">' +
+                    `<span class="combo-bet-cells">${cells}</span>` +
+                    `<span class="combo-bet-payout">${payoutText}</span>` +
+                    '</div>'
+                );
+            }
+            lines.push('</div>');
+            return lines.join('');
+        }
+
+        function blockToLineBit(block, idx) {
             const bitCount = (m) => {
                 let x = (m >>> 0);
                 let c = 0;
@@ -2351,18 +2314,14 @@
                 return nums.join('');
             });
             const cells = parts.map(p => `<span class="combo-cell">${p}</span>`).join('');
-            const payout = formatPayoutCells(payoutRange);
             return (
-                '<div class="combo-row">' +
+                `<div class="combo-row" data-idx="${idx}">` +
                 '<label class="combo-check-wrap">' +
                 '<input type="checkbox" class="combo-check">' +
                 '<span class="combo-check-visual">✓</span>' +
                 '</label>' +
                 cells +
                 `<span class="combo-count">${countLabel}組</span>` +
-                `<span class="combo-payout-lo">${payout.lo}</span>` +
-                `<span class="combo-payout-sep">${payout.sep}</span>` +
-                `<span class="combo-payout-hi">${payout.hi}</span>` +
                 '</div>'
             );
         }
@@ -3038,14 +2997,9 @@
         let currentStatsMode = 'venue';
         let currentStatsYears = '3';
         let currentPerson = 'jockey';
-        let hotEnabled = true;
-        let hotThresholdPct = 5;
         const statsToggleEl = document.getElementById("statsToggle");
         const yearsToggleEl = document.getElementById("yearsToggle");
         const personToggleEl = document.getElementById("personToggle");
-        const hotEnableBtnEl = document.getElementById("hotEnableBtn");
-        const hotThresholdSelectEl = document.getElementById("hotThresholdSelect");
-        const hotThresholdRowEl = document.querySelector(".hot-threshold-row");
         const statsPopBtn = document.getElementById("statsPopBtn");
         const statsModal = document.getElementById("statsModal");
         const statsPopLabel = document.getElementById("statsPopLabel");
@@ -3054,7 +3008,7 @@
         const allPersonOptions = [...personToggleEl.querySelectorAll(".sort-option")];
 
         const STATS_LABEL = {
-            win5: 'WIN5', venue: '競馬場', distance: '距離', course: 'コース',
+            win5: 'WIN5', venue: '競馬場', surface: '芝/ダ', distance: '距離', course: 'コース',
         };
         const PERSON_LABEL = { jockey: '騎手', trainer: '調教師' };
 
@@ -3084,18 +3038,11 @@
         });
 
         function isHotPerson(stats) {
-            if (!hotEnabled) return false;
             const m = /\((\d+)-(\d+)-(\d+)-(\d+)\)/.exec(stats || "");
             if (!m) return false;
             const w = +m[1], runs = +m[1] + +m[2] + +m[3] + +m[4];
             if (runs === 0) return false;
-            return w / runs >= hotThresholdPct / 100;
-        }
-
-        function syncHotUi() {
-            if (hotEnableBtnEl) hotEnableBtnEl.classList.toggle('on', hotEnabled);
-            if (hotThresholdRowEl) hotThresholdRowEl.classList.toggle('is-disabled', !hotEnabled);
-            if (hotThresholdSelectEl) hotThresholdSelectEl.value = String(hotThresholdPct);
+            return w / runs >= 0.05;
         }
 
         function applyPersonDisplay() {
@@ -3159,21 +3106,6 @@
             syncPersonToggle(opt.dataset.key);
         });
 
-        hotEnableBtnEl.addEventListener("click", () => {
-            hotEnabled = !hotEnabled;
-            syncHotUi();
-            applyPersonDisplay();
-            saveState();
-        });
-
-        hotThresholdSelectEl.addEventListener("change", () => {
-            const next = Number(hotThresholdSelectEl.value);
-            if (!Number.isFinite(next)) return;
-            hotThresholdPct = next;
-            applyPersonDisplay();
-            saveState();
-        });
-
         async function fetchAndApplyJockeyStats() {
             const raceInfo = window.raceInfo || [];
             const raceCourses = window.raceCourses || [];
@@ -3184,6 +3116,12 @@
             let keysPerRace = [];
             if (mode === 'win5') {
                 keysPerRace = Array(TOTAL_RACES).fill('win5');
+            } else if (mode === 'surface') {
+                for (let i = 0; i < TOTAL_RACES; i++) {
+                    const course = extractCourse(raceCourses[i]);
+                    const m = course.match(/^(芝|ダ|障)/);
+                    keysPerRace.push(m ? m[1] : "");
+                }
             } else if (mode === 'distance') {
                 for (let i = 0; i < TOTAL_RACES; i++) {
                     const course = extractCourse(raceCourses[i]);
@@ -3243,7 +3181,6 @@
         applyRaceFocus(isMobileLayout() ? "1" : "all");
         initMobileSwipe();
         restoreState();
-        syncHotUi();
         updateStatsPopLabel();
         applyShareFromURL();
         loadWin5Tabs();
