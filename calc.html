@@ -3135,7 +3135,11 @@
                 }
             } else {
                 for (let i = 0; i < TOTAL_RACES; i++) {
-                    keysPerRace.push(extractVenue(raceInfo[i]));
+                    const venue = extractVenue(raceInfo[i]);
+                    const course = extractCourse(raceCourses[i]);
+                    const sfMatch = course.match(/^(芝|ダ|障)/);
+                    const sf = sfMatch ? sfMatch[1] : "";
+                    keysPerRace.push((venue && sf) ? `${venue}:${sf}` : "");
                 }
             }
 
