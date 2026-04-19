@@ -2334,7 +2334,7 @@
                     .join('');
                 const payout = computeBetPayout(horses, supportRates, sales);
                 const payoutText = payout != null
-                    ? `${Math.round(payout).toLocaleString()}円`
+                    ? `${Math.round(payout / 10000)}万円`
                     : '';
                 lines.push(
                     '<div class="combo-bet">' +
