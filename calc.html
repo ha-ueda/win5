@@ -1146,6 +1146,7 @@
                 <div id="personToggle" class="sort-switch">
                     <span class="sort-option active" data-key="jockey">騎手</span>
                     <span class="sort-option" data-key="trainer">調教師</span>
+                    <span class="sort-option" data-key="jt">騎手×調教師</span>
                 </div>
             </div>
             <div class="stats-modal-row">
@@ -1520,6 +1521,7 @@
             tr.dataset.tid = "";
             tr.dataset.jstats = "";
             tr.dataset.tstats = "";
+            tr.dataset.jtstats = "";
             tr.dataset.odds = "";
             tr.dataset.ninki = "";
 
@@ -1731,6 +1733,7 @@
 
                     const jstats = (sel.dataset.jstats || "").trim();
                     const tstats = (sel.dataset.tstats || "").trim();
+                    const jtstats = (sel.dataset.jtstats || "").trim();
 
                     state.races[`r${r}`][sel.dataset.horse] = {
                         mark: (box?.textContent || "").trim(),
@@ -1745,7 +1748,8 @@
                         waku: waku || null,
                         umaban: umaban || null,
                         jstats: jstats || null,
-                        tstats: tstats || null
+                        tstats: tstats || null,
+                        jtstats: jtstats || null
                     };
                 });
             }
@@ -1784,7 +1788,7 @@
                     allYearsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsYears));
                 }
                 if (state.person) {
-                    currentPerson = state.person === 'trainer' ? 'trainer' : 'jockey';
+                    currentPerson = (state.person === 'trainer' || state.person === 'jt') ? state.person : 'jockey';
                     allPersonOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentPerson));
                 }
                 if (Number.isFinite(state.hotThreshold) && state.hotThreshold > 0) {
@@ -1833,6 +1837,7 @@
                             sel.dataset.tid = "";
                             sel.dataset.jstats = "";
                             sel.dataset.tstats = "";
+                            sel.dataset.jtstats = "";
                             sel.dataset.odds = "";
                             sel.dataset.ninki = "";
                             if (box) {
@@ -1860,6 +1865,7 @@
                         sel.dataset.tid = (val.tid || "") ? String(val.tid).trim() : "";
                         sel.dataset.jstats = (val.jstats || "") ? String(val.jstats).trim() : "";
                         sel.dataset.tstats = (val.tstats || "") ? String(val.tstats).trim() : "";
+                        sel.dataset.jtstats = (val.jtstats || "") ? String(val.jtstats).trim() : "";
                         sel.dataset.odds = (val.odds || "") ? String(val.odds).trim() : "";
                         sel.dataset.ninki = (val.ninki || "") ? String(val.ninki).trim() : "";
                     });
@@ -1907,6 +1913,7 @@
                 sel.dataset.trainer = "";
                 sel.dataset.jstats = "";
                 sel.dataset.tstats = "";
+                sel.dataset.jtstats = "";
                 sel.dataset.odds = "";
                 sel.dataset.ninki = "";
 
@@ -2457,6 +2464,7 @@
             document.querySelectorAll('.custom-select').forEach(sel => {
                 sel.dataset.jstats = "";
                 sel.dataset.tstats = "";
+                sel.dataset.jtstats = "";
             });
 
             const races = json.races || [];
@@ -2535,6 +2543,7 @@
                         sel.dataset.tid = "";
                         sel.dataset.jstats = "";
                         sel.dataset.tstats = "";
+                        sel.dataset.jtstats = "";
                         sel.dataset.odds = "";
                         sel.dataset.ninki = "";
 
@@ -3080,7 +3089,7 @@
         const STATS_LABEL = {
             win5: 'WIN5', venue: '競馬場', surface: '馬場', distance: '距離', course: 'コース',
         };
-        const PERSON_LABEL = { jockey: '騎手', trainer: '調教師' };
+        const PERSON_LABEL = { jockey: '騎手', trainer: '調教師', jt: '騎×調' };
 
         function updateStatsPopLabel() {
             const parts = [
@@ -3134,8 +3143,14 @@
                 const nameEl = sel.querySelector('.person-name');
                 const statsEl = sel.querySelector('.person-stats');
                 if (!nameEl || !statsEl) return;
-                const name = (currentPerson === 'trainer' ? sel.dataset.trainer : sel.dataset.jockey) || "";
-                const stats = (currentPerson === 'trainer' ? sel.dataset.tstats : sel.dataset.jstats) || "";
+                const jockey = sel.dataset.jockey || "";
+                const trainer = sel.dataset.trainer || "";
+                const name = currentPerson === 'jt'
+                    ? ((jockey && trainer) ? `${jockey}・${trainer}` : (jockey || trainer))
+                    : (currentPerson === 'trainer' ? trainer : jockey);
+                const stats = (currentPerson === 'jt'
+                    ? sel.dataset.jtstats
+                    : (currentPerson === 'trainer' ? sel.dataset.tstats : sel.dataset.jstats)) || "";
                 nameEl.textContent = name;
                 statsEl.textContent = stats;
                 nameEl.classList.toggle('hot', isHotPerson(stats));
@@ -3253,8 +3268,8 @@
                 const json = await res.json();
                 if (!json.ok || !json.stats) return;
 
-                const datasetKey = personAtFetch === 'trainer' ? 'tstats' : 'jstats';
-                const idKey = personAtFetch === 'trainer' ? 'tid' : 'jid';
+                const datasetKey = personAtFetch === 'jt' ? 'jtstats'
+                    : (personAtFetch === 'trainer' ? 'tstats' : 'jstats');
 
                 for (let r = 0; r < TOTAL_RACES; r++) {
                     const key = keysPerRace[r];
@@ -3264,7 +3279,14 @@
 
                     document.querySelectorAll(`.custom-select[data-race="${r + 1}"]`).forEach(sel => {
                         if (sel.classList.contains("is-empty")) return;
-                        const id = (sel.dataset[idKey] || "").trim();
+                        let id;
+                        if (personAtFetch === 'jt') {
+                            const jid = (sel.dataset.jid || "").trim();
+                            const tid = (sel.dataset.tid || "").trim();
+                            id = (jid && tid) ? `${jid}|${tid}` : "";
+                        } else {
+                            id = (sel.dataset[personAtFetch === 'trainer' ? 'tid' : 'jid'] || "").trim();
+                        }
                         if (!id) {
                             sel.dataset[datasetKey] = "";
                             return;
