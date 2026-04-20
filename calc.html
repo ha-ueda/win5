@@ -1510,6 +1510,8 @@
             tr.dataset.name = "";
             tr.dataset.jockey = "";
             tr.dataset.trainer = "";
+            tr.dataset.jid = "";
+            tr.dataset.tid = "";
             tr.dataset.jstats = "";
             tr.dataset.tstats = "";
             tr.dataset.odds = "";
@@ -1713,6 +1715,8 @@
                     const isEmpty = sel.classList.contains("is-empty");
                     const jockey = (sel.dataset.jockey || "").trim();
                     const trainer = (sel.dataset.trainer || "").trim();
+                    const jid = (sel.dataset.jid || "").trim();
+                    const tid = (sel.dataset.tid || "").trim();
                     const odds = (oEl?.textContent || "").trim();
                     const ninki = (pEl?.textContent || "").trim().replace("人気", "");
                     const waku = (noEl?.dataset.waku || "").trim();
@@ -1727,6 +1731,8 @@
                         name: isEmpty ? null : name,
                         jockey: jockey || null,
                         trainer: trainer || null,
+                        jid: jid || null,
+                        tid: tid || null,
                         odds: odds || null,
                         ninki: ninki || null,
                         waku: waku || null,
@@ -1812,6 +1818,8 @@
                             sel.dataset.name = "";
                             sel.dataset.jockey = "";
                             sel.dataset.trainer = "";
+                            sel.dataset.jid = "";
+                            sel.dataset.tid = "";
                             sel.dataset.jstats = "";
                             sel.dataset.tstats = "";
                             sel.dataset.odds = "";
@@ -1837,6 +1845,8 @@
                         sel.dataset.name = String(name || "").trim();
                         sel.dataset.jockey = (val.jockey || "") ? String(val.jockey).trim() : "";
                         sel.dataset.trainer = (val.trainer || "") ? String(val.trainer).trim() : "";
+                        sel.dataset.jid = (val.jid || "") ? String(val.jid).trim() : "";
+                        sel.dataset.tid = (val.tid || "") ? String(val.tid).trim() : "";
                         sel.dataset.jstats = (val.jstats || "") ? String(val.jstats).trim() : "";
                         sel.dataset.tstats = (val.tstats || "") ? String(val.tstats).trim() : "";
                         sel.dataset.odds = (val.odds || "") ? String(val.odds).trim() : "";
@@ -1844,9 +1854,6 @@
                     });
                 }
                 applyPersonDisplay();
-                // 復元直後のDOM状態を lastState に反映しておく。
-                // これをしないと次の saveState で必ず書き込みが走り、
-                // 別タブが行った最新の変更を上書きしてしまう可能性がある。
                 lastState = data;
             } catch (e) {
                 console.warn("restoreState: 保存データの復元に失敗しました", e);
@@ -2447,6 +2454,8 @@
                 const horses = (races[r] && races[r].horses) ? races[r].horses : [];
                 const jockeys = (races[r] && races[r].jockeys) ? races[r].jockeys : [];
                 const trainers = (races[r] && races[r].trainers) ? races[r].trainers : [];
+                const jockeyIds = (races[r] && races[r].jockeyIds) ? races[r].jockeyIds : [];
+                const trainerIds = (races[r] && races[r].trainerIds) ? races[r].trainerIds : [];
                 const oddsArr = (races[r] && races[r].odds) ? races[r].odds : [];
                 const ninkiArr = (races[r] && races[r].ninki) ? races[r].ninki : [];
                 const wakuClasses = (races[r] && races[r].wakuClasses) ? races[r].wakuClasses : [];
@@ -2459,6 +2468,8 @@
                     const name = horses[i - 1] || "";
                     const jockey = jockeys[i - 1] || "";
                     const trainer = trainers[i - 1] || "";
+                    const jid = jockeyIds[i - 1] || "";
+                    const tid = trainerIds[i - 1] || "";
                     const odds = oddsArr[i - 1];
                     const ninki = ninkiArr[i - 1];
                     const wakuClass = wakuClasses[i - 1] || "";
@@ -2491,6 +2502,8 @@
                         sel.dataset.name = String(name || "").trim();
                         sel.dataset.jockey = String(jockey || "").trim();
                         sel.dataset.trainer = String(trainer || "").trim();
+                        sel.dataset.jid = String(jid || "").trim();
+                        sel.dataset.tid = String(tid || "").trim();
                         sel.dataset.odds = (odds === undefined || odds === null) ? "" : String(odds).trim();
                         sel.dataset.ninki = (ninki === undefined || ninki === null) ? "" : String(ninki).trim();
                     } else {
@@ -2507,6 +2520,8 @@
                         sel.dataset.name = "";
                         sel.dataset.jockey = "";
                         sel.dataset.trainer = "";
+                        sel.dataset.jid = "";
+                        sel.dataset.tid = "";
                         sel.dataset.jstats = "";
                         sel.dataset.tstats = "";
                         sel.dataset.odds = "";
@@ -3035,23 +3050,6 @@
             return String(courseInfoText || "").replace(/m$/, "").trim();
         }
 
-        function findPersonStats(statsMap, personName) {
-            // seed / cron は netkeiba の結果ページ表記で統一されているが、現レース card の
-            // データソースは shutuba ページで、外国人騎手だけ文字数が違うことがある
-            // (例: result 「ルメー」3 文字 / shutuba 「ルメール」4 文字)。
-            // そのため完全一致の後、shutuba 側が結果ページキーより長い場合の前方一致を救う。
-            // 日本人騎手は両ページとも同じ 3 文字表記なので exact で即返す。
-            const name = personName.replace(/\s+/g, '');
-            if (statsMap[name]) return statsMap[name];
-            if (statsMap[personName]) return statsMap[personName];
-
-            for (const [key, val] of Object.entries(statsMap)) {
-                const k = key.replace(/\s+/g, '');
-                if (k && name.length > k.length && name.startsWith(k)) return val;
-            }
-            return null;
-        }
-
         let currentStatsMode = 'venue';
         let currentStatsYears = '3';
         let currentPerson = 'jockey';
@@ -3130,8 +3128,6 @@
             });
         }
 
-        // toggle から fetchAndApplyJockeyStats を起動する際の共通ラッパ。
-        // UI 応答性のため await はせず fire-and-forget だが、エラーは握り潰さずログに出す。
         function kickStatsFetch() {
             if (!hasExistingData()) return;
             fetchAndApplyJockeyStats().catch(e => console.warn("fetchAndApplyJockeyStats:", e));
@@ -3229,7 +3225,7 @@
                 if (!json.ok || !json.stats) return;
 
                 const datasetKey = personAtFetch === 'trainer' ? 'tstats' : 'jstats';
-                const nameKey = personAtFetch === 'trainer' ? 'trainer' : 'jockey';
+                const idKey = personAtFetch === 'trainer' ? 'tid' : 'jid';
 
                 for (let r = 0; r < TOTAL_RACES; r++) {
                     const key = keysPerRace[r];
@@ -3239,10 +3235,12 @@
 
                     document.querySelectorAll(`.custom-select[data-race="${r + 1}"]`).forEach(sel => {
                         if (sel.classList.contains("is-empty")) return;
-                        const name = (sel.dataset[nameKey] || "").trim();
-                        if (!name) return;
-
-                        const s = findPersonStats(statsMap, name) || [0,0,0,0];
+                        const id = (sel.dataset[idKey] || "").trim();
+                        if (!id) {
+                            sel.dataset[datasetKey] = "";
+                            return;
+                        }
+                        const s = statsMap[id] || [0,0,0,0];
                         sel.dataset[datasetKey] = `(${s[0]}-${s[1]}-${s[2]}-${s[3]})`;
                     });
                 }
