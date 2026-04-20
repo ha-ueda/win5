@@ -1163,6 +1163,12 @@
                     <span class="sort-option active" data-key="3">3年</span>
                 </div>
             </div>
+            <div class="stats-modal-row">
+                <div id="hotToggle" class="sort-switch">
+                    <span class="sort-option" data-key="0.05">5%</span>
+                    <span class="sort-option active" data-key="0.10">10%</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1696,6 +1702,7 @@
                 statsMode: currentStatsMode,
                 statsYears: currentStatsYears,
                 person: currentPerson,
+                hotThreshold: currentHotThreshold,
                 minFav: document.getElementById('minFav').value,
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
@@ -1779,6 +1786,10 @@
                 if (state.person) {
                     currentPerson = state.person === 'trainer' ? 'trainer' : 'jockey';
                     allPersonOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentPerson));
+                }
+                if (Number.isFinite(state.hotThreshold) && state.hotThreshold > 0) {
+                    currentHotThreshold = state.hotThreshold;
+                    allHotOptions.forEach(o => o.classList.toggle('active', Number(o.dataset.key) === currentHotThreshold));
                 }
                 for (let r = 1; r <= TOTAL_RACES; r++) {
                     const race = state.races?.[`r${r}`];
@@ -3053,15 +3064,18 @@
         let currentStatsMode = 'venue';
         let currentStatsYears = '3';
         let currentPerson = 'jockey';
+        let currentHotThreshold = 0.10;
         const statsToggleEl = document.getElementById("statsToggle");
         const yearsToggleEl = document.getElementById("yearsToggle");
         const personToggleEl = document.getElementById("personToggle");
+        const hotToggleEl = document.getElementById("hotToggle");
         const statsPopBtn = document.getElementById("statsPopBtn");
         const statsModal = document.getElementById("statsModal");
         const statsPopLabel = document.getElementById("statsPopLabel");
         const allStatsOptions = [...statsToggleEl.querySelectorAll(".sort-option")];
         const allYearsOptions = [...yearsToggleEl.querySelectorAll(".sort-option")];
         const allPersonOptions = [...personToggleEl.querySelectorAll(".sort-option")];
+        const allHotOptions = [...hotToggleEl.querySelectorAll(".sort-option")];
 
         const STATS_LABEL = {
             win5: 'WIN5', venue: '競馬場', surface: '馬場', distance: '距離', course: 'コース',
@@ -3112,7 +3126,7 @@
             if (!m) return false;
             const w = +m[1], runs = +m[1] + +m[2] + +m[3] + +m[4];
             if (runs === 0) return false;
-            return w / runs >= 0.05;
+            return w / runs >= currentHotThreshold;
         }
 
         function applyPersonDisplay() {
@@ -3156,6 +3170,15 @@
             saveState();
         }
 
+        function syncHotToggle(key) {
+            const v = Number(key);
+            if (!Number.isFinite(v) || v <= 0) return;
+            currentHotThreshold = v;
+            allHotOptions.forEach(o => o.classList.toggle('active', o.dataset.key === key));
+            applyPersonDisplay();
+            saveState();
+        }
+
         statsToggleEl.addEventListener("click", (e) => {
             const opt = e.target.closest(".sort-option");
             if (!opt || opt.dataset.key === currentStatsMode) return;
@@ -3172,6 +3195,12 @@
             const opt = e.target.closest(".sort-option");
             if (!opt || opt.dataset.key === currentPerson) return;
             syncPersonToggle(opt.dataset.key);
+        });
+
+        hotToggleEl.addEventListener("click", (e) => {
+            const opt = e.target.closest(".sort-option");
+            if (!opt || Number(opt.dataset.key) === currentHotThreshold) return;
+            syncHotToggle(opt.dataset.key);
         });
 
         async function fetchAndApplyJockeyStats() {
