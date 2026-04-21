@@ -3198,6 +3198,24 @@
             return w / runs >= currentHotThreshold;
         }
 
+        // 半角15文字 / 全角10文字 を同等とみなす: 半角=2, 全角=3, 上限=30
+        const BREEDER_MAX_UNIT = 30;
+        function breederCharUnit(c) {
+            return c.charCodeAt(0) < 0x80 ? 2 : 3;
+        }
+        function truncateBreeder(s) {
+            const str = String(s || "");
+            let unit = 0;
+            let out = "";
+            for (const c of str) {
+                const u = breederCharUnit(c);
+                if (unit + u > BREEDER_MAX_UNIT) return out + "...";
+                unit += u;
+                out += c;
+            }
+            return str;
+        }
+
         function applyPersonDisplay() {
             document.querySelectorAll('.custom-select').forEach(sel => {
                 const nameEl = sel.querySelector('.person-name');
@@ -3215,7 +3233,7 @@
                     name = trainer;
                     stats = sel.dataset.tstats || "";
                 } else if (currentPerson === 'breeder') {
-                    name = breeder;
+                    name = truncateBreeder(breeder);
                     stats = sel.dataset.bstats || "";
                 } else {
                     name = jockey;
