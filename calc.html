@@ -910,65 +910,33 @@
         .ns-toast {
             position: fixed;
             left: 50%;
-            top: 24px;
-            transform: translateX(-50%) translateY(-12px);
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
             opacity: 0;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 22px;
-            border-radius: 999px;
-            background: #eef1f6;
-            color: #1f1f1f;
-            font-family: "Roboto", "Google Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-            font-size: 14px;
-            font-weight: 400;
-            line-height: 1.4;
+            padding: 20px 36px;
+            border-radius: 14px;
+            background: rgba(20, 20, 20, 0.88);
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+            font-size: 22px;
+            font-weight: 600;
+            line-height: 1.3;
             letter-spacing: .01em;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             z-index: 2147483647;
             pointer-events: none;
-            max-width: min(90vw, 480px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            backdrop-filter: saturate(180%) blur(20px);
+            max-width: min(90vw, 400px);
             text-align: center;
-            box-shadow: 0 1px 2px rgba(0,0,0,.12), 0 4px 12px rgba(0,0,0,.16);
-            transition: opacity .2s cubic-bezier(0.4, 0.0, 0.2, 1), transform .2s cubic-bezier(0.4, 0.0, 0.2, 1);
+            box-shadow: 0 4px 24px rgba(0,0,0,.18), 0 0 0 0.5px rgba(0,0,0,.12);
+            transition: opacity .15s ease, transform .15s ease;
         }
         .ns-toast[data-visible="1"] {
             opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-        .ns-toast::before {
-            content: "";
-            flex-shrink: 0;
-            width: 18px;
-            height: 18px;
-            background-color: #1f1f1f;
-            -webkit-mask-repeat: no-repeat;
-            mask-repeat: no-repeat;
-            -webkit-mask-position: center;
-            mask-position: center;
-            -webkit-mask-size: contain;
-            mask-size: contain;
-            -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>');
-            mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>');
-        }
-        .ns-toast[data-type="success"]::before {
-            -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>');
-            mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>');
-        }
-        .ns-toast[data-type="error"]::before {
-            -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>');
-            mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>');
-        }
-        .ns-toast[data-type="loading"]::before {
-            -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.4" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>');
-            mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.4" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>');
-            animation: ns-toast-spin 0.9s linear infinite;
-        }
-        @keyframes ns-toast-spin {
-            to { transform: rotate(360deg); }
+            transform: translate(-50%, -50%) scale(1);
         }
 
         @media (max-width: 640px) {
@@ -1179,6 +1147,7 @@
                     <span class="sort-option active" data-key="jockey">騎手</span>
                     <span class="sort-option" data-key="trainer">調教師</span>
                     <span class="sort-option" data-key="jt">騎手×調教師</span>
+                    <span class="sort-option" data-key="breeder">生産者</span>
                 </div>
             </div>
             <div class="stats-modal-row">
@@ -1211,7 +1180,7 @@
         let toastFadeTimer = null;
         const LOADING_TIMEOUT = 30000;
 
-        function showToast(message, { type = "info", duration = 4000 } = {}) {
+        function showToast(message, { type = "info", duration = 1200 } = {}) {
             let el = document.querySelector(".ns-toast");
             if (toastHideTimer) { clearTimeout(toastHideTimer); toastHideTimer = null; }
             if (toastFadeTimer) { clearTimeout(toastFadeTimer); toastFadeTimer = null; }
@@ -1549,11 +1518,14 @@
             tr.dataset.name = "";
             tr.dataset.jockey = "";
             tr.dataset.trainer = "";
+            tr.dataset.breeder = "";
             tr.dataset.jid = "";
             tr.dataset.tid = "";
+            tr.dataset.bid = "";
             tr.dataset.jstats = "";
             tr.dataset.tstats = "";
             tr.dataset.jtstats = "";
+            tr.dataset.bstats = "";
             tr.dataset.odds = "";
             tr.dataset.ninki = "";
 
@@ -1756,8 +1728,10 @@
                     const isEmpty = sel.classList.contains("is-empty");
                     const jockey = (sel.dataset.jockey || "").trim();
                     const trainer = (sel.dataset.trainer || "").trim();
+                    const breeder = (sel.dataset.breeder || "").trim();
                     const jid = (sel.dataset.jid || "").trim();
                     const tid = (sel.dataset.tid || "").trim();
+                    const bid = (sel.dataset.bid || "").trim();
                     const odds = (oEl?.textContent || "").trim();
                     const ninki = (pEl?.textContent || "").trim().replace("人気", "");
                     const waku = (noEl?.dataset.waku || "").trim();
@@ -1766,6 +1740,7 @@
                     const jstats = (sel.dataset.jstats || "").trim();
                     const tstats = (sel.dataset.tstats || "").trim();
                     const jtstats = (sel.dataset.jtstats || "").trim();
+                    const bstats = (sel.dataset.bstats || "").trim();
 
                     state.races[`r${r}`][sel.dataset.horse] = {
                         mark: (box?.textContent || "").trim(),
@@ -1773,15 +1748,18 @@
                         name: isEmpty ? null : name,
                         jockey: jockey || null,
                         trainer: trainer || null,
+                        breeder: breeder || null,
                         jid: jid || null,
                         tid: tid || null,
+                        bid: bid || null,
                         odds: odds || null,
                         ninki: ninki || null,
                         waku: waku || null,
                         umaban: umaban || null,
                         jstats: jstats || null,
                         tstats: tstats || null,
-                        jtstats: jtstats || null
+                        jtstats: jtstats || null,
+                        bstats: bstats || null
                     };
                 });
             }
@@ -1820,7 +1798,7 @@
                     allYearsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsYears));
                 }
                 if (state.person) {
-                    currentPerson = (state.person === 'trainer' || state.person === 'jt') ? state.person : 'jockey';
+                    currentPerson = (state.person === 'trainer' || state.person === 'jt' || state.person === 'breeder') ? state.person : 'jockey';
                     allPersonOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentPerson));
                 }
                 if (Number.isFinite(state.hotThreshold) && state.hotThreshold > 0) {
@@ -1865,11 +1843,14 @@
                             sel.dataset.name = "";
                             sel.dataset.jockey = "";
                             sel.dataset.trainer = "";
+                            sel.dataset.breeder = "";
                             sel.dataset.jid = "";
                             sel.dataset.tid = "";
+                            sel.dataset.bid = "";
                             sel.dataset.jstats = "";
                             sel.dataset.tstats = "";
                             sel.dataset.jtstats = "";
+                            sel.dataset.bstats = "";
                             sel.dataset.odds = "";
                             sel.dataset.ninki = "";
                             if (box) {
@@ -1893,11 +1874,14 @@
                         sel.dataset.name = String(name || "").trim();
                         sel.dataset.jockey = (val.jockey || "") ? String(val.jockey).trim() : "";
                         sel.dataset.trainer = (val.trainer || "") ? String(val.trainer).trim() : "";
+                        sel.dataset.breeder = (val.breeder || "") ? String(val.breeder).trim() : "";
                         sel.dataset.jid = (val.jid || "") ? String(val.jid).trim() : "";
                         sel.dataset.tid = (val.tid || "") ? String(val.tid).trim() : "";
+                        sel.dataset.bid = (val.bid || "") ? String(val.bid).trim() : "";
                         sel.dataset.jstats = (val.jstats || "") ? String(val.jstats).trim() : "";
                         sel.dataset.tstats = (val.tstats || "") ? String(val.tstats).trim() : "";
                         sel.dataset.jtstats = (val.jtstats || "") ? String(val.jtstats).trim() : "";
+                        sel.dataset.bstats = (val.bstats || "") ? String(val.bstats).trim() : "";
                         sel.dataset.odds = (val.odds || "") ? String(val.odds).trim() : "";
                         sel.dataset.ninki = (val.ninki || "") ? String(val.ninki).trim() : "";
                     });
@@ -1943,9 +1927,11 @@
                 sel.dataset.name = "";
                 sel.dataset.jockey = "";
                 sel.dataset.trainer = "";
+                sel.dataset.breeder = "";
                 sel.dataset.jstats = "";
                 sel.dataset.tstats = "";
                 sel.dataset.jtstats = "";
+                sel.dataset.bstats = "";
                 sel.dataset.odds = "";
                 sel.dataset.ninki = "";
 
@@ -2497,6 +2483,7 @@
                 sel.dataset.jstats = "";
                 sel.dataset.tstats = "";
                 sel.dataset.jtstats = "";
+                sel.dataset.bstats = "";
             });
 
             const races = json.races || [];
@@ -2505,8 +2492,10 @@
                 const horses = (races[r] && races[r].horses) ? races[r].horses : [];
                 const jockeys = (races[r] && races[r].jockeys) ? races[r].jockeys : [];
                 const trainers = (races[r] && races[r].trainers) ? races[r].trainers : [];
+                const breeders = (races[r] && races[r].breeders) ? races[r].breeders : [];
                 const jockeyIds = (races[r] && races[r].jockeyIds) ? races[r].jockeyIds : [];
                 const trainerIds = (races[r] && races[r].trainerIds) ? races[r].trainerIds : [];
+                const breederIds = (races[r] && races[r].breederIds) ? races[r].breederIds : [];
                 const oddsArr = (races[r] && races[r].odds) ? races[r].odds : [];
                 const ninkiArr = (races[r] && races[r].ninki) ? races[r].ninki : [];
                 const wakuClasses = (races[r] && races[r].wakuClasses) ? races[r].wakuClasses : [];
@@ -2519,8 +2508,10 @@
                     const name = horses[i - 1] || "";
                     const jockey = jockeys[i - 1] || "";
                     const trainer = trainers[i - 1] || "";
+                    const breeder = breeders[i - 1] || "";
                     const jid = jockeyIds[i - 1] || "";
                     const tid = trainerIds[i - 1] || "";
+                    const bid = breederIds[i - 1] || "";
                     const odds = oddsArr[i - 1];
                     const ninki = ninkiArr[i - 1];
                     const wakuClass = wakuClasses[i - 1] || "";
@@ -2553,8 +2544,10 @@
                         sel.dataset.name = String(name || "").trim();
                         sel.dataset.jockey = String(jockey || "").trim();
                         sel.dataset.trainer = String(trainer || "").trim();
+                        sel.dataset.breeder = String(breeder || "").trim();
                         sel.dataset.jid = String(jid || "").trim();
                         sel.dataset.tid = String(tid || "").trim();
+                        sel.dataset.bid = String(bid || "").trim();
                         sel.dataset.odds = (odds === undefined || odds === null) ? "" : String(odds).trim();
                         sel.dataset.ninki = (ninki === undefined || ninki === null) ? "" : String(ninki).trim();
                     } else {
@@ -2571,11 +2564,14 @@
                         sel.dataset.name = "";
                         sel.dataset.jockey = "";
                         sel.dataset.trainer = "";
+                        sel.dataset.breeder = "";
                         sel.dataset.jid = "";
                         sel.dataset.tid = "";
+                        sel.dataset.bid = "";
                         sel.dataset.jstats = "";
                         sel.dataset.tstats = "";
                         sel.dataset.jtstats = "";
+                        sel.dataset.bstats = "";
                         sel.dataset.odds = "";
                         sel.dataset.ninki = "";
 
@@ -3121,7 +3117,7 @@
         const STATS_LABEL = {
             win5: 'WIN5', venue: '競馬場', surface: '馬場', distance: '距離', course: 'コース',
         };
-        const PERSON_LABEL = { jockey: '騎手', trainer: '調教師', jt: '騎×調' };
+        const PERSON_LABEL = { jockey: '騎手', trainer: '調教師', jt: '騎×調', breeder: '生産者' };
 
         function updateStatsPopLabel() {
             const parts = [
@@ -3177,12 +3173,22 @@
                 if (!nameEl || !statsEl) return;
                 const jockey = sel.dataset.jockey || "";
                 const trainer = sel.dataset.trainer || "";
-                const name = currentPerson === 'jt'
-                    ? ((jockey && trainer) ? `${jockey}・${trainer}` : (jockey || trainer))
-                    : (currentPerson === 'trainer' ? trainer : jockey);
-                const stats = (currentPerson === 'jt'
-                    ? sel.dataset.jtstats
-                    : (currentPerson === 'trainer' ? sel.dataset.tstats : sel.dataset.jstats)) || "";
+                const breeder = sel.dataset.breeder || "";
+                let name = "";
+                let stats = "";
+                if (currentPerson === 'jt') {
+                    name = (jockey && trainer) ? `${jockey}・${trainer}` : (jockey || trainer);
+                    stats = sel.dataset.jtstats || "";
+                } else if (currentPerson === 'trainer') {
+                    name = trainer;
+                    stats = sel.dataset.tstats || "";
+                } else if (currentPerson === 'breeder') {
+                    name = breeder;
+                    stats = sel.dataset.bstats || "";
+                } else {
+                    name = jockey;
+                    stats = sel.dataset.jstats || "";
+                }
                 nameEl.textContent = name;
                 statsEl.textContent = stats;
                 nameEl.classList.toggle('hot', isHotPerson(stats));
@@ -3301,7 +3307,8 @@
                 if (!json.ok || !json.stats) return;
 
                 const datasetKey = personAtFetch === 'jt' ? 'jtstats'
-                    : (personAtFetch === 'trainer' ? 'tstats' : 'jstats');
+                    : (personAtFetch === 'trainer' ? 'tstats'
+                    : (personAtFetch === 'breeder' ? 'bstats' : 'jstats'));
 
                 for (let r = 0; r < TOTAL_RACES; r++) {
                     const key = keysPerRace[r];
@@ -3316,6 +3323,8 @@
                             const jid = (sel.dataset.jid || "").trim();
                             const tid = (sel.dataset.tid || "").trim();
                             id = (jid && tid) ? `${jid}|${tid}` : "";
+                        } else if (personAtFetch === 'breeder') {
+                            id = (sel.dataset.bid || "").trim();
                         } else {
                             id = (sel.dataset[personAtFetch === 'trainer' ? 'tid' : 'jid'] || "").trim();
                         }
