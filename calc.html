@@ -122,13 +122,13 @@
         }
 
         #raceTables {
-            width: 100%;
+            width: calc(100% + 20px);
+            margin-inline: -10px;
             overflow: hidden;
         }
 
         #raceTables .race-row {
             display: flex;
-            gap: 10px;
             align-items: flex-start;
             width: max-content;
             min-width: 100%;
@@ -1026,7 +1026,7 @@
             }
 
             .race-card {
-                flex: 0 0 calc(100vw - 20px);
+                flex: 0 0 100vw;
                 min-width: auto;
             }
 
