@@ -432,7 +432,7 @@
             background: rgb(222, 224, 229);
         }
 
-        .selected {
+        .mark-box {
             display: block;
             width: 40px;
             height: 36px;
@@ -448,7 +448,7 @@
             text-align: center;
         }
 
-        .selected.is-marked {
+        .mark-box.is-marked {
             background-color: #ec5754 !important;
             color: #fff !important;
             box-shadow: inset 0 0 0 1px #ec5754 !important;
@@ -565,6 +565,36 @@
 
         .is-empty {
             display: none;
+        }
+
+        .custom-select.is-scratched td {
+            background: #e5e5e5;
+        }
+
+        .custom-select.is-scratched .mark-box {
+            cursor: not-allowed;
+            color: #aaa;
+            background: #e6e6e6;
+            box-shadow: inset 0 0 0 1px #cfcfcf;
+        }
+
+        .custom-select.is-scratched .horse-name,
+        .custom-select.is-scratched .person-name,
+        .custom-select.is-scratched .person-stats {
+            color: #999;
+        }
+
+        .custom-select.is-scratched .horse-name {
+            color: #bfbfbf;
+        }
+
+        .custom-select.is-scratched .person-name {
+            color: #bfbfbf;
+        }
+
+        .custom-select.is-scratched .odds-bottom {
+            color: #9C9fa6;
+            font-size: 14px;
         }
 
         .combo-grid {
@@ -1330,6 +1360,42 @@
             el.style.borderColor = "";
         }
 
+        function isScratchedStatus(status) {
+            const s = String(status || "").trim();
+            return s === "scratched" || s === "取消" || s === "除外";
+        }
+
+        function getMarkBox(sel) {
+            return sel?.querySelector("[data-role='mark-box']") || null;
+        }
+
+        function resetRowMark(sel) {
+            const box = getMarkBox(sel);
+            if (box) {
+                box.textContent = "";
+                box.dataset.bg = "none";
+            }
+            if (sel) {
+                applyMarkBackground(sel, false);
+                applyBg(sel, "none");
+            }
+        }
+
+        function setRowStatus(sel, status) {
+            if (!sel) return;
+            const scratched = isScratchedStatus(status);
+            sel.dataset.status = scratched ? "scratched" : "";
+            sel.classList.toggle("is-scratched", scratched);
+            const box = getMarkBox(sel);
+            if (scratched) {
+                resetRowMark(sel);
+                if (box) box.remove();
+            } else if (!box) {
+                const markCell = sel.querySelector(".col-mark");
+                if (markCell) markCell.appendChild(createMarkBox(sel));
+            }
+        }
+
         const sortStateByRace = {};
 
         function updateSortUI(card, key, dir) {
@@ -1356,6 +1422,7 @@
             const rows = Array.from(tbody.querySelectorAll("tr.custom-select"));
             const getVal = (row) => {
                 if (row.classList.contains("is-empty")) return null;
+                if (row.classList.contains("is-scratched") && key === "odds") return null;
                 if (key === "no") return parseNum(row.dataset.umaban) ?? parseNum(row.querySelector("td.col-no")?.textContent) ?? null;
                 if (key === "name") return (row.dataset.name || "").trim();
                 if (key === "odds") return parseNum(row.dataset.odds);
@@ -1367,6 +1434,10 @@
                 const be = b.classList.contains("is-empty");
                 if (ae && !be) return 1;
                 if (!ae && be) return -1;
+                const as = a.classList.contains("is-scratched");
+                const bs = b.classList.contains("is-scratched");
+                if (as && !bs) return 1;
+                if (!as && bs) return -1;
 
                 const av = getVal(a);
                 const bv = getVal(b);
@@ -1506,6 +1577,34 @@
             setTimeout(() => document.addEventListener("click", closePalette, true), 0);
         }
 
+        function createMarkBox(rowEl) {
+            const selected = document.createElement("div");
+            selected.className = "mark-box selected";
+            selected.textContent = "";
+            selected.dataset.role = "mark-box";
+            selected.dataset.bg = "none";
+
+            const cycleMark = () => {
+                if (rowEl.classList.contains("is-scratched")) return;
+                const cur = MARKS.indexOf(selected.textContent);
+                selected.textContent = MARKS[(cur + 1) % MARKS.length];
+                applyMarkBackground(rowEl, selected.textContent !== "");
+                saveState();
+            };
+
+            selected.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (backgroundMode) {
+                    openPalette(rowEl, e);
+                    return;
+                }
+                cycleMark();
+            });
+
+            return selected;
+        }
+
         function createRow(raceNum, horseNum) {
             const tr = document.createElement("tr");
             tr.className = "custom-select";
@@ -1522,6 +1621,7 @@
             tr.dataset.jtstats = "";
             tr.dataset.odds = "";
             tr.dataset.ninki = "";
+            tr.dataset.status = "";
 
             const tdNo = document.createElement("td");
             tdNo.className = "col-no";
@@ -1529,11 +1629,7 @@
 
             const tdM = document.createElement("td");
             tdM.className = "col-mark";
-            const selected = document.createElement("div");
-            selected.className = "selected";
-            selected.textContent = "";
-            selected.dataset.bg = "none";
-            tdM.appendChild(selected);
+            tdM.appendChild(createMarkBox(tr));
 
             const tdInfo = document.createElement("td");
             tdInfo.className = "col-info";
@@ -1574,23 +1670,6 @@
             oBottom.textContent = "";
             tdOdds.appendChild(oTop);
             tdOdds.appendChild(oBottom);
-
-            const cycleMark = () => {
-                const cur = MARKS.indexOf(selected.textContent);
-                selected.textContent = MARKS[(cur + 1) % MARKS.length];
-                applyMarkBackground(tr, selected.textContent !== "");
-                saveState();
-            };
-
-            selected.addEventListener("click", (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (backgroundMode) {
-                    openPalette(tr, e);
-                    return;
-                }
-                cycleMark();
-            });
 
             tr.appendChild(tdNo);
             tr.appendChild(tdM);
@@ -1720,6 +1799,7 @@
 
                     const name = (nameEl?.textContent || "").trim();
                     const isEmpty = sel.classList.contains("is-empty");
+                    const status = (sel.dataset.status || "").trim();
                     const jockey = (sel.dataset.jockey || "").trim();
                     const trainer = (sel.dataset.trainer || "").trim();
                     const jid = (sel.dataset.jid || "").trim();
@@ -1747,7 +1827,8 @@
                         umaban: umaban || null,
                         jstats: jstats || null,
                         tstats: tstats || null,
-                        jtstats: jtstats || null
+                        jtstats: jtstats || null,
+                        status: status || null
                     };
                 });
             }
@@ -1820,6 +1901,7 @@
                         const name = val.name;
                         if (name === null) {
                             sel.classList.add("is-empty");
+                            setRowStatus(sel, "");
                             if (nameEl) nameEl.textContent = "";
                             if (oEl) {
                                 oEl.textContent = "";
@@ -1838,6 +1920,7 @@
                             sel.dataset.jtstats = "";
                             sel.dataset.odds = "";
                             sel.dataset.ninki = "";
+                            sel.dataset.status = "";
                             if (box) {
                                 box.textContent = "";
                                 box.dataset.bg = "none";
@@ -1848,12 +1931,13 @@
                         }
 
                         sel.classList.remove("is-empty");
-                        if (nameEl) nameEl.textContent = String(name);
+                        setRowStatus(sel, val.status || "");
+                        if (nameEl) nameEl.textContent = sel.classList.contains("is-scratched") ? "" : String(name);
                         if (oEl) {
-                            oEl.textContent = (val.odds || "") ? String(val.odds) : "";
+                            oEl.textContent = sel.classList.contains("is-scratched") ? "" : ((val.odds || "") ? String(val.odds) : "");
                             setOddsHot(oEl, oEl.textContent);
                         }
-                        if (pEl) pEl.textContent = (val.ninki || "") ? (String(val.ninki) + "人気") : "";
+                        if (pEl) pEl.textContent = sel.classList.contains("is-scratched") ? "" : ((val.ninki || "") ? (String(val.ninki) + "人気") : "");
                         if (noEl) setNoBox(noEl, (val.waku || "") ? String(val.waku) : "", (val.umaban || "") ? String(val.umaban) : String(sel.dataset.horse));
                         sel.dataset.umaban = (val.umaban || "") ? String(val.umaban).trim() : "";
                         sel.dataset.name = String(name || "").trim();
@@ -1864,8 +1948,8 @@
                         sel.dataset.jstats = (val.jstats || "") ? String(val.jstats).trim() : "";
                         sel.dataset.tstats = (val.tstats || "") ? String(val.tstats).trim() : "";
                         sel.dataset.jtstats = (val.jtstats || "") ? String(val.jtstats).trim() : "";
-                        sel.dataset.odds = (val.odds || "") ? String(val.odds).trim() : "";
-                        sel.dataset.ninki = (val.ninki || "") ? String(val.ninki).trim() : "";
+                        sel.dataset.odds = sel.classList.contains("is-scratched") ? "" : ((val.odds || "") ? String(val.odds).trim() : "");
+                        sel.dataset.ninki = sel.classList.contains("is-scratched") ? "" : ((val.ninki || "") ? String(val.ninki).trim() : "");
                     });
                 }
                 applyPersonDisplay();
@@ -1891,6 +1975,7 @@
         function clearAllHorseNames() {
             document.querySelectorAll('.custom-select').forEach(sel => {
                 sel.classList.remove("is-empty");
+                setRowStatus(sel, "");
 
                 const nameEl = sel.querySelector('.horse-name');
                 const oEl = sel.querySelector('.odds-top');
@@ -1909,11 +1994,14 @@
                 sel.dataset.name = "";
                 sel.dataset.jockey = "";
                 sel.dataset.trainer = "";
+                sel.dataset.jid = "";
+                sel.dataset.tid = "";
                 sel.dataset.jstats = "";
                 sel.dataset.tstats = "";
                 sel.dataset.jtstats = "";
                 sel.dataset.odds = "";
                 sel.dataset.ninki = "";
+                sel.dataset.status = "";
 
                 if (box) {
                     box.textContent = "";
@@ -1936,6 +2024,7 @@
             const favs = [], himo = [], colorMap = {};
             document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
                 if (sel.classList.contains("is-empty")) return;
+                if (sel.classList.contains("is-scratched")) return;
                 const box = sel.querySelector('.selected');
                 const v = (box?.textContent || "").trim();
 
@@ -2150,7 +2239,7 @@
 
         function buildBetsCopyTextFromBlocks(blocks) {
             const map = Array.from({ length: TOTAL_RACES }, () => new Array(HORSE_MAX + 1).fill(""));
-            document.querySelectorAll('.custom-select:not(.is-empty)').forEach(sel => {
+            document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)').forEach(sel => {
                 const r = Number(sel.dataset.race);
                 const h = Number(sel.dataset.horse);
                 if (!Number.isFinite(r) || !Number.isFinite(h) || r < 1 || r > TOTAL_RACES || h < 1 || h > HORSE_MAX) return;
@@ -2477,6 +2566,7 @@
                 const ninkiArr = (races[r] && races[r].ninki) ? races[r].ninki : [];
                 const wakuClasses = (races[r] && races[r].wakuClasses) ? races[r].wakuClasses : [];
                 const umabans = (races[r] && races[r].umabans) ? races[r].umabans : [];
+                const statuses = (races[r] && races[r].statuses) ? races[r].statuses : [];
 
                 for (let i = 1; i <= HORSE_MAX; i++) {
                     const raceNum = r + 1;
@@ -2492,6 +2582,7 @@
                     const wakuClass = wakuClasses[i - 1] || "";
                     const waku = wakuClass || "";
                     const umaban = umabans[i - 1] || String(i);
+                    const scratched = isScratchedStatus(statuses[i - 1]);
 
                     const sel = document.querySelector(`.custom-select[data-race="${raceNum}"][data-horse="${horseNum}"]`);
                     if (!sel) continue;
@@ -2504,14 +2595,15 @@
 
                     if (name) {
                         sel.classList.remove("is-empty");
-                        if (nameEl) nameEl.textContent = String(name);
+                        setRowStatus(sel, scratched ? "scratched" : "");
+                        if (nameEl) nameEl.textContent = scratched ? "" : String(name);
                         if (oEl) {
-                            const oTxt = (odds === undefined || odds === null) ? "" : String(odds);
+                            const oTxt = scratched ? "" : ((odds === undefined || odds === null) ? "" : String(odds));
                             oEl.textContent = oTxt;
                             setOddsHot(oEl, oTxt);
                         }
                         if (pEl) {
-                            const pTxt = (ninki === undefined || ninki === null || ninki === "") ? "" : `${String(ninki)}人気`;
+                            const pTxt = scratched ? "" : ((ninki === undefined || ninki === null || ninki === "") ? "" : `${String(ninki)}人気`);
                             pEl.textContent = pTxt;
                         }
                         if (noEl) setNoBox(noEl, String(waku || ""), String(umaban || ""));
@@ -2521,10 +2613,11 @@
                         sel.dataset.trainer = String(trainer || "").trim();
                         sel.dataset.jid = String(jid || "").trim();
                         sel.dataset.tid = String(tid || "").trim();
-                        sel.dataset.odds = (odds === undefined || odds === null) ? "" : String(odds).trim();
-                        sel.dataset.ninki = (ninki === undefined || ninki === null) ? "" : String(ninki).trim();
+                        sel.dataset.odds = scratched ? "" : ((odds === undefined || odds === null) ? "" : String(odds).trim());
+                        sel.dataset.ninki = scratched ? "" : ((ninki === undefined || ninki === null) ? "" : String(ninki).trim());
                     } else {
                         sel.classList.add("is-empty");
+                        setRowStatus(sel, "");
 
                         if (nameEl) nameEl.textContent = "";
                         if (oEl) {
@@ -2544,6 +2637,7 @@
                         sel.dataset.jtstats = "";
                         sel.dataset.odds = "";
                         sel.dataset.ninki = "";
+                        sel.dataset.status = "";
 
                         if (box) {
                             box.textContent = "";
@@ -2688,7 +2782,7 @@
         }
 
         function hasExistingMarks() {
-            return Array.from(document.querySelectorAll(".custom-select:not(.is-empty)")).some(sel => {
+            return Array.from(document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)")).some(sel => {
                 const box = sel.querySelector(".selected");
                 if (!box) return false;
                 const mark = (box.textContent || "").trim();
@@ -2737,6 +2831,7 @@
             const items = [];
             document.querySelectorAll(".custom-select").forEach(sel => {
                 if (sel.classList.contains("is-empty")) return;
+                if (sel.classList.contains("is-scratched")) return;
                 const r = Number(sel.dataset.race);
                 const h = Number(sel.dataset.horse);
                 const box = sel.querySelector(".selected");
@@ -2767,7 +2862,7 @@
                 const [r, h, mark, bg] = it;
 
                 const sel = document.querySelector(`.custom-select[data-race="${r}"][data-horse="${h}"]`);
-                if (!sel || sel.classList.contains("is-empty")) continue;
+                if (!sel || sel.classList.contains("is-empty") || sel.classList.contains("is-scratched")) continue;
 
                 const box = sel.querySelector(".selected");
                 if (!box) continue;
@@ -2897,7 +2992,7 @@
         }
 
         function clearAllMarks() {
-            document.querySelectorAll('.custom-select:not(.is-empty)').forEach(sel => {
+            document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)').forEach(sel => {
                 const box = sel.querySelector('.selected');
                 if (box) box.textContent = "";
                 applyMarkBackground(sel, false);
@@ -3141,6 +3236,12 @@
                 const nameEl = sel.querySelector('.person-name');
                 const statsEl = sel.querySelector('.person-stats');
                 if (!nameEl || !statsEl) return;
+                if (sel.classList.contains("is-scratched")) {
+                    nameEl.textContent = "";
+                    statsEl.textContent = "";
+                    nameEl.classList.remove('hot');
+                    return;
+                }
                 const jockey = sel.dataset.jockey || "";
                 const trainer = sel.dataset.trainer || "";
                 let name = "";
@@ -3283,6 +3384,7 @@
 
                     document.querySelectorAll(`.custom-select[data-race="${r + 1}"]`).forEach(sel => {
                         if (sel.classList.contains("is-empty")) return;
+                        if (sel.classList.contains("is-scratched")) return;
                         let id;
                         if (personAtFetch === 'jt') {
                             const jid = (sel.dataset.jid || "").trim();
