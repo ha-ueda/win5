@@ -102,7 +102,7 @@
 
         .toggle-row .race-clear {
             width: 80px;
-            min-height: 44px;
+            min-height: 40px;
             text-align: center;
             padding: 6px 0;
         }
@@ -110,6 +110,11 @@
         .toggle-row > #sortToggle,
         .toggle-row > #statsPopBtn {
             width: 200px;
+        }
+
+        .toggle-row > #sortToggle .sort-option,
+        .toggle-row > #statsPopBtn {
+            min-height: 40px;
         }
 
         #sortToggle .sort-option {
@@ -1718,7 +1723,9 @@
                 clearBtn.type = "button";
                 clearBtn.className = "race-clear";
                 clearBtn.textContent = "クリア";
-                clearBtn.addEventListener("click", () => clearColumn(r));
+                clearBtn.addEventListener("click", () => {
+                    if (confirm("このレースの印と背景色をクリアしますか？")) clearColumn(r);
+                });
 
                 headRight.appendChild(clearBtn);
 
