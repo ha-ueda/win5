@@ -355,6 +355,94 @@
             padding: 8px 6px;
         }
 
+        .bg-rule-modal-card {
+            width: min(460px, 100%);
+        }
+
+        .bg-rule-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .bg-rule-item {
+            display: grid;
+            grid-template-columns: 20px 1fr auto;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .bg-rule-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            border: 1px solid rgba(0,0,0,0.18);
+            cursor: pointer;
+        }
+
+        .bg-rule-label {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.3;
+        }
+
+        .bg-rule-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            border-radius: 999px;
+            background: #d2d2d2;
+            transition: background 0.15s;
+        }
+
+        .bg-rule-switch::after {
+            content: "";
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            left: 2px;
+            top: 2px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+            transition: transform 0.15s;
+        }
+
+        .bg-rule-item.active .bg-rule-switch {
+            background: #3251BC;
+        }
+
+        .bg-rule-item.active .bg-rule-switch::after {
+            transform: translateX(20px);
+        }
+
+        .bg-rule-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .bg-rule-actions button {
+            min-height: 40px;
+            border: 1px solid #d0d0d0;
+            border-radius: 8px;
+            background: #f7f7f7;
+            color: #333;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .bg-rule-actions .primary {
+            background: #3251BC;
+            border-color: #3251BC;
+            color: #fff;
+        }
+
         .shutuba-wrap {
             width: 100%;
         }
@@ -1105,12 +1193,14 @@
                 <span id="statsPopLabel">騎手・競馬場・3年</span>
                 <span class="stats-pop-arrow">▼</span>
             </button>
-            <button id="modeToggle" class="race-clear clear-pc" type="button">背景選択</button>
+            <button id="modeToggle" class="race-clear clear-pc" type="button">個別背景</button>
+            <button id="bgRuleBtn" class="race-clear clear-pc" type="button">条件背景</button>
             <button id="bgClearAllBtn" class="race-clear clear-pc" type="button">色クリア</button>
             <button class="race-clear clear-pc" type="button" onclick="if(confirm('印をすべてクリアしますか？'))clearAllMarks()">印クリア</button>
         </div>
         <div class="toggle-row toggle-row-sp-2">
-            <button id="modeToggleSp" class="race-clear" type="button">背景選択</button>
+            <button id="modeToggleSp" class="race-clear" type="button">個別背景</button>
+            <button id="bgRuleBtnSp" class="race-clear" type="button">条件背景</button>
             <button class="race-clear" type="button" onclick="document.getElementById('bgClearAllBtn').click()">色クリア</button>
             <button class="race-clear" type="button" onclick="if(confirm('印をすべてクリアしますか？'))clearAllMarks()">印クリア</button>
         </div>
@@ -1207,6 +1297,20 @@
         </div>
     </div>
 
+    <div id="bgRuleModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="条件背景">
+        <div class="modal-card bg-rule-modal-card" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">条件背景</div>
+                <button class="modal-close-btn" onclick="closeBgRuleModal()" aria-label="閉じる">&times;</button>
+            </div>
+            <div id="bgRuleList" class="bg-rule-list"></div>
+            <div class="bg-rule-actions">
+                <button type="button" onclick="closeBgRuleModal()">キャンセル</button>
+                <button class="primary" type="button" onclick="applySelectedBackgroundRules()">適用</button>
+            </div>
+        </div>
+    </div>
+
     <script>
 
         let toastHideTimer = null;
@@ -1264,8 +1368,34 @@
         const STORAGE_KEY_OLD = 'win5_state_v8';
         const WIN5_API = "https://win5.cooopew.workers.dev/";
         const BG_COLORS = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4"];
+        const RULE_BG_COLOR = "#b3d1ff";
+        const BACKGROUND_RULES = [
+            {
+                key: "redOdds",
+                label: "人気紐",
+                color: RULE_BG_COLOR,
+                match: row => {
+                    const mark = (row.querySelector(".selected")?.textContent || "").trim();
+                    if (mark !== "✓") return false;
+                    const odds = parseNum(row.dataset.odds);
+                    return odds !== null && odds > 0 && odds < 10;
+                }
+            },
+            {
+                key: "wins1",
+                label: "騎手もしくは調教師が 1 勝以下",
+                color: RULE_BG_COLOR,
+                match: row => {
+                    const mark = (row.querySelector(".selected")?.textContent || "").trim();
+                    if (mark !== "◎" && mark !== "✓") return false;
+                    return isWinsAtMost(row.dataset.jstats, 1) || isWinsAtMost(row.dataset.tstats, 1);
+                }
+            }
+        ];
 
         let backgroundMode = false;
+        let selectedBgRuleKeys = new Set(["redOdds"]);
+        let bgRuleColors = Object.fromEntries(BACKGROUND_RULES.map(rule => [rule.key, rule.color]));
         const modeBtn = document.getElementById("modeToggle");
 
 
@@ -1306,7 +1436,10 @@
             document.querySelectorAll('.custom-select:not(.is-empty)').forEach(r => {
                 if (!r) return;
                 const box = r.querySelector(".selected");
-                if (box) box.dataset.bg = "none";
+                if (box) {
+                    box.dataset.bg = "none";
+                    box.dataset.bgSource = "";
+                }
                 applyBg(r, "none");
             });
             saveState();
@@ -1319,6 +1452,170 @@
                 clearAllRowBackgrounds();
             });
         }
+
+        function setRowBackground(rowEl, bg, source = "") {
+            const box = rowEl?.querySelector(".selected");
+            if (!box) return;
+            const c = (bg && bg !== "none") ? String(bg) : "none";
+            box.dataset.bg = c;
+            box.dataset.bgSource = c === "none" ? "" : String(source || "");
+            applyBg(rowEl, c);
+        }
+
+        function clearAppliedRuleBackgrounds() {
+            document.querySelectorAll('.custom-select:not(.is-empty)').forEach(row => {
+                const box = row.querySelector(".selected");
+                if (!box || box.dataset.bgSource !== "rule") return;
+                setRowBackground(row, "none");
+            });
+        }
+
+        function getBgRuleColor(rule) {
+            return bgRuleColors[rule.key] || rule.color || RULE_BG_COLOR;
+        }
+
+        function openBgRulePalette(rule, swatch, e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const palette = document.createElement("div");
+            palette.style.position = "absolute";
+            palette.style.zIndex = 30000;
+            palette.style.display = "flex";
+            palette.style.flexWrap = "wrap";
+            palette.style.gap = "10px";
+            palette.style.background = "#fff";
+            palette.style.border = "1px solid #999";
+            palette.style.padding = "10px";
+            palette.style.borderRadius = "12px";
+            palette.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
+            palette.style.maxWidth = Math.min(window.innerWidth - 20, 400) + "px";
+
+            BG_COLORS.forEach(color => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.style.width = "36px";
+                btn.style.height = "36px";
+                btn.style.backgroundColor = color;
+                btn.style.border = "1px solid #777";
+                btn.style.borderRadius = "8px";
+                btn.style.cursor = "pointer";
+                btn.addEventListener("click", (ev) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    bgRuleColors[rule.key] = color;
+                    swatch.style.backgroundColor = color;
+                    palette.remove();
+                    saveState();
+                });
+                palette.appendChild(btn);
+            });
+
+            document.body.appendChild(palette);
+
+            const rect = palette.getBoundingClientRect();
+            const pw = rect.width;
+            const ph = rect.height;
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const sx = window.scrollX;
+            const sy = window.scrollY;
+
+            let left = e.clientX + sx;
+            let top = e.clientY + sy;
+
+            if (e.clientX + pw > vw - 10) left = vw - pw - 10 + sx;
+            if (e.clientY + ph > vh - 10) top = vh - ph - 10 + sy;
+
+            palette.style.left = left + "px";
+            palette.style.top = top + "px";
+
+            const closePalette = (ev) => {
+                if (!palette.contains(ev.target)) {
+                    palette.remove();
+                    document.removeEventListener("click", closePalette, true);
+                }
+            };
+
+            setTimeout(() => document.addEventListener("click", closePalette, true), 0);
+        }
+
+        async function ensureBackgroundRuleStats(activeRules) {
+            if (!activeRules.some(rule => rule.key === "wins1")) return;
+            await Promise.all([
+                fetchAndApplyJockeyStats("jockey", { updateDisplay: false }),
+                fetchAndApplyJockeyStats("trainer", { updateDisplay: false })
+            ]);
+        }
+
+        async function applySelectedBackgroundRules() {
+            clearAppliedRuleBackgrounds();
+            const activeRules = BACKGROUND_RULES.filter(rule => selectedBgRuleKeys.has(rule.key));
+            await ensureBackgroundRuleStats(activeRules);
+            if (activeRules.length > 0) {
+                document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)').forEach(row => {
+                    const box = row.querySelector(".selected");
+                    if (!box) return;
+                    if ((box.dataset.bg || "none") !== "none" && box.dataset.bgSource !== "rule") return;
+                    const rule = activeRules.find(r => r.match(row));
+                    if (!rule) return;
+                    setRowBackground(row, getBgRuleColor(rule), "rule");
+                });
+            }
+            saveState();
+            closeBgRuleModal();
+        }
+
+        function renderBgRuleList() {
+            const list = document.getElementById("bgRuleList");
+            if (!list) return;
+            list.innerHTML = "";
+            BACKGROUND_RULES.forEach(rule => {
+                const item = document.createElement("button");
+                item.type = "button";
+                item.className = "bg-rule-item";
+                item.dataset.key = rule.key;
+                item.classList.toggle("active", selectedBgRuleKeys.has(rule.key));
+                item.innerHTML = `
+                    <span class="bg-rule-swatch"></span>
+                    <span class="bg-rule-label"></span>
+                    <span class="bg-rule-switch" aria-hidden="true"></span>
+                `;
+                const swatch = item.querySelector(".bg-rule-swatch");
+                if (swatch) {
+                    swatch.style.backgroundColor = getBgRuleColor(rule);
+                    swatch.addEventListener("click", (e) => openBgRulePalette(rule, swatch, e));
+                }
+                const label = item.querySelector(".bg-rule-label");
+                if (label) label.textContent = rule.label;
+                item.addEventListener("click", () => {
+                    if (selectedBgRuleKeys.has(rule.key)) selectedBgRuleKeys.delete(rule.key);
+                    else selectedBgRuleKeys.add(rule.key);
+                    item.classList.toggle("active", selectedBgRuleKeys.has(rule.key));
+                    saveState();
+                });
+                list.appendChild(item);
+            });
+        }
+
+        function openBgRuleModal() {
+            renderBgRuleList();
+            const modal = document.getElementById("bgRuleModal");
+            if (!modal) return;
+            modal.style.display = "flex";
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeBgRuleModal() {
+            const modal = document.getElementById("bgRuleModal");
+            if (!modal) return;
+            modal.style.display = "none";
+            document.body.style.overflow = "";
+        }
+
+        document.getElementById("bgRuleBtn")?.addEventListener("click", openBgRuleModal);
+        document.getElementById("bgRuleBtnSp")?.addEventListener("click", openBgRuleModal);
+        document.getElementById("bgRuleModal")?.addEventListener("click", closeBgRuleModal);
 
 
         function toCircleNumber(num) {
@@ -1380,6 +1677,7 @@
             if (box) {
                 box.textContent = "";
                 box.dataset.bg = "none";
+                box.dataset.bgSource = "";
             }
             if (sel) {
                 applyMarkBackground(sel, false);
@@ -1502,9 +1800,7 @@
             if (!box) return;
 
             const applyColorToRow = (row, color) => {
-                const b = row?.querySelector(".selected");
-                if (b) b.dataset.bg = color;
-                applyBg(row, color);
+                setRowBackground(row, color, color === "none" ? "" : "manual");
             };
 
             const applyColor = (color) => {
@@ -1589,6 +1885,7 @@
             selected.textContent = "";
             selected.dataset.role = "mark-box";
             selected.dataset.bg = "none";
+            selected.dataset.bgSource = "";
 
             const cycleMark = () => {
                 if (rowEl.classList.contains("is-scratched")) return;
@@ -1790,6 +2087,9 @@
                 statsYears: currentStatsYears,
                 person: currentPerson,
                 hotThreshold: currentHotThreshold,
+                bgRuleKeys: [...selectedBgRuleKeys],
+                bgRuleColors: { ...bgRuleColors },
+                sortKey: currentSortKey,
                 minFav: document.getElementById('minFav').value,
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
@@ -1824,6 +2124,7 @@
                     state.races[`r${r}`][sel.dataset.horse] = {
                         mark: (box?.textContent || "").trim(),
                         bg: (box?.dataset.bg || "none").trim(),
+                        bgSource: (box?.dataset.bgSource || "").trim(),
                         name: isEmpty ? null : name,
                         jockey: jockey || null,
                         trainer: trainer || null,
@@ -1882,6 +2183,22 @@
                     currentHotThreshold = state.hotThreshold;
                     allHotOptions.forEach(o => o.classList.toggle('active', Number(o.dataset.key) === currentHotThreshold));
                 }
+                if (Array.isArray(state.bgRuleKeys)) {
+                    const valid = new Set(BACKGROUND_RULES.map(rule => rule.key));
+                    selectedBgRuleKeys = new Set(state.bgRuleKeys
+                        .map(key => key === "rank3" ? "redOdds" : key)
+                        .filter(key => valid.has(key)));
+                }
+                if (state.bgRuleColors && typeof state.bgRuleColors === "object") {
+                    for (const rule of BACKGROUND_RULES) {
+                        const saved = state.bgRuleColors[rule.key];
+                        if (BG_COLORS.includes(saved)) bgRuleColors[rule.key] = saved;
+                    }
+                }
+                if (state.sortKey === "no" || state.sortKey === "odds") {
+                    currentSortKey = state.sortKey;
+                    sortOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentSortKey));
+                }
                 for (let r = 1; r <= TOTAL_RACES; r++) {
                     const race = state.races?.[`r${r}`];
                     if (!race) continue;
@@ -1901,6 +2218,7 @@
                         if (box) {
                             box.textContent = m;
                             box.dataset.bg = b;
+                            box.dataset.bgSource = (val.bgSource || "").toString();
                         }
 
                         applyMarkBackground(sel, !!m);
@@ -1932,6 +2250,7 @@
                             if (box) {
                                 box.textContent = "";
                                 box.dataset.bg = "none";
+                                box.dataset.bgSource = "";
                             }
                             applyMarkBackground(sel, false);
                             applyBg(sel, "none");
@@ -1961,6 +2280,7 @@
                     });
                 }
                 applyPersonDisplay();
+                sortAllRaces(currentSortKey);
                 lastState = data;
             } catch (e) {
                 console.warn("restoreState: 保存データの復元に失敗しました", e);
@@ -1973,6 +2293,7 @@
                 if (box) {
                     box.textContent = "";
                     box.dataset.bg = "none";
+                    box.dataset.bgSource = "";
                 }
                 applyMarkBackground(sel, false);
                 applyBg(sel, "none");
@@ -2014,6 +2335,7 @@
                 if (box) {
                     box.textContent = "";
                     box.dataset.bg = "none";
+                    box.dataset.bgSource = "";
                 }
                 applyMarkBackground(sel, false);
                 applyBg(sel, "none");
@@ -2650,6 +2972,7 @@
                         if (box) {
                             box.textContent = "";
                             box.dataset.bg = "none";
+                            box.dataset.bgSource = "";
                         }
                         applyMarkBackground(sel, false);
                         applyBg(sel, "none");
@@ -2658,6 +2981,7 @@
             }
 
             applyPersonDisplay();
+            sortAllRaces(currentSortKey);
             saveState();
         }
 
@@ -2861,6 +3185,7 @@
                 if (!box) return;
                 box.textContent = "";
                 box.dataset.bg = "none";
+                box.dataset.bgSource = "";
                 applyMarkBackground(sel, false);
                 applyBg(sel, "none");
             });
@@ -2881,8 +3206,7 @@
                 box.textContent = m;
                 applyMarkBackground(sel, !!m);
 
-                box.dataset.bg = b;
-                applyBg(sel, b);
+                setRowBackground(sel, b, b === "none" ? "" : "manual");
             }
 
             saveState();
@@ -3027,6 +3351,7 @@
             currentSortKey = opt.dataset.key;
             sortAllRaces(currentSortKey);
             sortOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentSortKey));
+            saveState();
         });
 
         function isMobileLayout() {
@@ -3229,6 +3554,7 @@
         statsModal.addEventListener("click", closeStatsModal);
         document.addEventListener("keydown", (e) => {
             if (e.key === "Escape" && statsModal.style.display === "flex") closeStatsModal();
+            if (e.key === "Escape" && document.getElementById("bgRuleModal")?.style.display === "flex") closeBgRuleModal();
         });
 
         function isHotPerson(stats) {
@@ -3237,6 +3563,11 @@
             const w = +m[1], runs = +m[1] + +m[2] + +m[3] + +m[4];
             if (runs === 0) return false;
             return w / runs >= currentHotThreshold;
+        }
+
+        function isWinsAtMost(stats, maxWins) {
+            const m = /\((\d+)-\d+-\d+-\d+\)/.exec(stats || "");
+            return !!m && Number(m[1]) <= maxWins;
         }
 
         function applyPersonDisplay() {
@@ -3331,11 +3662,11 @@
             syncHotToggle(opt.dataset.key);
         });
 
-        async function fetchAndApplyJockeyStats() {
+        async function fetchAndApplyJockeyStats(personOverride = currentPerson, { updateDisplay = true } = {}) {
             const raceInfo = window.raceInfo || [];
             const raceCourses = window.raceCourses || [];
             const mode = currentStatsMode;
-            const person = currentPerson;
+            const person = personOverride;
             const personAtFetch = person;
 
             let keysPerRace = [];
@@ -3409,7 +3740,7 @@
                         sel.dataset[datasetKey] = `(${s[0]}-${s[1]}-${s[2]}-${s[3]})`;
                     });
                 }
-                if (personAtFetch === currentPerson) applyPersonDisplay();
+                if (updateDisplay && personAtFetch === currentPerson) applyPersonDisplay();
                 saveState();
             } catch (e) {
                 console.warn("fetchAndApplyJockeyStats:", e);
