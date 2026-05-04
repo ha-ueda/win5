@@ -367,20 +367,19 @@
 
         .bg-rule-item {
             display: grid;
-            grid-template-columns: 20px 1fr auto;
+            grid-template-columns: 36px 1fr auto;
             align-items: center;
             gap: 10px;
             padding: 10px 12px;
             border: 1px solid #e0e0e0;
             border-radius: 8px;
             background: #fff;
-            cursor: pointer;
         }
 
         .bg-rule-swatch {
-            width: 20px;
-            height: 20px;
-            border-radius: 5px;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
             border: 1px solid rgba(0,0,0,0.18);
             cursor: pointer;
         }
@@ -389,14 +388,18 @@
             font-size: 14px;
             color: #333;
             line-height: 1.3;
+            text-align: center;
         }
 
         .bg-rule-switch {
             position: relative;
             width: 44px;
             height: 24px;
+            border: 0;
+            padding: 0;
             border-radius: 999px;
             background: #d2d2d2;
+            cursor: pointer;
             transition: background 0.15s;
         }
 
@@ -1382,13 +1385,23 @@
                 }
             },
             {
-                key: "wins1",
-                label: "騎手もしくは調教師が 1 勝以下",
+                key: "jockeyWins1",
+                label: "騎手が 1 勝以下",
                 color: RULE_BG_COLOR,
                 match: row => {
                     const mark = (row.querySelector(".selected")?.textContent || "").trim();
                     if (mark !== "◎" && mark !== "✓") return false;
-                    return isWinsAtMost(row.dataset.jstats, 1) || isWinsAtMost(row.dataset.tstats, 1);
+                    return isWinsAtMost(row.dataset.jstats, 1);
+                }
+            },
+            {
+                key: "trainerWins1",
+                label: "調教師が 1 勝以下",
+                color: RULE_BG_COLOR,
+                match: row => {
+                    const mark = (row.querySelector(".selected")?.textContent || "").trim();
+                    if (mark !== "◎" && mark !== "✓") return false;
+                    return isWinsAtMost(row.dataset.tstats, 1);
                 }
             }
         ];
@@ -1541,11 +1554,12 @@
         }
 
         async function ensureBackgroundRuleStats(activeRules) {
-            if (!activeRules.some(rule => rule.key === "wins1")) return;
-            await Promise.all([
-                fetchAndApplyJockeyStats("jockey", { updateDisplay: false }),
-                fetchAndApplyJockeyStats("trainer", { updateDisplay: false })
-            ]);
+            const needsJockey = activeRules.some(rule => rule.key === "jockeyWins1");
+            const needsTrainer = activeRules.some(rule => rule.key === "trainerWins1");
+            const jobs = [];
+            if (needsJockey) jobs.push(fetchAndApplyJockeyStats("jockey", { updateDisplay: false }));
+            if (needsTrainer) jobs.push(fetchAndApplyJockeyStats("trainer", { updateDisplay: false }));
+            await Promise.all(jobs);
         }
 
         async function applySelectedBackgroundRules() {
@@ -1571,15 +1585,14 @@
             if (!list) return;
             list.innerHTML = "";
             BACKGROUND_RULES.forEach(rule => {
-                const item = document.createElement("button");
-                item.type = "button";
+                const item = document.createElement("div");
                 item.className = "bg-rule-item";
                 item.dataset.key = rule.key;
                 item.classList.toggle("active", selectedBgRuleKeys.has(rule.key));
                 item.innerHTML = `
                     <span class="bg-rule-swatch"></span>
                     <span class="bg-rule-label"></span>
-                    <span class="bg-rule-switch" aria-hidden="true"></span>
+                    <button class="bg-rule-switch" type="button" aria-label="${rule.label}を切り替え"></button>
                 `;
                 const swatch = item.querySelector(".bg-rule-swatch");
                 if (swatch) {
@@ -1588,12 +1601,17 @@
                 }
                 const label = item.querySelector(".bg-rule-label");
                 if (label) label.textContent = rule.label;
-                item.addEventListener("click", () => {
-                    if (selectedBgRuleKeys.has(rule.key)) selectedBgRuleKeys.delete(rule.key);
-                    else selectedBgRuleKeys.add(rule.key);
-                    item.classList.toggle("active", selectedBgRuleKeys.has(rule.key));
-                    saveState();
-                });
+                const switchBtn = item.querySelector(".bg-rule-switch");
+                if (switchBtn) {
+                    switchBtn.setAttribute("aria-pressed", String(selectedBgRuleKeys.has(rule.key)));
+                    switchBtn.addEventListener("click", () => {
+                        if (selectedBgRuleKeys.has(rule.key)) selectedBgRuleKeys.delete(rule.key);
+                        else selectedBgRuleKeys.add(rule.key);
+                        item.classList.toggle("active", selectedBgRuleKeys.has(rule.key));
+                        switchBtn.setAttribute("aria-pressed", String(selectedBgRuleKeys.has(rule.key)));
+                        saveState();
+                    });
+                }
                 list.appendChild(item);
             });
         }
@@ -2186,10 +2204,18 @@
                 if (Array.isArray(state.bgRuleKeys)) {
                     const valid = new Set(BACKGROUND_RULES.map(rule => rule.key));
                     selectedBgRuleKeys = new Set(state.bgRuleKeys
-                        .map(key => key === "rank3" ? "redOdds" : key)
+                        .flatMap(key => {
+                            if (key === "rank3") return ["redOdds"];
+                            if (key === "wins1") return ["jockeyWins1", "trainerWins1"];
+                            return [key];
+                        })
                         .filter(key => valid.has(key)));
                 }
                 if (state.bgRuleColors && typeof state.bgRuleColors === "object") {
+                    if (BG_COLORS.includes(state.bgRuleColors.wins1)) {
+                        bgRuleColors.jockeyWins1 = state.bgRuleColors.wins1;
+                        bgRuleColors.trainerWins1 = state.bgRuleColors.wins1;
+                    }
                     for (const rule of BACKGROUND_RULES) {
                         const saved = state.bgRuleColors[rule.key];
                         if (BG_COLORS.includes(saved)) bgRuleColors[rule.key] = saved;
