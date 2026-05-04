@@ -1045,8 +1045,9 @@
             font-weight: 600;
             line-height: 1.3;
             letter-spacing: .01em;
-            white-space: normal;
-            overflow-wrap: anywhere;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
             z-index: 2147483647;
             pointer-events: none;
             -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -3157,7 +3158,7 @@
             } catch (e) { }
 
             if (!token) {
-                showToast("クリップボードに共有URLがありません", { type: "error" });
+                showToast("共有URLがありません", { type: "error" });
                 return;
             }
 
