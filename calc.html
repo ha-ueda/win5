@@ -609,11 +609,6 @@
             border-radius: 1em;
         }
 
-        .person-name.hot {
-            color: #c62828;
-            font-weight: 700;
-        }
-
         .col-odds {
             width: 67px;
             font-feature-settings: "tnum" 1;
@@ -1271,7 +1266,6 @@
                 <div id="personToggle" class="sort-switch">
                     <span class="sort-option active" data-key="jockey">騎手</span>
                     <span class="sort-option" data-key="trainer">調教師</span>
-                    <span class="sort-option" data-key="jt">騎手 × 調教師</span>
                 </div>
             </div>
             <div class="stats-modal-row">
@@ -1288,12 +1282,6 @@
                     <span class="sort-option" data-key="1">1年</span>
                     <span class="sort-option active" data-key="3">3年</span>
                     <span class="sort-option" data-key="5">5年</span>
-                </div>
-            </div>
-            <div class="stats-modal-row">
-                <div id="hotToggle" class="sort-switch">
-                    <span class="sort-option" data-key="0.05">5%</span>
-                    <span class="sort-option active" data-key="0.10">10%</span>
                 </div>
             </div>
         </div>
@@ -2103,7 +2091,6 @@
                 statsMode: currentStatsMode,
                 statsYears: currentStatsYears,
                 person: currentPerson,
-                hotThreshold: currentHotThreshold,
                 bgRuleKeys: [...selectedBgRuleKeys],
                 bgRuleColors: { ...bgRuleColors },
                 sortKey: currentSortKey,
@@ -2193,12 +2180,8 @@
                     allYearsOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentStatsYears));
                 }
                 if (state.person) {
-                    currentPerson = (state.person === 'trainer' || state.person === 'jt') ? state.person : 'jockey';
+                    currentPerson = state.person === 'trainer' ? 'trainer' : 'jockey';
                     allPersonOptions.forEach(o => o.classList.toggle('active', o.dataset.key === currentPerson));
-                }
-                if (Number.isFinite(state.hotThreshold) && state.hotThreshold > 0) {
-                    currentHotThreshold = state.hotThreshold;
-                    allHotOptions.forEach(o => o.classList.toggle('active', Number(o.dataset.key) === currentHotThreshold));
                 }
                 if (Array.isArray(state.bgRuleKeys)) {
                     const valid = new Set(BACKGROUND_RULES.map(rule => rule.key));
@@ -3524,23 +3507,20 @@
         let currentStatsMode = 'venue';
         let currentStatsYears = '3';
         let currentPerson = 'jockey';
-        let currentHotThreshold = 0.10;
         const statsToggleEl = document.getElementById("statsToggle");
         const yearsToggleEl = document.getElementById("yearsToggle");
         const personToggleEl = document.getElementById("personToggle");
-        const hotToggleEl = document.getElementById("hotToggle");
         const statsPopBtn = document.getElementById("statsPopBtn");
         const statsModal = document.getElementById("statsModal");
         const statsPopLabel = document.getElementById("statsPopLabel");
         const allStatsOptions = [...statsToggleEl.querySelectorAll(".sort-option")];
         const allYearsOptions = [...yearsToggleEl.querySelectorAll(".sort-option")];
         const allPersonOptions = [...personToggleEl.querySelectorAll(".sort-option")];
-        const allHotOptions = [...hotToggleEl.querySelectorAll(".sort-option")];
 
         const STATS_LABEL = {
             win5: 'WIN5', venue: '競馬場', surface: '馬場', distance: '距離', course: 'コース',
         };
-        const PERSON_LABEL = { jockey: '騎手', trainer: '調教師', jt: '騎 × 調' };
+        const PERSON_LABEL = { jockey: '騎手', trainer: '調教師' };
 
         function updateStatsPopLabel() {
             const parts = [
@@ -3582,14 +3562,6 @@
             if (e.key === "Escape" && document.getElementById("bgRuleModal")?.style.display === "flex") closeBgRuleModal();
         });
 
-        function isHotPerson(stats) {
-            const m = /\((\d+)-(\d+)-(\d+)-(\d+)\)/.exec(stats || "");
-            if (!m) return false;
-            const w = +m[1], runs = +m[1] + +m[2] + +m[3] + +m[4];
-            if (runs === 0) return false;
-            return w / runs >= currentHotThreshold;
-        }
-
         function isWinsAtMost(stats, maxWins) {
             const m = /\((\d+)-\d+-\d+-\d+\)/.exec(stats || "");
             return !!m && Number(m[1]) <= maxWins;
@@ -3603,17 +3575,13 @@
                 if (sel.classList.contains("is-scratched")) {
                     nameEl.textContent = "";
                     statsEl.textContent = "";
-                    nameEl.classList.remove('hot');
                     return;
                 }
                 const jockey = sel.dataset.jockey || "";
                 const trainer = sel.dataset.trainer || "";
                 let name = "";
                 let stats = "";
-                if (currentPerson === 'jt') {
-                    name = (jockey && trainer) ? `${jockey}・${trainer}` : (jockey || trainer);
-                    stats = sel.dataset.jtstats || "";
-                } else if (currentPerson === 'trainer') {
+                if (currentPerson === 'trainer') {
                     name = trainer;
                     stats = sel.dataset.tstats || "";
                 } else {
@@ -3622,7 +3590,6 @@
                 }
                 nameEl.textContent = name;
                 statsEl.textContent = stats;
-                nameEl.classList.toggle('hot', isHotPerson(stats));
             });
         }
 
@@ -3654,15 +3621,6 @@
             saveState();
         }
 
-        function syncHotToggle(key) {
-            const v = Number(key);
-            if (!Number.isFinite(v) || v <= 0) return;
-            currentHotThreshold = v;
-            allHotOptions.forEach(o => o.classList.toggle('active', o.dataset.key === key));
-            applyPersonDisplay();
-            saveState();
-        }
-
         statsToggleEl.addEventListener("click", (e) => {
             const opt = e.target.closest(".sort-option");
             if (!opt || opt.dataset.key === currentStatsMode) return;
@@ -3679,12 +3637,6 @@
             const opt = e.target.closest(".sort-option");
             if (!opt || opt.dataset.key === currentPerson) return;
             syncPersonToggle(opt.dataset.key);
-        });
-
-        hotToggleEl.addEventListener("click", (e) => {
-            const opt = e.target.closest(".sort-option");
-            if (!opt || Number(opt.dataset.key) === currentHotThreshold) return;
-            syncHotToggle(opt.dataset.key);
         });
 
         async function fetchAndApplyJockeyStats(personOverride = currentPerson, { updateDisplay = true } = {}) {
@@ -3737,8 +3689,7 @@
                 const json = await res.json();
                 if (!json.ok || !json.stats) return;
 
-                const datasetKey = personAtFetch === 'jt' ? 'jtstats'
-                    : (personAtFetch === 'trainer' ? 'tstats' : 'jstats');
+                const datasetKey = personAtFetch === 'trainer' ? 'tstats' : 'jstats';
 
                 for (let r = 0; r < TOTAL_RACES; r++) {
                     const key = keysPerRace[r];
@@ -3749,14 +3700,7 @@
                     document.querySelectorAll(`.custom-select[data-race="${r + 1}"]`).forEach(sel => {
                         if (sel.classList.contains("is-empty")) return;
                         if (sel.classList.contains("is-scratched")) return;
-                        let id;
-                        if (personAtFetch === 'jt') {
-                            const jid = (sel.dataset.jid || "").trim();
-                            const tid = (sel.dataset.tid || "").trim();
-                            id = (jid && tid) ? `${jid}|${tid}` : "";
-                        } else {
-                            id = (sel.dataset[personAtFetch === 'trainer' ? 'tid' : 'jid'] || "").trim();
-                        }
+                        const id = (sel.dataset[personAtFetch === 'trainer' ? 'tid' : 'jid'] || "").trim();
                         if (!id) {
                             sel.dataset[datasetKey] = "";
                             return;
