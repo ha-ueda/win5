@@ -1355,19 +1355,18 @@
             {
                 key: "jockeyWins1Prob3",
                 label: "直近1年間で1勝以下の騎手",
-                color: "#e0b3ff",
+                color: "#ffc800",
                 match: row => hasAnyMark(row) && isJockeyWins1Prob3Band(row)
             },
             {
                 key: "trainerWins1Prob3",
                 label: "直近1年間で1勝以下の調教師",
-                color: "#afdfe4",
+                color: "#96c78c",
                 match: row => hasAnyMark(row) && isWins1Prob3Band(row, "trainer")
             },
             {
                 key: "jockeyNoDailyMultiWin5",
-                label: "5年間で1日に2勝以上したことがない騎手",
-                color: "#c8ad9d",
+                label: "5年間で同日2勝以上ない騎手",
                 getColor: row => getJockeyColor(row),
                 swatchColor: "#ffffff",
                 colorEditable: false,
@@ -1379,6 +1378,8 @@
         let selectedBgRuleKeys = new Set(["redOdds"]);
         let bgRuleColors = Object.fromEntries(BACKGROUND_RULES.map(rule => [rule.key, rule.color]));
         let jockeyDailyMultiWinIds5Years = null;
+        let jockeyDailyMultiWinIds5YearsPromise = null;
+        const statsFetchCache = new Map();
         const modeBtn = document.getElementById("modeToggle");
 
 
@@ -1555,7 +1556,11 @@
                     save: false
                 }));
             }
-            if (needsJockeyProb3) jobs.push(fetchWins1ProbabilityThresholds("jockey"));
+            if (needsJockeyProb3 && needsTrainerProb3) {
+                jobs.push(fetchWins1ProbabilityThresholds("all"));
+            } else if (needsJockeyProb3) {
+                jobs.push(fetchWins1ProbabilityThresholds("jockey"));
+            }
             if (needsTrainerProb3) {
                 jobs.push(fetchAndApplyJockeyStats("trainer", {
                     updateDisplay: false,
@@ -1564,7 +1569,7 @@
                     datasetKey: "tstatsSurface1",
                     save: false
                 }));
-                jobs.push(fetchWins1ProbabilityThresholds("trainer"));
+                if (!needsJockeyProb3) jobs.push(fetchWins1ProbabilityThresholds("trainer"));
             }
             if (needsJockeyNoDailyMultiWin5) jobs.push(fetchJockeyDailyMultiWinIds5Years());
             await Promise.all(jobs);
@@ -3771,10 +3776,28 @@
             return getClosestProbabilityStarts(getWins1ProbabilityTable(person)[surface], BG_PROBABILITY_TARGET);
         }
 
+        function applyProbabilityThresholdPayload(person, thresholds) {
+            if (!thresholds) return;
+            const nextTable = {};
+            for (const surface of ["芝", "ダ"]) {
+                const rows = thresholds[surface]?.rows;
+                if (Array.isArray(rows) && rows.length) {
+                    nextTable[surface] = rows.map(row => ({
+                        starts: Number(row.starts),
+                        probability: Number(row.probability)
+                    })).filter(row => Number.isFinite(row.starts) && Number.isFinite(row.probability));
+                }
+            }
+            if (nextTable["芝"] || nextTable["ダ"]) {
+                setWins1ProbabilityTable(person, nextTable);
+            }
+        }
+
         async function fetchWins1ProbabilityThresholds(person = "jockey") {
+            const normalizedPerson = person === "all" ? "all" : (person === "trainer" ? "trainer" : "jockey");
             try {
                 const u = new URL("probability-thresholds", WIN5_API);
-                u.searchParams.set("person", person === "trainer" ? "trainer" : "jockey");
+                u.searchParams.set("person", normalizedPerson);
                 u.searchParams.set("winsMax", "1");
                 u.searchParams.set("target", String(BG_PROBABILITY_TARGET));
                 u.searchParams.set("step", "1");
@@ -3782,19 +3805,13 @@
                 const json = await res.json();
                 if (!json.ok || !json.thresholds) return;
 
-                const nextTable = {};
-                for (const surface of ["芝", "ダ"]) {
-                    const rows = json.thresholds[surface]?.rows;
-                    if (Array.isArray(rows) && rows.length) {
-                        nextTable[surface] = rows.map(row => ({
-                            starts: Number(row.starts),
-                            probability: Number(row.probability)
-                        })).filter(row => Number.isFinite(row.starts) && Number.isFinite(row.probability));
-                    }
+                if (normalizedPerson === "all") {
+                    applyProbabilityThresholdPayload("jockey", json.thresholds.jockey);
+                    applyProbabilityThresholdPayload("trainer", json.thresholds.trainer);
+                    return;
                 }
-                if (nextTable["芝"] || nextTable["ダ"]) {
-                    setWins1ProbabilityTable(person, nextTable);
-                }
+
+                applyProbabilityThresholdPayload(normalizedPerson, json.thresholds);
             } catch (e) {
                 console.warn("fetchWins1ProbabilityThresholds:", e);
             }
@@ -3802,6 +3819,8 @@
 
         async function fetchJockeyDailyMultiWinIds5Years() {
             if (jockeyDailyMultiWinIds5Years) return;
+            if (jockeyDailyMultiWinIds5YearsPromise) return jockeyDailyMultiWinIds5YearsPromise;
+            jockeyDailyMultiWinIds5YearsPromise = (async () => {
             try {
                 const u = new URL("daily-multi-win-persons", WIN5_API);
                 u.searchParams.set("person", "jockey");
@@ -3813,7 +3832,11 @@
                 jockeyDailyMultiWinIds5Years = new Set(json.ids.map(id => String(id)));
             } catch (e) {
                 console.warn("fetchJockeyDailyMultiWinIds5Years:", e);
+            } finally {
+                jockeyDailyMultiWinIds5YearsPromise = null;
             }
+            })();
+            return jockeyDailyMultiWinIds5YearsPromise;
         }
 
         function isJockeyWins1Prob3Band(row) {
@@ -3982,13 +4005,23 @@
             if (validKeys.length === 0) return;
 
             try {
-                const u = new URL("stats", WIN5_API);
-                u.searchParams.set("mode", apiMode);
-                u.searchParams.set("years", years);
-                u.searchParams.set("person", personAtFetch);
-                u.searchParams.set("q", validKeys.join(","));
-                const res = await fetch(u.toString(), { cache: "no-store" });
-                const json = await res.json();
+                const cacheKey = JSON.stringify({
+                    mode: apiMode,
+                    years: String(years),
+                    person: personAtFetch,
+                    q: validKeys.join(",")
+                });
+                let json = statsFetchCache.get(cacheKey);
+                if (!json) {
+                    const u = new URL("stats", WIN5_API);
+                    u.searchParams.set("mode", apiMode);
+                    u.searchParams.set("years", years);
+                    u.searchParams.set("person", personAtFetch);
+                    u.searchParams.set("q", validKeys.join(","));
+                    const res = await fetch(u.toString(), { cache: "no-store" });
+                    json = await res.json();
+                    if (json.ok && json.stats) statsFetchCache.set(cacheKey, json);
+                }
                 if (!json.ok || !json.stats) return;
 
                 for (let r = 0; r < TOTAL_RACES; r++) {
