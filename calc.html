@@ -1375,11 +1375,13 @@
             },
             {
                 key: "jockeyNoDailyMultiWin5",
-                label: "5年間で同日2勝以上しない騎手",
+                label: "5年間で1日2勝以上しない騎手",
                 getColor: row => getJockeyColor(row),
                 swatchBackground: "linear-gradient(90deg, #ffadad 0%, #ffadad 20%, #9bf6ff 20%, #9bf6ff 40%, #bdb2ff 40%, #bdb2ff 60%, #f9c74f 60%, #f9c74f 80%, #43aa8b 80%, #43aa8b 100%)",
                 colorEditable: false,
-                match: row => hasAnyMark(row) && isJockeyWithoutDailyMultiWin5Years(row)
+                match: row => hasAnyMark(row)
+                    && isJockeyWithoutDailyMultiWin5Years(row)
+                    && getSelectedJockeyRaceCount(row) >= 2
             }
         ];
 
@@ -3868,6 +3870,19 @@
             return !jockeyDailyMultiWinIds5Years.has(jid);
         }
 
+        function getSelectedJockeyRaceCount(row) {
+            const jid = String(row?.dataset?.jid || "").trim();
+            if (!jid) return 0;
+            const races = new Set();
+            document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
+                if (!hasAnyMark(sel)) return;
+                if (String(sel.dataset.jid || "").trim() !== jid) return;
+                const race = String(sel.dataset.race || "").trim();
+                if (race) races.add(race);
+            });
+            return races.size;
+        }
+
         function hashString(value) {
             let hash = 0;
             const text = String(value || "");
@@ -3886,6 +3901,7 @@
             const ids = [...new Set(
                 Array.from(document.querySelectorAll(".custom-select"))
                     .filter(sel => hasAnyMark(sel) && isJockeyWithoutDailyMultiWin5Years(sel))
+                    .filter(sel => getSelectedJockeyRaceCount(sel) >= 2)
                     .map(sel => String(sel.dataset.jid || "").trim())
                     .filter(Boolean)
             )].sort();
