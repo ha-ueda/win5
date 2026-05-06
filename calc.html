@@ -2991,17 +2991,20 @@
                     const oEl = sel.querySelector(".odds-top");
                     const pEl = sel.querySelector(".odds-bottom");
                     const scratched = sel.classList.contains("is-scratched");
+                    const hasOdds = odds !== undefined && odds !== null && String(odds).trim() !== "";
+                    const hasNinki = ninki !== undefined && ninki !== null && String(ninki).trim() !== "";
+                    if (!scratched && !hasOdds && !hasNinki) continue;
 
-                    const oTxt = scratched || odds === undefined || odds === null ? "" : String(odds);
+                    const oTxt = scratched ? "" : (hasOdds ? String(odds) : (sel.dataset.odds || ""));
                     if (oEl) {
                         oEl.textContent = oTxt;
                         setOddsHot(oEl, oTxt);
                     }
                     if (pEl) {
-                        pEl.textContent = scratched || ninki === undefined || ninki === null || ninki === "" ? "" : `${String(ninki)}人気`;
+                        pEl.textContent = scratched ? "" : (hasNinki ? `${String(ninki)}人気` : pEl.textContent);
                     }
                     sel.dataset.odds = oTxt.trim();
-                    sel.dataset.ninki = scratched || ninki === undefined || ninki === null ? "" : String(ninki).trim();
+                    sel.dataset.ninki = scratched ? "" : (hasNinki ? String(ninki).trim() : sel.dataset.ninki);
                 }
             }
 
@@ -3018,7 +3021,8 @@
                 }
 
                 const races = json.races || [];
-                if (races.length === 0 || races.every(r => !r || !r.odds || r.odds.length === 0)) {
+                const hasOddsData = races.some(r => Array.isArray(r?.odds) && r.odds.some(v => v !== undefined && v !== null && String(v).trim() !== ""));
+                if (!hasOddsData) {
                     showToast("オッズデータがありません");
                     return;
                 }
