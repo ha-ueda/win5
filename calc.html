@@ -1265,7 +1265,6 @@
             </div>
             <div id="statsInfoPanel" class="stats-info-panel" hidden>
                 <dl>
-                    <dt>馬場</dt><dd>芝・ダート・障害の成績</dd>
                     <dt>競馬場</dt><dd>競馬場の成績</dd>
                     <dt>距離</dt><dd>同距離の成績</dd>
                 </dl>
@@ -1278,7 +1277,6 @@
             </div>
             <div class="stats-modal-row">
                 <div id="statsToggle" class="sort-switch">
-                    <span class="sort-option" data-key="surface">馬場</span>
                     <span class="sort-option" data-key="venue">競馬場</span>
                     <span class="sort-option" data-key="distance">距離</span>
                 </div>
@@ -2159,7 +2157,7 @@
 
                 if (state.minFav) document.getElementById('minFav').value = state.minFav;
                 currentStatsModes = normalizeStatsModes(Array.isArray(state.statsModes) ? state.statsModes : []);
-                currentStatsMode = currentStatsModes.length ? 'combo' : 'win5';
+                currentStatsMode = 'combo';
                 syncStatsToggleUI();
                 if (state.statsYears) {
                     currentStatsYears = state.statsYears;
@@ -3490,9 +3488,9 @@
             return String(courseInfoText || "").replace(/m$/, "").trim();
         }
 
-        const VALID_STATS_MODES = ['surface', 'venue', 'distance'];
+        const VALID_STATS_MODES = ['venue', 'distance'];
         let currentStatsModes = [];
-        let currentStatsMode = 'win5';
+        let currentStatsMode = 'combo';
         let currentStatsYears = '3';
         let currentPerson = 'jockey';
         const statsToggleEl = document.getElementById("statsToggle");
@@ -3506,7 +3504,7 @@
         const allPersonOptions = [...personToggleEl.querySelectorAll(".sort-option")];
 
         const STATS_LABEL = {
-            win5: 'WIN5', venue: '競馬場', surface: '馬場', distance: '距離',
+            win5: 'WIN5', venue: '競馬場', distance: '距離',
         };
         const PERSON_LABEL = { jockey: '騎手', trainer: '調教師' };
 
@@ -3599,7 +3597,7 @@
 
         function syncStatsToggle(keys) {
             currentStatsModes = normalizeStatsModes(keys);
-            currentStatsMode = currentStatsModes.length ? 'combo' : 'win5';
+            currentStatsMode = 'combo';
             syncStatsToggleUI();
             updateStatsPopLabel();
             kickStatsFetch();
@@ -3650,14 +3648,13 @@
         });
 
         function getStatsKeysForModes(modes, raceInfo, raceCourses) {
-            if (modes.length === 0) return Array(TOTAL_RACES).fill('win5');
             const modeSet = new Set(modes);
             const keysPerRace = [];
             for (let i = 0; i < TOTAL_RACES; i++) {
                 const venue = modeSet.has('venue') ? extractVenue(raceInfo[i]) : "*";
                 const course = extractCourse(raceCourses[i]);
                 const surfaceMatch = course.match(/^(芝|ダ|障)/);
-                const surface = modeSet.has('surface') ? (surfaceMatch ? surfaceMatch[1] : "") : "*";
+                const surface = surfaceMatch ? surfaceMatch[1] : "";
                 const distanceMatch = course.match(/^(?:芝|ダ|障)(\d+)/);
                 const distance = modeSet.has('distance') ? (distanceMatch ? distanceMatch[1] : "") : "*";
                 keysPerRace.push((venue && surface && distance) ? `${venue}:${surface}:${distance}` : "");
@@ -3671,7 +3668,7 @@
             const modes = normalizeStatsModes(currentStatsModes);
             const personAtFetch = personOverride;
             const datasetKey = personAtFetch === 'trainer' ? 'tstats' : 'jstats';
-            const apiMode = modes.length ? 'combo' : 'win5';
+            const apiMode = 'combo';
             const keysPerRace = getStatsKeysForModes(modes, raceInfo, raceCourses);
             const validKeys = [...new Set(keysPerRace.filter(k => k))];
             if (validKeys.length === 0) return;
@@ -3681,7 +3678,7 @@
                 u.searchParams.set("mode", apiMode);
                 u.searchParams.set("years", currentStatsYears);
                 u.searchParams.set("person", personAtFetch);
-                if (apiMode !== 'win5') u.searchParams.set("q", validKeys.join(","));
+                u.searchParams.set("q", validKeys.join(","));
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
                 if (!json.ok || !json.stats) return;
