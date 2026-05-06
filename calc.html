@@ -1309,6 +1309,15 @@
         const STORAGE_KEY_OLD = 'win5_state_v8';
         const WIN5_API = "https://win5.cooopew.workers.dev/";
         const BG_COLORS = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4"];
+        const JOCKEY_NO_DAILY_MULTI_WIN_COLORS = [
+            "#ffadad", "#ffd6a5", "#fdffb6", "#caffbf", "#9bf6ff", "#a0c4ff",
+            "#bdb2ff", "#ffc6ff", "#ff8fab", "#f9c74f", "#90be6d", "#43aa8b",
+            "#4d96ff", "#845ec2", "#f3722c", "#ef476f", "#06d6a0", "#118ab2",
+            "#c77dff", "#f8961e", "#84dcc6", "#f28482", "#b8f2e6", "#f6bd60",
+            "#8ecae6", "#ffb703", "#a7c957", "#e5989b", "#80ed99", "#cdb4db"
+        ];
+        const JOCKEY_NO_DAILY_MULTI_WIN_COLOR_POOL = JOCKEY_NO_DAILY_MULTI_WIN_COLORS
+            .filter(color => !BG_COLORS.includes(color));
         const RULE_BG_COLOR = "#b3d1ff";
         const BG_PROBABILITY_TARGET = 3;
         let jockeyWins1ProbabilityTable = {
@@ -1368,7 +1377,7 @@
                 key: "jockeyNoDailyMultiWin5",
                 label: "5年間で同日2勝以上しない騎手",
                 getColor: row => getJockeyColor(row),
-                swatchColor: "#ffffff",
+                swatchBackground: "linear-gradient(90deg, #ffadad 0%, #ffadad 20%, #9bf6ff 20%, #9bf6ff 40%, #bdb2ff 40%, #bdb2ff 60%, #f9c74f 60%, #f9c74f 80%, #43aa8b 80%, #43aa8b 100%)",
                 colorEditable: false,
                 match: row => hasAnyMark(row) && isJockeyWithoutDailyMultiWin5Years(row)
             }
@@ -1611,7 +1620,8 @@
                 `;
                 const swatch = item.querySelector(".bg-rule-swatch");
                 if (swatch) {
-                    swatch.style.backgroundColor = rule.swatchColor || getBgRuleColor(rule);
+                    if (rule.swatchBackground) swatch.style.background = rule.swatchBackground;
+                    else swatch.style.backgroundColor = rule.swatchColor || getBgRuleColor(rule);
                     if (rule.colorEditable !== false) {
                         swatch.addEventListener("click", (e) => openBgRulePalette(rule, swatch, e));
                     } else {
@@ -3867,29 +3877,22 @@
             return Math.abs(hash);
         }
 
-        function hslToHex(h, s, l) {
-            s /= 100;
-            l /= 100;
-            const c = (1 - Math.abs(2 * l - 1)) * s;
-            const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-            const m = l - c / 2;
-            let r = 0, g = 0, b = 0;
-            if (h < 60) [r, g, b] = [c, x, 0];
-            else if (h < 120) [r, g, b] = [x, c, 0];
-            else if (h < 180) [r, g, b] = [0, c, x];
-            else if (h < 240) [r, g, b] = [0, x, c];
-            else if (h < 300) [r, g, b] = [x, 0, c];
-            else [r, g, b] = [c, 0, x];
-            const toHex = v => Math.round((v + m) * 255).toString(16).padStart(2, "0");
-            return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-        }
-
         function getJockeyColor(row) {
             const jid = String(row?.dataset?.jid || "").trim();
-            if (!jid) return "#c8ad9d";
+            const colors = JOCKEY_NO_DAILY_MULTI_WIN_COLOR_POOL.length
+                ? JOCKEY_NO_DAILY_MULTI_WIN_COLOR_POOL
+                : JOCKEY_NO_DAILY_MULTI_WIN_COLORS;
+            if (!jid) return colors[0];
+            const ids = [...new Set(
+                Array.from(document.querySelectorAll(".custom-select"))
+                    .filter(sel => hasAnyMark(sel) && isJockeyWithoutDailyMultiWin5Years(sel))
+                    .map(sel => String(sel.dataset.jid || "").trim())
+                    .filter(Boolean)
+            )].sort();
+            const index = ids.indexOf(jid);
+            if (index >= 0) return colors[index % colors.length];
             const hash = hashString(jid);
-            const hue = (hash * 137) % 360;
-            return hslToHex(hue, 58, 78);
+            return colors[hash % colors.length];
         }
 
         function applyPersonDisplay() {
