@@ -1186,7 +1186,7 @@
     <div class="top-bar-right">
         <select id="win5TabSelect"></select>
         <button class="calc-btn" onclick="handleLoad()">データ取得</button>
-        <button class="calc-btn" onclick="confirmAndClear()">クリア</button>
+        <button class="calc-btn" onclick="loadOddsOnly()">オッズ取得</button>
         <button class="calc-btn" onclick="openShare()">共有</button>
     </div>
 
@@ -2983,6 +2983,7 @@
         }
 
         function handleLoad() {
+            if (!confirm("データを取得しますか？")) return;
             loadWin5Data();
         }
 
@@ -2993,17 +2994,20 @@
             clearAllHorseNames();
         }
 
+        async function fetchSelectedWin5Data() {
+            const idx = document.getElementById("win5TabSelect").value;
+
+            const u = new URL(WIN5_API);
+            u.searchParams.set("tab", idx);
+            u.searchParams.set("_", String(Date.now()));
+
+            const res = await fetch(u.toString(), { cache: "no-store" });
+            return res.json();
+        }
+
         async function loadWin5Data() {
             try {
-                const idx = document.getElementById("win5TabSelect").value;
-
-                const u = new URL(WIN5_API);
-                u.searchParams.set("tab", idx);
-                u.searchParams.set("_", String(Date.now()));
-
-                const res = await fetch(u.toString(), { cache: "no-store" });
-                const json = await res.json();
-
+                const json = await fetchSelectedWin5Data();
                 if (!json.ok) {
                     showToast("取得に失敗しました", { type: "error" });
                     return;
@@ -3021,6 +3025,61 @@
                 showToast("取得しました");
             } catch (e) {
                 showToast("取得に失敗しました");
+            }
+        }
+
+        function applyOddsOnlyData(json) {
+            const races = json.races || [];
+
+            for (let r = 0; r < TOTAL_RACES; r++) {
+                const oddsArr = (races[r] && races[r].odds) ? races[r].odds : [];
+                const ninkiArr = (races[r] && races[r].ninki) ? races[r].ninki : [];
+
+                for (let i = 1; i <= HORSE_MAX; i++) {
+                    const sel = document.querySelector(`.custom-select[data-race="${r + 1}"][data-horse="${i}"]`);
+                    if (!sel || sel.classList.contains("is-empty")) continue;
+
+                    const odds = oddsArr[i - 1];
+                    const ninki = ninkiArr[i - 1];
+                    const oEl = sel.querySelector(".odds-top");
+                    const pEl = sel.querySelector(".odds-bottom");
+                    const scratched = sel.classList.contains("is-scratched");
+
+                    const oTxt = scratched || odds === undefined || odds === null ? "" : String(odds);
+                    if (oEl) {
+                        oEl.textContent = oTxt;
+                        setOddsHot(oEl, oTxt);
+                    }
+                    if (pEl) {
+                        pEl.textContent = scratched || ninki === undefined || ninki === null || ninki === "" ? "" : `${String(ninki)}人気`;
+                    }
+                    sel.dataset.odds = oTxt.trim();
+                    sel.dataset.ninki = scratched || ninki === undefined || ninki === null ? "" : String(ninki).trim();
+                }
+            }
+
+            sortAllRaces(currentSortKey);
+            saveState();
+        }
+
+        async function loadOddsOnly() {
+            try {
+                const json = await fetchSelectedWin5Data();
+                if (!json.ok) {
+                    showToast("オッズ取得に失敗しました", { type: "error" });
+                    return;
+                }
+
+                const races = json.races || [];
+                if (races.length === 0 || races.every(r => !r || !r.odds || r.odds.length === 0)) {
+                    showToast("オッズデータがありません");
+                    return;
+                }
+
+                applyOddsOnlyData(json);
+                showToast("オッズを取得しました");
+            } catch (e) {
+                showToast("オッズ取得に失敗しました");
             }
         }
 
