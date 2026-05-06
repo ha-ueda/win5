@@ -295,52 +295,6 @@
             width: min(420px, 100%);
         }
 
-        .stats-modal-card .modal-title {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .stats-info-btn {
-            background: none;
-            border: none;
-            font-size: 18px;
-            color: #888;
-            cursor: pointer;
-            padding: 2px 6px;
-            line-height: 1;
-            border-radius: 6px;
-        }
-
-        .stats-info-btn:active {
-            background: #f0f0f0;
-        }
-
-        .stats-info-panel {
-            margin: 6px 0 10px;
-            padding: 10px 12px;
-            background: #f7f7f9;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #333;
-        }
-
-        .stats-info-panel dl {
-            margin: 0;
-            display: grid;
-            grid-template-columns: auto 1fr;
-            gap: 4px 10px;
-        }
-
-        .stats-info-panel dt {
-            font-weight: 600;
-            color: #555;
-        }
-
-        .stats-info-panel dd {
-            margin: 0;
-        }
-
         .stats-modal-row {
             display: flex;
             align-items: center;
@@ -1259,15 +1213,8 @@
             <div class="modal-header">
                 <div class="modal-title">
                     <span>表示設定</span>
-                    <button id="statsInfoBtn" class="stats-info-btn" type="button" onclick="toggleStatsInfo(event)" aria-label="モードの説明" aria-expanded="false" aria-controls="statsInfoPanel">ⓘ</button>
                 </div>
                 <button class="modal-close-btn" onclick="closeStatsModal()" aria-label="閉じる">&times;</button>
-            </div>
-            <div id="statsInfoPanel" class="stats-info-panel" hidden>
-                <dl>
-                    <dt>競馬場</dt><dd>競馬場の成績</dd>
-                    <dt>距離</dt><dd>同距離の成績</dd>
-                </dl>
             </div>
             <div class="stats-modal-row">
                 <div id="personToggle" class="sort-switch">
@@ -3592,25 +3539,11 @@
         function openStatsModal() {
             statsModal.style.display = "flex";
             document.body.style.overflow = "hidden";
-            const panel = document.getElementById("statsInfoPanel");
-            const btn = document.getElementById("statsInfoBtn");
-            if (panel) panel.hidden = true;
-            if (btn) btn.setAttribute("aria-expanded", "false");
         }
 
         function closeStatsModal() {
             statsModal.style.display = "none";
             document.body.style.overflow = "";
-        }
-
-        function toggleStatsInfo(event) {
-            if (event) event.stopPropagation();
-            const panel = document.getElementById("statsInfoPanel");
-            const btn = document.getElementById("statsInfoBtn");
-            if (!panel || !btn) return;
-            const next = panel.hidden;
-            panel.hidden = !next;
-            btn.setAttribute("aria-expanded", String(next));
         }
 
         statsPopBtn.addEventListener("click", openStatsModal);
