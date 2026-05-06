@@ -3533,8 +3533,13 @@
         }
 
         function updateStatsPopLabel() {
+            const modeLabels = VALID_STATS_MODES
+                .filter(mode => currentStatsModes.includes(mode))
+                .map(mode => STATS_LABEL[mode])
+                .filter(Boolean);
             const parts = [
                 PERSON_LABEL[currentPerson] || '騎手',
+                ...modeLabels,
                 `${currentStatsYears}年`,
             ];
             statsPopLabel.textContent = parts.join('・');
