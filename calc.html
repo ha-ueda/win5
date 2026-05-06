@@ -1310,6 +1310,36 @@
         const WIN5_API = "https://win5.cooopew.workers.dev/";
         const BG_COLORS = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4"];
         const RULE_BG_COLOR = "#b3d1ff";
+        const BG_PROBABILITY_TARGET = 3;
+        let jockeyWins1ProbabilityTable = {
+            "芝": [
+                { starts: 10, probability: 10.37 },
+                { starts: 20, probability: 4.56 },
+                { starts: 30, probability: 2.90 },
+                { starts: 40, probability: 0.83 },
+                { starts: 50, probability: 0.00 },
+                { starts: 60, probability: 0.00 }
+            ],
+            "ダ": [
+                { starts: 10, probability: 9.91 },
+                { starts: 20, probability: 3.02 },
+                { starts: 30, probability: 0.00 },
+                { starts: 40, probability: 0.00 }
+            ]
+        };
+        let trainerWins1ProbabilityTable = {
+            "芝": [
+                { starts: 10, probability: 26.56 },
+                { starts: 20, probability: 3.73 },
+                { starts: 30, probability: 0.41 },
+                { starts: 40, probability: 0.00 }
+            ],
+            "ダ": [
+                { starts: 10, probability: 12.50 },
+                { starts: 20, probability: 0.43 },
+                { starts: 30, probability: 0.00 }
+            ]
+        };
         const BACKGROUND_RULES = [
             {
                 key: "redOdds",
@@ -1321,12 +1351,34 @@
                     const odds = parseNum(row.dataset.odds);
                     return odds !== null && odds > 0 && odds < 10;
                 }
+            },
+            {
+                key: "jockeyWins1Prob3",
+                label: "直近1年間で1勝以下の騎手",
+                color: "#e0b3ff",
+                match: row => hasAnyMark(row) && isJockeyWins1Prob3Band(row)
+            },
+            {
+                key: "trainerWins1Prob3",
+                label: "直近1年間で1勝以下の調教師",
+                color: "#afdfe4",
+                match: row => hasAnyMark(row) && isWins1Prob3Band(row, "trainer")
+            },
+            {
+                key: "jockeyNoDailyMultiWin5",
+                label: "5年間で1日に2勝以上したことがない騎手",
+                color: "#c8ad9d",
+                getColor: row => getJockeyColor(row),
+                swatchColor: "#ffffff",
+                colorEditable: false,
+                match: row => hasAnyMark(row) && isJockeyWithoutDailyMultiWin5Years(row)
             }
         ];
 
         let backgroundMode = false;
         let selectedBgRuleKeys = new Set(["redOdds"]);
         let bgRuleColors = Object.fromEntries(BACKGROUND_RULES.map(rule => [rule.key, rule.color]));
+        let jockeyDailyMultiWinIds5Years = null;
         const modeBtn = document.getElementById("modeToggle");
 
 
@@ -1384,10 +1436,27 @@
             });
         }
 
+        function normalizeBgColors(bg) {
+            const raw = Array.isArray(bg) ? bg : String(bg || "").split(",");
+            const colors = [];
+            for (const item of raw) {
+                const color = String(item || "").trim();
+                if (!color || color === "none") continue;
+                if (!/^#[0-9a-f]{3,8}$/i.test(color) && !/^rgba?\([\d\s.,%]+\)$/i.test(color)) continue;
+                colors.push(color);
+            }
+            return colors;
+        }
+
+        function serializeBg(bg) {
+            const colors = normalizeBgColors(bg);
+            return colors.length ? colors.join(",") : "none";
+        }
+
         function setRowBackground(rowEl, bg, source = "") {
             const box = rowEl?.querySelector(".selected");
             if (!box) return;
-            const c = (bg && bg !== "none") ? String(bg) : "none";
+            const c = serializeBg(bg);
             box.dataset.bg = c;
             box.dataset.bgSource = c === "none" ? "" : String(source || "");
             applyBg(rowEl, c);
@@ -1401,7 +1470,8 @@
             });
         }
 
-        function getBgRuleColor(rule) {
+        function getBgRuleColor(rule, row = null) {
+            if (row && typeof rule.getColor === "function") return rule.getColor(row);
             return bgRuleColors[rule.key] || rule.color || RULE_BG_COLOR;
         }
 
@@ -1472,11 +1542,31 @@
         }
 
         async function ensureBackgroundRuleStats(activeRules) {
-            const needsJockey = activeRules.some(rule => rule.key === "jockeyWins1");
-            const needsTrainer = activeRules.some(rule => rule.key === "trainerWins1");
+            const needsJockeyProb3 = activeRules.some(rule => rule.key === "jockeyWins1Prob3");
+            const needsTrainerProb3 = activeRules.some(rule => rule.key === "trainerWins1Prob3");
+            const needsJockeyNoDailyMultiWin5 = activeRules.some(rule => rule.key === "jockeyNoDailyMultiWin5");
             const jobs = [];
-            if (needsJockey) jobs.push(fetchAndApplyJockeyStats("jockey", { updateDisplay: false }));
-            if (needsTrainer) jobs.push(fetchAndApplyJockeyStats("trainer", { updateDisplay: false }));
+            if (needsJockeyProb3) {
+                jobs.push(fetchAndApplyJockeyStats("jockey", {
+                    updateDisplay: false,
+                    years: "1",
+                    modes: [],
+                    datasetKey: "jstatsSurface1",
+                    save: false
+                }));
+            }
+            if (needsJockeyProb3) jobs.push(fetchWins1ProbabilityThresholds("jockey"));
+            if (needsTrainerProb3) {
+                jobs.push(fetchAndApplyJockeyStats("trainer", {
+                    updateDisplay: false,
+                    years: "1",
+                    modes: [],
+                    datasetKey: "tstatsSurface1",
+                    save: false
+                }));
+                jobs.push(fetchWins1ProbabilityThresholds("trainer"));
+            }
+            if (needsJockeyNoDailyMultiWin5) jobs.push(fetchJockeyDailyMultiWinIds5Years());
             await Promise.all(jobs);
         }
 
@@ -1489,9 +1579,11 @@
                     const box = row.querySelector(".selected");
                     if (!box) return;
                     if ((box.dataset.bg || "none") !== "none" && box.dataset.bgSource !== "rule") return;
-                    const rule = activeRules.find(r => r.match(row));
-                    if (!rule) return;
-                    setRowBackground(row, getBgRuleColor(rule), "rule");
+                    const matchedColors = activeRules
+                        .filter(rule => rule.match(row))
+                        .map(rule => getBgRuleColor(rule, row));
+                    if (!matchedColors.length) return;
+                    setRowBackground(row, matchedColors, "rule");
                 });
             }
             saveState();
@@ -1514,8 +1606,12 @@
                 `;
                 const swatch = item.querySelector(".bg-rule-swatch");
                 if (swatch) {
-                    swatch.style.backgroundColor = getBgRuleColor(rule);
-                    swatch.addEventListener("click", (e) => openBgRulePalette(rule, swatch, e));
+                    swatch.style.backgroundColor = rule.swatchColor || getBgRuleColor(rule);
+                    if (rule.colorEditable !== false) {
+                        swatch.addEventListener("click", (e) => openBgRulePalette(rule, swatch, e));
+                    } else {
+                        swatch.style.cursor = "default";
+                    }
                 }
                 const label = item.querySelector(".bg-rule-label");
                 if (label) label.textContent = rule.label;
@@ -1654,6 +1750,21 @@
             return Number.isFinite(n) ? n : null;
         }
 
+        function getRowSupportRate(row) {
+            const race = Number(row?.dataset?.race);
+            if (!Number.isFinite(race) || race < 1 || race > TOTAL_RACES) return 0;
+            let inv = 0;
+            let sum = 0;
+            document.querySelectorAll(`.custom-select[data-race="${race}"]:not(.is-empty):not(.is-scratched)`).forEach(sel => {
+                const odds = parseFloat((sel.dataset.odds || "").trim());
+                if (!Number.isFinite(odds) || odds <= 0) return;
+                const v = 1 / odds;
+                sum += v;
+                if (sel === row) inv = v;
+            });
+            return sum > 0 ? inv / sum : 0;
+        }
+
         function sortRaceTable(raceNum, key, dir) {
             const card = document.querySelector(`.race-card[data-race="${raceNum}"]`);
             const tbody = card?.querySelector("tbody");
@@ -1718,8 +1829,22 @@
         function applyBg(rowEl, bg) {
             const el = rowEl?.querySelector(".person-name");
             if (!el) return;
-            if (bg && bg !== "none") el.style.backgroundColor = bg;
-            else el.style.backgroundColor = "";
+            const colors = normalizeBgColors(bg);
+            el.style.backgroundImage = "";
+            el.style.backgroundColor = "";
+            if (colors.length === 1) {
+                el.style.backgroundColor = colors[0];
+                return;
+            }
+            if (colors.length > 1) {
+                const step = 100 / colors.length;
+                const stops = colors.flatMap((color, i) => {
+                    const start = (step * i).toFixed(4).replace(/\.?0+$/, "");
+                    const end = (step * (i + 1)).toFixed(4).replace(/\.?0+$/, "");
+                    return [`${color} ${start}%`, `${color} ${end}%`];
+                });
+                el.style.backgroundImage = `linear-gradient(90deg, ${stops.join(", ")})`;
+            }
         }
 
         function applyMarkBackground(rowEl, hasMark) {
@@ -1735,14 +1860,11 @@
             const box = rowEl.querySelector(".selected");
             if (!box) return;
 
-            const applyColorToRow = (row, color) => {
-                setRowBackground(row, color, color === "none" ? "" : "manual");
-            };
-
-            const applyColor = (color) => {
-                const c = (color === "none") ? "none" : String(color);
-                applyColorToRow(rowEl, c);
-                palette.remove();
+            const selectedColors = new Set(normalizeBgColors(box.dataset.bg));
+            const getSelectedList = () => BG_COLORS.filter(color => selectedColors.has(color));
+            const applySelectedColors = () => {
+                const colors = getSelectedList();
+                setRowBackground(rowEl, colors, colors.length ? "manual" : "");
                 saveState();
             };
 
@@ -1760,6 +1882,13 @@
             palette.style.maxWidth = Math.min(window.innerWidth - 20, 400) + "px";
 
             const colors = BG_COLORS;
+            const colorButtons = [];
+            const updateColorButton = (btn, color) => {
+                const active = selectedColors.has(color);
+                btn.style.boxShadow = active ? "0 0 0 3px #3251BC" : "none";
+                btn.style.transform = active ? "scale(1.06)" : "scale(1)";
+            };
+
             colors.forEach(c => {
                 const btn = document.createElement("div");
                 btn.style.width = "36px";
@@ -1769,8 +1898,13 @@
                 btn.style.borderRadius = "8px";
                 btn.style.cursor = "pointer";
                 btn.addEventListener("click", () => {
-                    applyColor(c);
+                    if (selectedColors.has(c)) selectedColors.delete(c);
+                    else selectedColors.add(c);
+                    updateColorButton(btn, c);
+                    applySelectedColors();
                 });
+                updateColorButton(btn, c);
+                colorButtons.push(btn);
                 palette.appendChild(btn);
             });
 
@@ -1782,7 +1916,9 @@
             noneBtn.style.borderRadius = "8px";
             noneBtn.style.cursor = "pointer";
             noneBtn.addEventListener("click", () => {
-                applyColor("none");
+                selectedColors.clear();
+                colorButtons.forEach((btn, i) => updateColorButton(btn, colors[i]));
+                applySelectedColors();
             });
             palette.appendChild(noneBtn);
 
@@ -2119,7 +2255,7 @@
                     selectedBgRuleKeys = new Set(state.bgRuleKeys
                         .flatMap(key => {
                             if (key === "rank3") return ["redOdds"];
-                            if (key === "wins1") return ["jockeyWins1", "trainerWins1"];
+                            if (key === "wins1") return ["jockeyWins1Prob3", "trainerWins1Prob3"];
                             return [key];
                         })
                         .filter(key => valid.has(key)));
@@ -2367,7 +2503,7 @@
                 return a.filter(x => !favSet.has(x)).map(x => 1 << (x - 1));
             });
 
-            const colorIdTable = Array.from({ length: TOTAL_RACES }, () => new Int16Array(HORSE_MAX).fill(-1));
+            const colorMaskTable = Array.from({ length: TOTAL_RACES }, () => Array(HORSE_MAX).fill(0n));
             const colorIdMap = new Map();
             let nextColorId = 0;
 
@@ -2375,15 +2511,17 @@
                 const usedHorses = races[i];
                 for (let idx = 0; idx < usedHorses.length; idx++) {
                     const h = usedHorses[idx];
-                    const c = colorArray[i][h];
-                    if (c && c !== "none") {
+                    const colors = normalizeBgColors(colorArray[i][h]);
+                    let colorMask = 0n;
+                    for (const c of colors) {
                         let id = colorIdMap.get(c);
                         if (id === undefined) {
                             id = nextColorId++;
                             colorIdMap.set(c, id);
                         }
-                        colorIdTable[i][h - 1] = id;
+                        colorMask |= (1n << BigInt(id));
                     }
+                    colorMaskTable[i][h - 1] = colorMask;
                 }
             }
 
@@ -2401,16 +2539,16 @@
                 const revOrder = new Int8Array(n);
                 for (let i = 0; i < n; i++) revOrder[order[i]] = i;
 
-                const candColorIds = new Array(n);
+                const candColorMasks = new Array(n);
                 for (let r = 0; r < n; r++) {
                     const arr = candidates[r];
-                    const ids = new Int16Array(arr.length);
+                    const masks = new Array(arr.length);
                     for (let i = 0; i < arr.length; i++) {
                         const bit = arr[i];
                         const idx = Math.log2(bit) | 0;
-                        ids[i] = colorIdTable[r][idx];
+                        masks[i] = colorMaskTable[r][idx];
                     }
-                    candColorIds[r] = ids;
+                    candColorMasks[r] = masks;
                 }
 
                 let count = 0;
@@ -2428,16 +2566,16 @@
 
                     const raceIdx = order[depth];
                     const arr = candidates[raceIdx];
-                    const colorIds = candColorIds[raceIdx];
+                    const colorMasks = candColorMasks[raceIdx];
 
                     for (let k = 0; k < arr.length; k++) {
                         const m = arr[k];
-                        const colorId = colorIds[k];
+                        const colorMask = colorMasks[k];
 
-                        if (colorId >= 0 && (usedColorMask & (1n << BigInt(colorId)))) continue;
+                        if (colorMask && (usedColorMask & colorMask)) continue;
 
                         path[depth] = m;
-                        const nextMask = (colorId >= 0) ? (usedColorMask | (1n << BigInt(colorId))) : usedColorMask;
+                        const nextMask = colorMask ? (usedColorMask | colorMask) : usedColorMask;
                         dfs(depth + 1, nextMask);
                     }
                 };
@@ -3498,6 +3636,17 @@
             return String(courseInfoText || "").replace(/m$/, "").trim();
         }
 
+        function getDistanceCategory(distance) {
+            const d = Number(distance);
+            if (!Number.isFinite(d)) return "";
+            if (d >= 1000 && d <= 1300) return "S";
+            if (d >= 1301 && d <= 1899) return "M";
+            if (d >= 1900 && d <= 2100) return "I";
+            if (d >= 2101 && d <= 2700) return "L";
+            if (d >= 2701) return "E";
+            return "";
+        }
+
         const VALID_STATS_MODES = ['venue', 'distance'];
         let currentStatsModes = [];
         let currentStatsMode = 'combo';
@@ -3565,6 +3714,159 @@
         function isWinsAtMost(stats, maxWins) {
             const m = /\((\d+)-\d+-\d+-\d+\)/.exec(stats || "");
             return !!m && Number(m[1]) <= maxWins;
+        }
+
+        function hasAnyMark(row) {
+            const mark = (row?.querySelector(".selected")?.textContent || "").trim();
+            return mark === "◎" || mark === "✓";
+        }
+
+        function parseStatsRecord(stats) {
+            const m = /\((\d+)-(\d+)-(\d+)-(\d+)\)/.exec(stats || "");
+            if (!m) return null;
+            const wins = Number(m[1]);
+            const seconds = Number(m[2]);
+            const thirds = Number(m[3]);
+            const others = Number(m[4]);
+            if (![wins, seconds, thirds, others].every(Number.isFinite)) return null;
+            return { wins, starts: wins + seconds + thirds + others };
+        }
+
+        function getRaceSurface(row) {
+            const race = Number(row?.dataset?.race);
+            if (!Number.isFinite(race) || race < 1 || race > TOTAL_RACES) return "";
+            const course = extractCourse((window.raceCourses || [])[race - 1]);
+            const m = course.match(/^(芝|ダ)/);
+            return m ? m[1] : "";
+        }
+
+        function getClosestProbabilityStarts(table, targetProbability) {
+            if (!Array.isArray(table) || !table.length) return null;
+            let best = null;
+            for (const item of table) {
+                const starts = Number(item?.starts);
+                const probability = Number(item?.probability);
+                if (!Number.isFinite(starts) || !Number.isFinite(probability)) continue;
+                const diff = Math.abs(probability - targetProbability);
+                if (!best || diff < best.diff || (diff === best.diff && starts < best.starts)) {
+                    best = { starts, probability, diff };
+                }
+            }
+            return best;
+        }
+
+        function getWins1ProbabilityTable(person) {
+            return person === "trainer" ? trainerWins1ProbabilityTable : jockeyWins1ProbabilityTable;
+        }
+
+        function setWins1ProbabilityTable(person, table) {
+            if (person === "trainer") {
+                trainerWins1ProbabilityTable = { ...trainerWins1ProbabilityTable, ...table };
+            } else {
+                jockeyWins1ProbabilityTable = { ...jockeyWins1ProbabilityTable, ...table };
+            }
+        }
+
+        function getWins1ProbabilityThreshold(surface, person) {
+            return getClosestProbabilityStarts(getWins1ProbabilityTable(person)[surface], BG_PROBABILITY_TARGET);
+        }
+
+        async function fetchWins1ProbabilityThresholds(person = "jockey") {
+            try {
+                const u = new URL("probability-thresholds", WIN5_API);
+                u.searchParams.set("person", person === "trainer" ? "trainer" : "jockey");
+                u.searchParams.set("winsMax", "1");
+                u.searchParams.set("target", String(BG_PROBABILITY_TARGET));
+                u.searchParams.set("step", "1");
+                const res = await fetch(u.toString(), { cache: "no-store" });
+                const json = await res.json();
+                if (!json.ok || !json.thresholds) return;
+
+                const nextTable = {};
+                for (const surface of ["芝", "ダ"]) {
+                    const rows = json.thresholds[surface]?.rows;
+                    if (Array.isArray(rows) && rows.length) {
+                        nextTable[surface] = rows.map(row => ({
+                            starts: Number(row.starts),
+                            probability: Number(row.probability)
+                        })).filter(row => Number.isFinite(row.starts) && Number.isFinite(row.probability));
+                    }
+                }
+                if (nextTable["芝"] || nextTable["ダ"]) {
+                    setWins1ProbabilityTable(person, nextTable);
+                }
+            } catch (e) {
+                console.warn("fetchWins1ProbabilityThresholds:", e);
+            }
+        }
+
+        async function fetchJockeyDailyMultiWinIds5Years() {
+            if (jockeyDailyMultiWinIds5Years) return;
+            try {
+                const u = new URL("daily-multi-win-persons", WIN5_API);
+                u.searchParams.set("person", "jockey");
+                u.searchParams.set("years", "5");
+                u.searchParams.set("winsMin", "2");
+                const res = await fetch(u.toString(), { cache: "no-store" });
+                const json = await res.json();
+                if (!json.ok || !Array.isArray(json.ids)) return;
+                jockeyDailyMultiWinIds5Years = new Set(json.ids.map(id => String(id)));
+            } catch (e) {
+                console.warn("fetchJockeyDailyMultiWinIds5Years:", e);
+            }
+        }
+
+        function isJockeyWins1Prob3Band(row) {
+            return isWins1Prob3Band(row, "jockey");
+        }
+
+        function isWins1Prob3Band(row, person = "jockey") {
+            const statsKey = person === "trainer" ? "tstatsSurface1" : "jstatsSurface1";
+            const stats = parseStatsRecord(row?.dataset?.[statsKey]);
+            if (!stats || stats.wins > 1) return false;
+            const surface = getRaceSurface(row);
+            const threshold = getWins1ProbabilityThreshold(surface, person);
+            return !!threshold && stats.starts >= threshold.starts;
+        }
+
+        function isJockeyWithoutDailyMultiWin5Years(row) {
+            const jid = String(row?.dataset?.jid || "").trim();
+            if (!jid || !jockeyDailyMultiWinIds5Years) return false;
+            return !jockeyDailyMultiWinIds5Years.has(jid);
+        }
+
+        function hashString(value) {
+            let hash = 0;
+            const text = String(value || "");
+            for (let i = 0; i < text.length; i++) {
+                hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+            }
+            return Math.abs(hash);
+        }
+
+        function hslToHex(h, s, l) {
+            s /= 100;
+            l /= 100;
+            const c = (1 - Math.abs(2 * l - 1)) * s;
+            const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+            const m = l - c / 2;
+            let r = 0, g = 0, b = 0;
+            if (h < 60) [r, g, b] = [c, x, 0];
+            else if (h < 120) [r, g, b] = [x, c, 0];
+            else if (h < 180) [r, g, b] = [0, c, x];
+            else if (h < 240) [r, g, b] = [0, x, c];
+            else if (h < 300) [r, g, b] = [x, 0, c];
+            else [r, g, b] = [c, 0, x];
+            const toHex = v => Math.round((v + m) * 255).toString(16).padStart(2, "0");
+            return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+        }
+
+        function getJockeyColor(row) {
+            const jid = String(row?.dataset?.jid || "").trim();
+            if (!jid) return "#c8ad9d";
+            const hash = hashString(jid);
+            const hue = (hash * 137) % 360;
+            return hslToHex(hue, 58, 78);
         }
 
         function applyPersonDisplay() {
@@ -3657,27 +3959,32 @@
                 const surfaceMatch = course.match(/^(芝|ダ|障)/);
                 const surface = surfaceMatch ? surfaceMatch[1] : "";
                 const distanceMatch = course.match(/^(?:芝|ダ|障)(\d+)/);
-                const distance = modeSet.has('distance') ? (distanceMatch ? distanceMatch[1] : "") : "*";
+                const distance = modeSet.has('distance') ? getDistanceCategory(distanceMatch ? Number(distanceMatch[1]) : null) : "*";
                 keysPerRace.push((venue && surface && distance) ? `${venue}:${surface}:${distance}` : "");
             }
             return keysPerRace;
         }
 
-        async function fetchAndApplyJockeyStats(personOverride = currentPerson, { updateDisplay = true } = {}) {
+        async function fetchAndApplyJockeyStats(personOverride = currentPerson, { updateDisplay = true, years = currentStatsYears, modes = currentStatsModes, datasetKey = null, save = true } = {}) {
             const raceInfo = window.raceInfo || [];
             const raceCourses = window.raceCourses || [];
-            const modes = normalizeStatsModes(currentStatsModes);
+            const statsModes = normalizeStatsModes(modes);
             const personAtFetch = personOverride;
-            const datasetKey = personAtFetch === 'trainer' ? 'tstats' : 'jstats';
+            const targetDatasetKey = datasetKey || (personAtFetch === 'trainer' ? 'tstats' : 'jstats');
             const apiMode = 'combo';
-            const keysPerRace = getStatsKeysForModes(modes, raceInfo, raceCourses);
+            const keysPerRace = getStatsKeysForModes(statsModes, raceInfo, raceCourses);
             const validKeys = [...new Set(keysPerRace.filter(k => k))];
+            if (datasetKey) {
+                document.querySelectorAll('.custom-select').forEach(sel => {
+                    sel.dataset[targetDatasetKey] = "";
+                });
+            }
             if (validKeys.length === 0) return;
 
             try {
                 const u = new URL("stats", WIN5_API);
                 u.searchParams.set("mode", apiMode);
-                u.searchParams.set("years", currentStatsYears);
+                u.searchParams.set("years", years);
                 u.searchParams.set("person", personAtFetch);
                 u.searchParams.set("q", validKeys.join(","));
                 const res = await fetch(u.toString(), { cache: "no-store" });
@@ -3695,15 +4002,15 @@
                         if (sel.classList.contains("is-scratched")) return;
                         const id = (sel.dataset[personAtFetch === 'trainer' ? 'tid' : 'jid'] || "").trim();
                         if (!id) {
-                            sel.dataset[datasetKey] = "";
+                            sel.dataset[targetDatasetKey] = "";
                             return;
                         }
                         const s = statsMap[id] || [0,0,0,0];
-                        sel.dataset[datasetKey] = `(${s[0]}-${s[1]}-${s[2]}-${s[3]})`;
+                        sel.dataset[targetDatasetKey] = `(${s[0]}-${s[1]}-${s[2]}-${s[3]})`;
                     });
                 }
-                if (updateDisplay && personAtFetch === currentPerson) applyPersonDisplay();
-                saveState();
+                if (updateDisplay && personAtFetch === currentPerson && targetDatasetKey === (personAtFetch === 'trainer' ? 'tstats' : 'jstats')) applyPersonDisplay();
+                if (save) saveState();
             } catch (e) {
                 console.warn("fetchAndApplyJockeyStats:", e);
             }
