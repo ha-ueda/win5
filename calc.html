@@ -422,6 +422,8 @@
         }
 
         table.shutuba-table {
+            --shutuba-row-border-color: #E3E5EB;
+            --shutuba-col-border-color: #c6c9d3;
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
@@ -444,15 +446,23 @@
             border-left: 1px solid #d9d9d9;
         }
 
+        table.shutuba-table thead th.col-no+th {
+            border-left-color: #dadada;
+        }
+
         table.shutuba-table tbody td {
             padding: 0;
-            border-bottom: 1px solid rgb(227, 229, 235);
+            border-bottom: 1px solid var(--shutuba-row-border-color);
             vertical-align: middle;
             background: #fff;
         }
 
         table.shutuba-table tbody td+td {
-            border-left: 1px solid rgb(227, 229, 235);
+            border-left: 1px solid var(--shutuba-col-border-color);
+        }
+
+        table.shutuba-table tbody td.col-no+td {
+            border-left-color: #dadada;
         }
 
         table.shutuba-table tbody tr.custom-select:not(.is-empty):not(:has(~ tr.custom-select:not(.is-empty))) td {
@@ -570,6 +580,7 @@
             gap: 0;
             white-space: nowrap;
             flex: 0 0 auto;
+            padding-right: 4px;
         }
 
         .person-name {
