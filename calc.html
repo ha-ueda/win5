@@ -1332,6 +1332,15 @@
             "#c77dff", "#f8961e", "#84dcc6", "#f28482", "#b8f2e6", "#f6bd60",
             "#8ecae6", "#ffb703", "#a7c957", "#e5989b", "#80ed99", "#cdb4db"
         ];
+        const SHARE_COLOR_TABLE_V1 = [
+            "#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d",
+            "#e761a4", "#ffadad", "#ffd6a5", "#fdffb6", "#caffbf", "#9bf6ff",
+            "#a0c4ff", "#bdb2ff", "#ffc6ff", "#ff8fab", "#f9c74f", "#90be6d",
+            "#43aa8b", "#4d96ff", "#845ec2", "#f3722c", "#ef476f", "#06d6a0",
+            "#118ab2", "#c77dff", "#f8961e", "#84dcc6", "#f28482", "#b8f2e6",
+            "#f6bd60", "#8ecae6", "#ffb703", "#a7c957", "#e5989b", "#80ed99",
+            "#cdb4db"
+        ];
         const JOCKEY_NO_DAILY_MULTI_WIN_COLOR_POOL = JOCKEY_NO_DAILY_MULTI_WIN_COLORS
             .filter(color => !BG_COLORS.includes(color));
         const RULE_BG_COLOR = "#b3d1ff";
@@ -3350,8 +3359,39 @@
             return { v: 1, items };
         }
 
+        function normalizeShareItem(it) {
+            if (!Array.isArray(it) || it.length < 4) return null;
+            const r = Number(it[0]);
+            const h = Number(it[1]);
+            if (!Number.isInteger(r) || !Number.isInteger(h) || r < 1 || r > TOTAL_RACES || h < 1 || h > HORSE_MAX) return null;
+
+            const mark = String(it[2] ?? "").trim();
+            if (!MARKS.includes(mark)) return null;
+
+            const bg = serializeBg(it[3] ?? "none");
+            return [r, h, mark, bg];
+        }
+
+        function normalizeSharePayload(payload) {
+            if (!payload || payload.v !== 1 || !Array.isArray(payload.items)) return null;
+            const items = [];
+            const seen = new Set();
+
+            for (const it of payload.items) {
+                const normalized = normalizeShareItem(it);
+                if (!normalized) return null;
+                const key = `${normalized[0]}:${normalized[1]}`;
+                if (seen.has(key)) return null;
+                seen.add(key);
+                items.push(normalized);
+            }
+
+            return { v: 1, items };
+        }
+
         function applySharePayload(payload) {
-            if (!payload || payload.v !== 1 || !Array.isArray(payload.items)) return;
+            const normalizedPayload = normalizeSharePayload(payload);
+            if (!normalizedPayload) throw new Error("Invalid share payload");
 
             document.querySelectorAll(".custom-select").forEach(sel => {
                 const box = sel.querySelector(".selected");
@@ -3363,8 +3403,7 @@
                 applyBg(sel, "none");
             });
 
-            for (const it of payload.items) {
-                if (!Array.isArray(it) || it.length < 4) continue;
+            for (const it of normalizedPayload.items) {
                 const [r, h, mark, bg] = it;
 
                 const sel = document.querySelector(`.custom-select[data-race="${r}"][data-horse="${h}"]`);
@@ -3404,7 +3443,56 @@
                 return null;
             };
 
-            const bytes = [];
+            const parseHexColor = (color) => {
+                const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(color || "").trim());
+                if (!m) return null;
+                const hex = m[1].length === 3
+                    ? m[1].split("").map(ch => ch + ch).join("")
+                    : m[1];
+                return {
+                    color: `#${hex.toLowerCase()}`,
+                    r: parseInt(hex.slice(0, 2), 16),
+                    g: parseInt(hex.slice(2, 4), 16),
+                    b: parseInt(hex.slice(4, 6), 16),
+                };
+            };
+
+            const shareKnownColors = [...new Set(SHARE_COLOR_TABLE_V1.map(c => {
+                const parsed = parseHexColor(c);
+                return parsed ? parsed.color : String(c || "").toLowerCase();
+            }))];
+            const knownColorToId = new Map(shareKnownColors.map((color, i) => [color, i]));
+
+            const makeToken = (prefix, bytes) => {
+                let bin = "";
+                for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+                const b64 = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+                return prefix + b64;
+            };
+
+            const setBit = (bytes, index) => {
+                bytes[index >> 3] |= 1 << (index & 7);
+            };
+
+            const encodedItems = [];
+            let needsMaskFormat = false;
+            let needsPaletteFormat = false;
+            let canUseKnownColorFormat = true;
+            let canUseSetFormat = true;
+            const palette = [];
+            const paletteIndex = new Map();
+
+            const addPaletteColor = (color) => {
+                const parsed = parseHexColor(color);
+                if (!parsed) return null;
+                if (!paletteIndex.has(parsed.color)) {
+                    if (palette.length >= 32) return null;
+                    paletteIndex.set(parsed.color, palette.length);
+                    palette.push(parsed);
+                }
+                return paletteIndex.get(parsed.color);
+            };
+
             for (const it of obj.items) {
                 if (!Array.isArray(it) || it.length < 4) continue;
                 const r = Number(it[0]);
@@ -3418,24 +3506,153 @@
                 if (mid === null) return legacy();
 
                 let bid = 0;
-                if (bg && bg !== "none") {
-                    const got = colorToId.get(bg);
-                    if (!got) return legacy();
-                    bid = got;
+                let mask = 0;
+                let paletteMask = 0;
+                const colors = (bg && bg !== "none") ? normalizeBgColors(bg) : [];
+                if (bg && bg !== "none" && colors.length === 0) return legacy();
+                const knownColorIds = [];
+                const itemColors = [];
+
+                for (const color of colors) {
+                    const parsed = parseHexColor(color);
+                    if (!parsed) canUseSetFormat = false;
+                    const normalizedColor = parsed ? parsed.color : String(color || "").toLowerCase();
+                    itemColors.push(normalizedColor);
+
+                    const got = colorToId.get(color);
+                    if (got) {
+                        if (bid === 0) bid = got;
+                        mask |= 1 << (got - 1);
+                    } else {
+                        needsPaletteFormat = true;
+                    }
+
+                    const paletteId = addPaletteColor(color);
+                    if (paletteId === null) return legacy();
+                    paletteMask |= 1 << paletteId;
+
+                    const knownId = parsed ? knownColorToId.get(parsed.color) : null;
+                    if (knownId === undefined || knownId === null || knownId > 63) {
+                        canUseKnownColorFormat = false;
+                    } else {
+                        knownColorIds.push(knownId);
+                    }
                 }
 
-                const rv = (r - 1) & 0x7;
-                const hv = (h - 1) & 0x1f;
-                const v = (rv << 12) | (hv << 7) | ((mid & 0x3) << 5) | (bid & 0x1f);
-                bytes.push((v >> 8) & 0xff, v & 0xff);
+                if (colors.length !== knownColorIds.length || colors.length > 63) canUseKnownColorFormat = false;
+                if (colors.length > 1) needsMaskFormat = true;
+                encodedItems.push({ r, h, mid, bid, mask, paletteMask, knownColorIds, colors: itemColors });
             }
 
-            if (bytes.length === 0) return legacy();
+            if (encodedItems.length === 0) return legacy();
 
-            let bin = "";
-            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-            const b64 = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-            return "3" + b64;
+            const candidates = [];
+
+            if (canUseKnownColorFormat) {
+                const knownBytes = [];
+                for (const item of encodedItems) {
+                    const pos = ((item.r - 1) * HORSE_MAX) + (item.h - 1);
+                    knownBytes.push(pos & 0xff, ((item.mid & 0x3) << 6) | (item.knownColorIds.length & 0x3f));
+                    for (const colorId of item.knownColorIds) knownBytes.push(colorId & 0x3f);
+                }
+                candidates.push(makeToken("6", knownBytes));
+            }
+
+            if (canUseSetFormat) {
+                const selectedMask = new Array(12).fill(0);
+                const itemByPos = new Map();
+                const colorSet = new Set();
+
+                for (const item of encodedItems) {
+                    const pos = ((item.r - 1) * HORSE_MAX) + (item.h - 1);
+                    setBit(selectedMask, pos);
+                    itemByPos.set(pos, item);
+                    for (const color of item.colors) colorSet.add(color);
+                }
+
+                const positions = [];
+                for (let pos = 0; pos < TOTAL_RACES * HORSE_MAX; pos++) {
+                    if (selectedMask[pos >> 3] & (1 << (pos & 7))) positions.push(pos);
+                }
+
+                const markBytes = new Array(Math.ceil((positions.length * 2) / 8)).fill(0);
+                positions.forEach((pos, index) => {
+                    const mid = itemByPos.get(pos)?.mid || 0;
+                    const bit = index * 2;
+                    markBytes[bit >> 3] |= (mid & 0x3) << (bit & 7);
+                });
+
+                const colorList = [...colorSet];
+                if (colorList.length <= 63) {
+                    const maskSize = Math.ceil(positions.length / 8);
+                    const setBytes = [...selectedMask, ...markBytes, colorList.length & 0x3f];
+
+                    for (const color of colorList) {
+                        const knownId = knownColorToId.get(color);
+                        if (knownId !== undefined && knownId !== null && knownId <= 63) {
+                            setBytes.push(knownId & 0x3f);
+                        } else {
+                            const parsed = parseHexColor(color);
+                            if (!parsed) {
+                                canUseSetFormat = false;
+                                break;
+                            }
+                            setBytes.push(0x80, parsed.r, parsed.g, parsed.b);
+                        }
+
+                        const colorMask = new Array(maskSize).fill(0);
+                        positions.forEach((pos, index) => {
+                            const item = itemByPos.get(pos);
+                            if (item?.colors?.includes(color)) setBit(colorMask, index);
+                        });
+                        setBytes.push(...colorMask);
+                    }
+
+                    if (canUseSetFormat) candidates.push(makeToken("7", setBytes));
+                }
+            }
+
+            if (needsPaletteFormat) {
+                const bytes = [];
+                const itemSize = palette.length <= 16 ? 4 : 6;
+                bytes.push(palette.length & 0xff, itemSize);
+                for (const color of palette) bytes.push(color.r, color.g, color.b);
+
+                for (const item of encodedItems) {
+                    const pos = ((item.r - 1) * HORSE_MAX) + (item.h - 1);
+                    if (itemSize === 4) {
+                        const v = ((pos & 0x7f) << 18) | ((item.mid & 0x3) << 16) | (item.paletteMask & 0xffff);
+                        bytes.push((v >> 24) & 0xff, (v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff);
+                    } else {
+                        bytes.push(pos & 0xff, item.mid & 0x3);
+                        bytes.push(
+                            (item.paletteMask >>> 24) & 0xff,
+                            (item.paletteMask >>> 16) & 0xff,
+                            (item.paletteMask >>> 8) & 0xff,
+                            item.paletteMask & 0xff
+                        );
+                    }
+                }
+
+                candidates.push(makeToken("5", bytes));
+            }
+
+            const bytes = [];
+            for (const item of encodedItems) {
+                const rv = (item.r - 1) & 0x7;
+                const hv = (item.h - 1) & 0x1f;
+                if (needsMaskFormat) {
+                    const v = (rv << 14) | (hv << 9) | ((item.mid & 0x3) << 7) | (item.mask & 0x7f);
+                    bytes.push((v >> 16) & 0xff, (v >> 8) & 0xff, v & 0xff);
+                } else {
+                    const v = (rv << 12) | (hv << 7) | ((item.mid & 0x3) << 5) | (item.bid & 0x1f);
+                    bytes.push((v >> 8) & 0xff, v & 0xff);
+                }
+            }
+            if (!needsPaletteFormat) candidates.push(makeToken(needsMaskFormat ? "4" : "3", bytes));
+
+            candidates.push(legacy());
+            return candidates.reduce((best, token) => token.length < best.length ? token : best);
         }
 
         function decodeSharePayload(token) {
@@ -3447,6 +3664,8 @@
             };
 
             const tok = String(token ?? "").trim();
+            const shareKnownColors = SHARE_COLOR_TABLE_V1.map(c => String(c || "").toLowerCase());
+
             if (tok && tok[0] === "3") {
                 try {
                     const raw = tok.slice(1).replace(/-/g, "+").replace(/_/g, "/");
@@ -3479,6 +3698,236 @@
                 }
             }
 
+            if (tok && tok[0] === "4") {
+                try {
+                    const raw = tok.slice(1).replace(/-/g, "+").replace(/_/g, "/");
+                    const pad = raw.length % 4 ? "=".repeat(4 - (raw.length % 4)) : "";
+                    const bin = atob(raw + pad);
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    if (bytes.length % 3 !== 0) return legacy(tok);
+
+                    const idToMark = ["", "✓", "◎", ""];
+                    const items = [];
+
+                    for (let i = 0; i < bytes.length; i += 3) {
+                        const v = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+                        const r = ((v >> 14) & 0x7) + 1;
+                        const h = ((v >> 9) & 0x1f) + 1;
+                        const mid = (v >> 7) & 0x3;
+                        const mask = v & 0x7f;
+
+                        if (r < 1 || r > 5 || h < 1 || h > 18) return legacy(tok);
+
+                        const mark = idToMark[mid] ?? "";
+                        const colors = [];
+                        for (let c = 0; c < BG_COLORS.length; c++) {
+                            if (mask & (1 << c)) colors.push(BG_COLORS[c]);
+                        }
+                        const bg = colors.length ? colors.join(",") : "none";
+                        items.push([r, h, mark, bg]);
+                    }
+
+                    return { v: 1, items };
+                } catch (e) {
+                    return legacy(tok);
+                }
+            }
+
+            if (tok && tok[0] === "5") {
+                try {
+                    const raw = tok.slice(1).replace(/-/g, "+").replace(/_/g, "/");
+                    const pad = raw.length % 4 ? "=".repeat(4 - (raw.length % 4)) : "";
+                    const bin = atob(raw + pad);
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    if (bytes.length < 2) return legacy(tok);
+
+                    const paletteLength = bytes[0];
+                    const itemSize = bytes[1];
+                    if (paletteLength < 1 || paletteLength > 32 || (itemSize !== 4 && itemSize !== 6)) return legacy(tok);
+
+                    let offset = 2;
+                    if (bytes.length < offset + (paletteLength * 3)) return legacy(tok);
+
+                    const palette = [];
+                    for (let i = 0; i < paletteLength; i++) {
+                        const r = bytes[offset++];
+                        const g = bytes[offset++];
+                        const b = bytes[offset++];
+                        palette.push(`#${[r, g, b].map(v => v.toString(16).padStart(2, "0")).join("")}`);
+                    }
+
+                    if ((bytes.length - offset) % itemSize !== 0) return legacy(tok);
+
+                    const idToMark = ["", "✓", "◎", ""];
+                    const items = [];
+
+                    while (offset < bytes.length) {
+                        let pos = 0;
+                        let mid = 0;
+                        let mask = 0;
+
+                        if (itemSize === 4) {
+                            const v = (bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
+                            offset += 4;
+                            pos = (v >> 18) & 0x7f;
+                            mid = (v >> 16) & 0x3;
+                            mask = v & 0xffff;
+                        } else {
+                            pos = bytes[offset++];
+                            mid = bytes[offset++] & 0x3;
+                            mask = (
+                                (bytes[offset] << 24) |
+                                (bytes[offset + 1] << 16) |
+                                (bytes[offset + 2] << 8) |
+                                bytes[offset + 3]
+                            ) >>> 0;
+                            offset += 4;
+                        }
+
+                        const r = Math.floor(pos / HORSE_MAX) + 1;
+                        const h = (pos % HORSE_MAX) + 1;
+                        if (r < 1 || r > 5 || h < 1 || h > 18) return legacy(tok);
+
+                        const colors = [];
+                        for (let c = 0; c < palette.length; c++) {
+                            if (mask & (1 << c)) colors.push(palette[c]);
+                        }
+                        const mark = idToMark[mid] ?? "";
+                        const bg = colors.length ? colors.join(",") : "none";
+                        items.push([r, h, mark, bg]);
+                    }
+
+                    return { v: 1, items };
+                } catch (e) {
+                    return legacy(tok);
+                }
+            }
+
+            if (tok && tok[0] === "6") {
+                try {
+                    const raw = tok.slice(1).replace(/-/g, "+").replace(/_/g, "/");
+                    const pad = raw.length % 4 ? "=".repeat(4 - (raw.length % 4)) : "";
+                    const bin = atob(raw + pad);
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+                    const idToMark = ["", "✓", "◎", ""];
+                    const items = [];
+                    let offset = 0;
+
+                    while (offset < bytes.length) {
+                        if (offset + 2 > bytes.length) return legacy(tok);
+
+                        const pos = bytes[offset++];
+                        const meta = bytes[offset++];
+                        const mid = (meta >> 6) & 0x3;
+                        const colorCount = meta & 0x3f;
+                        if (offset + colorCount > bytes.length) return legacy(tok);
+
+                        const r = Math.floor(pos / HORSE_MAX) + 1;
+                        const h = (pos % HORSE_MAX) + 1;
+                        if (r < 1 || r > 5 || h < 1 || h > 18) return legacy(tok);
+
+                        const colors = [];
+                        for (let i = 0; i < colorCount; i++) {
+                            const color = shareKnownColors[bytes[offset++]];
+                            if (!color) return legacy(tok);
+                            colors.push(color);
+                        }
+
+                        const mark = idToMark[mid] ?? "";
+                        const bg = colors.length ? colors.join(",") : "none";
+                        items.push([r, h, mark, bg]);
+                    }
+
+                    return { v: 1, items };
+                } catch (e) {
+                    return legacy(tok);
+                }
+            }
+
+            if (tok && tok[0] === "7") {
+                try {
+                    const raw = tok.slice(1).replace(/-/g, "+").replace(/_/g, "/");
+                    const pad = raw.length % 4 ? "=".repeat(4 - (raw.length % 4)) : "";
+                    const bin = atob(raw + pad);
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    if (bytes.length < 13) return legacy(tok);
+
+                    const hasBit = (arr, index) => !!(arr[index >> 3] & (1 << (index & 7)));
+                    const selectedMask = bytes.slice(0, 12);
+                    const positions = [];
+                    for (let pos = 0; pos < TOTAL_RACES * HORSE_MAX; pos++) {
+                        if (hasBit(selectedMask, pos)) positions.push(pos);
+                    }
+
+                    const markBytesLength = Math.ceil((positions.length * 2) / 8);
+                    let offset = 12;
+                    if (bytes.length < offset + markBytesLength + 1) return legacy(tok);
+
+                    const markBytes = bytes.slice(offset, offset + markBytesLength);
+                    offset += markBytesLength;
+
+                    const idToMark = ["", "✓", "◎", ""];
+                    const itemsByPos = new Map();
+                    positions.forEach((pos, index) => {
+                        const bit = index * 2;
+                        const mid = (markBytes[bit >> 3] >> (bit & 7)) & 0x3;
+                        const r = Math.floor(pos / HORSE_MAX) + 1;
+                        const h = (pos % HORSE_MAX) + 1;
+                        itemsByPos.set(pos, {
+                            r,
+                            h,
+                            mark: idToMark[mid] ?? "",
+                            colors: []
+                        });
+                    });
+
+                    const colorCount = bytes[offset++];
+                    const colorMaskLength = Math.ceil(positions.length / 8);
+
+                    for (let i = 0; i < colorCount; i++) {
+                        if (offset >= bytes.length) return legacy(tok);
+
+                        let color = "";
+                        const descriptor = bytes[offset++];
+                        if (descriptor & 0x80) {
+                            if (offset + 3 > bytes.length) return legacy(tok);
+                            const r = bytes[offset++];
+                            const g = bytes[offset++];
+                            const b = bytes[offset++];
+                            color = `#${[r, g, b].map(v => v.toString(16).padStart(2, "0")).join("")}`;
+                        } else {
+                            color = shareKnownColors[descriptor];
+                            if (!color) return legacy(tok);
+                        }
+
+                        if (offset + colorMaskLength > bytes.length) return legacy(tok);
+                        const colorMask = bytes.slice(offset, offset + colorMaskLength);
+                        offset += colorMaskLength;
+
+                        positions.forEach((pos, index) => {
+                            if (hasBit(colorMask, index)) itemsByPos.get(pos)?.colors.push(color);
+                        });
+                    }
+
+                    if (offset !== bytes.length) return legacy(tok);
+
+                    const items = positions.map(pos => {
+                        const item = itemsByPos.get(pos);
+                        const bg = item.colors.length ? item.colors.join(",") : "none";
+                        return [item.r, item.h, item.mark, bg];
+                    });
+
+                    return { v: 1, items };
+                } catch (e) {
+                    return legacy(tok);
+                }
+            }
+
             return legacy(tok);
         }
 
@@ -3487,6 +3936,12 @@
             const hash = location.hash || "";
             const m = hash.match(/share=([A-Za-z0-9\-_]+)/);
             if (!m) return;
+
+            if (hasExistingMarks() && !confirm("現在の印が上書きされます。共有内容を読み込みますか？")) {
+                const base = location.href.split("#")[0];
+                history.replaceState(null, "", base);
+                return;
+            }
 
             try {
                 const payload = decodeSharePayload(m[1]);
