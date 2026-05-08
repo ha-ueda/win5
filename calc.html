@@ -1107,18 +1107,27 @@
             }
 
             #raceTables {
-                overflow: visible;
+                width: calc(100% + 20px);
+                max-width: none;
+                margin-left: -10px;
+                margin-right: -10px;
+                overflow-x: auto;
+                overflow-y: visible;
             }
 
             #raceTables .race-row {
-                width: auto;
-                min-width: auto;
+                width: 100%;
+                min-width: 0;
                 transform: none !important;
             }
 
             .race-card {
-                flex: 0 0 calc(100vw - 20px);
-                min-width: auto;
+                flex: 0 0 100%;
+                width: 100%;
+                max-width: 100%;
+                min-width: 0;
+                border-left: 0;
+                border-right: 0;
             }
 
             body[data-focus-race="1"] .race-card:not([data-race="1"]),
