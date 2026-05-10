@@ -1414,6 +1414,12 @@
                 match: row => hasAnyMark(row) && isWins1Prob3Band(row, "trainer")
             },
             {
+                key: "jockeyLastWeekWin",
+                label: "先週勝利騎手",
+                color: "#e0b3ff",
+                match: row => hasAnyMark(row) && isJockeyLastWeekWinner(row)
+            },
+            {
                 key: "jockeyNoDailyMultiWin5",
                 label: "5年間で1日2勝以上しない騎手",
                 getColor: row => getJockeyColor(row),
@@ -1428,6 +1434,8 @@
         let backgroundMode = false;
         let selectedBgRuleKeys = new Set(["redOdds"]);
         let bgRuleColors = Object.fromEntries(BACKGROUND_RULES.map(rule => [rule.key, rule.color]));
+        let jockeyLastWeekWinIds = null;
+        let jockeyLastWeekWinIdsPromise = null;
         let jockeyDailyMultiWinIds5Years = null;
         let jockeyDailyMultiWinIds5YearsPromise = null;
         const statsFetchCache = new Map();
@@ -1596,6 +1604,7 @@
         async function ensureBackgroundRuleStats(activeRules) {
             const needsJockeyProb3 = activeRules.some(rule => rule.key === "jockeyWins1Prob3");
             const needsTrainerProb3 = activeRules.some(rule => rule.key === "trainerWins1Prob3");
+            const needsJockeyLastWeekWin = activeRules.some(rule => rule.key === "jockeyLastWeekWin");
             const needsJockeyNoDailyMultiWin5 = activeRules.some(rule => rule.key === "jockeyNoDailyMultiWin5");
             const jobs = [];
             if (needsJockeyProb3) {
@@ -1622,6 +1631,7 @@
                 }));
                 if (!needsJockeyProb3) jobs.push(fetchWins1ProbabilityThresholds("trainer"));
             }
+            if (needsJockeyLastWeekWin) jobs.push(fetchJockeyLastWeekWinIds());
             if (needsJockeyNoDailyMultiWin5) jobs.push(fetchJockeyDailyMultiWinIds5Years());
             await Promise.all(jobs);
         }
@@ -4337,6 +4347,28 @@
             return jockeyDailyMultiWinIds5YearsPromise;
         }
 
+        async function fetchJockeyLastWeekWinIds() {
+            if (jockeyLastWeekWinIds) return;
+            if (jockeyLastWeekWinIdsPromise) return jockeyLastWeekWinIdsPromise;
+            jockeyLastWeekWinIdsPromise = (async () => {
+            try {
+                const u = new URL("recent-win-persons", WIN5_API);
+                u.searchParams.set("person", "jockey");
+                u.searchParams.set("period", "previous-week");
+                u.searchParams.set("winsMin", "1");
+                const res = await fetch(u.toString(), { cache: "no-store" });
+                const json = await res.json();
+                if (!json.ok || !Array.isArray(json.ids)) return;
+                jockeyLastWeekWinIds = new Set(json.ids.map(id => String(id)));
+            } catch (e) {
+                console.warn("fetchJockeyLastWeekWinIds:", e);
+            } finally {
+                jockeyLastWeekWinIdsPromise = null;
+            }
+            })();
+            return jockeyLastWeekWinIdsPromise;
+        }
+
         function isJockeyWins1Prob3Band(row) {
             return isWins1Prob3Band(row, "jockey");
         }
@@ -4354,6 +4386,12 @@
             const jid = String(row?.dataset?.jid || "").trim();
             if (!jid || !jockeyDailyMultiWinIds5Years) return false;
             return !jockeyDailyMultiWinIds5Years.has(jid);
+        }
+
+        function isJockeyLastWeekWinner(row) {
+            const jid = String(row?.dataset?.jid || "").trim();
+            if (!jid || !jockeyLastWeekWinIds) return false;
+            return jockeyLastWeekWinIds.has(jid);
         }
 
         function getSelectedJockeyRaceCount(row) {
