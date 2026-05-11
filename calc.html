@@ -3019,6 +3019,8 @@
             window.raceTimes = json.raceTimes || ((json.races || []).map(r => (r && r.startTime) ? String(r.startTime) : ""));
             window.raceCourses = json.raceCourses || ((json.races || []).map(r => (r && r.courseInfo) ? String(r.courseInfo) : ""));
             window.win5Sales = json.sales || null;
+            window.win5Source = json.source || "";
+            window.win5SourceDate = json.sourceDate || "";
             updateRaceHeaders(window.raceInfo);
 
             document.querySelectorAll('.person-stats').forEach(el => { el.textContent = ""; });
@@ -3219,9 +3221,20 @@
 
         async function loadOddsOnly() {
             try {
+                if (window.win5Source && window.win5Source !== "upcoming") {
+                    showToast("過去データなので取得不要");
+                    return;
+                }
+
                 const json = await fetchSelectedWin5Data();
                 if (!json.ok) {
                     showToast("オッズ取得に失敗しました", { type: "error" });
+                    return;
+                }
+                window.win5Source = json.source || "";
+                window.win5SourceDate = json.sourceDate || "";
+                if (window.win5Source && window.win5Source !== "upcoming") {
+                    showToast("過去データなので取得不要");
                     return;
                 }
 
@@ -3248,6 +3261,9 @@
                 const json = await res.json();
 
                 if (!json.ok) return;
+
+                window.win5Source = json.source || "";
+                window.win5SourceDate = json.sourceDate || "";
 
                 const tabs = json.tabs || [];
                 const current = json.activeTab ?? 0;
