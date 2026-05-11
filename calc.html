@@ -3239,7 +3239,7 @@
         async function loadOddsOnly() {
             try {
                 if (window.win5Source && window.win5Source !== "upcoming") {
-                    showToast("過去データなので取得不要");
+                    showToast("オッズデータがありません");
                     return;
                 }
 
@@ -3257,7 +3257,7 @@
                 }
                 window.win5SourceDate = nextSourceDate;
                 if (window.win5Source && window.win5Source !== "upcoming") {
-                    showToast("過去データなので取得不要");
+                    showToast("オッズデータがありません");
                     return;
                 }
 
