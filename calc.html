@@ -1415,7 +1415,7 @@
             },
             {
                 key: "jockeyLastWeekWin",
-                label: "先週勝利騎手",
+                label: "前回勝利騎手",
                 color: "#e0b3ff",
                 match: row => hasAnyMark(row) && isJockeyLastWeekWinner(row)
             },
@@ -1436,6 +1436,7 @@
         let bgRuleColors = Object.fromEntries(BACKGROUND_RULES.map(rule => [rule.key, rule.color]));
         let jockeyLastWeekWinIds = null;
         let jockeyLastWeekWinIdsPromise = null;
+        let jockeyLastWeekWinIdsTargetDate = "";
         let jockeyDailyMultiWinIds5Years = null;
         let jockeyDailyMultiWinIds5YearsPromise = null;
         const statsFetchCache = new Map();
@@ -2233,6 +2234,8 @@
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
                 raceCourses: window.raceCourses || ["", "", "", "", ""],
+                win5Source: window.win5Source || "",
+                win5SourceDate: window.win5SourceDate || "",
             };
 
             for (let r = 1; r <= TOTAL_RACES; r++) {
@@ -2302,6 +2305,8 @@
                 if (state.raceInfo) window.raceInfo = state.raceInfo;
                 if (state.raceTimes) window.raceTimes = state.raceTimes;
                 if (state.raceCourses) window.raceCourses = state.raceCourses;
+                if (state.win5Source !== undefined) window.win5Source = state.win5Source || "";
+                if (state.win5SourceDate !== undefined) window.win5SourceDate = state.win5SourceDate || "";
 
                 updateRaceHeaders(window.raceInfo || ["", "", "", "", ""]);
 
@@ -2487,6 +2492,11 @@
             window.raceInfo = ["", "", "", "", ""];
             window.raceTimes = ["", "", "", "", ""];
             window.raceCourses = ["", "", "", "", ""];
+            window.win5Source = "";
+            window.win5SourceDate = "";
+            jockeyLastWeekWinIds = null;
+            jockeyLastWeekWinIdsPromise = null;
+            jockeyLastWeekWinIdsTargetDate = "";
             updateRaceHeaders(window.raceInfo);
 
             saveState();
@@ -3020,7 +3030,13 @@
             window.raceCourses = json.raceCourses || ((json.races || []).map(r => (r && r.courseInfo) ? String(r.courseInfo) : ""));
             window.win5Sales = json.sales || null;
             window.win5Source = json.source || "";
-            window.win5SourceDate = json.sourceDate || "";
+            const nextSourceDate = json.sourceDate || "";
+            if (window.win5SourceDate !== nextSourceDate) {
+                jockeyLastWeekWinIds = null;
+                jockeyLastWeekWinIdsPromise = null;
+                jockeyLastWeekWinIdsTargetDate = "";
+            }
+            window.win5SourceDate = nextSourceDate;
             updateRaceHeaders(window.raceInfo);
 
             document.querySelectorAll('.person-stats').forEach(el => { el.textContent = ""; });
@@ -3232,7 +3248,13 @@
                     return;
                 }
                 window.win5Source = json.source || "";
-                window.win5SourceDate = json.sourceDate || "";
+                const nextSourceDate = json.sourceDate || "";
+                if (window.win5SourceDate !== nextSourceDate) {
+                    jockeyLastWeekWinIds = null;
+                    jockeyLastWeekWinIdsPromise = null;
+                    jockeyLastWeekWinIdsTargetDate = "";
+                }
+                window.win5SourceDate = nextSourceDate;
                 if (window.win5Source && window.win5Source !== "upcoming") {
                     showToast("過去データなので取得不要");
                     return;
@@ -3262,8 +3284,10 @@
 
                 if (!json.ok) return;
 
-                window.win5Source = json.source || "";
-                window.win5SourceDate = json.sourceDate || "";
+                if (!hasExistingData()) {
+                    window.win5Source = json.source || "";
+                    window.win5SourceDate = json.sourceDate || "";
+                }
 
                 const tabs = json.tabs || [];
                 const current = json.activeTab ?? 0;
@@ -4364,18 +4388,21 @@
         }
 
         async function fetchJockeyLastWeekWinIds() {
-            if (jockeyLastWeekWinIds) return;
+            const targetDate = String(window.win5SourceDate || "").trim();
+            if (jockeyLastWeekWinIds && jockeyLastWeekWinIdsTargetDate === targetDate) return;
             if (jockeyLastWeekWinIdsPromise) return jockeyLastWeekWinIdsPromise;
             jockeyLastWeekWinIdsPromise = (async () => {
             try {
                 const u = new URL("recent-win-persons", WIN5_API);
                 u.searchParams.set("person", "jockey");
-                u.searchParams.set("period", "previous-week");
+                u.searchParams.set("period", "previous-win5");
                 u.searchParams.set("winsMin", "1");
+                if (targetDate) u.searchParams.set("date", targetDate);
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
                 if (!json.ok || !Array.isArray(json.ids)) return;
                 jockeyLastWeekWinIds = new Set(json.ids.map(id => String(id)));
+                jockeyLastWeekWinIdsTargetDate = targetDate;
             } catch (e) {
                 console.warn("fetchJockeyLastWeekWinIds:", e);
             } finally {
