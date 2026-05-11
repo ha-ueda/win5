@@ -1414,10 +1414,10 @@
                 match: row => hasAnyMark(row) && isWins1Prob3Band(row, "trainer")
             },
             {
-                key: "jockeyLastWeekWin",
+                key: "jockeyPreviousWin5Win",
                 label: "前回勝利騎手",
                 color: "#e0b3ff",
-                match: row => hasAnyMark(row) && isJockeyLastWeekWinner(row)
+                match: row => hasAnyMark(row) && isJockeyPreviousWin5Winner(row)
             },
             {
                 key: "jockeyNoDailyMultiWin5",
@@ -1434,9 +1434,9 @@
         let backgroundMode = false;
         let selectedBgRuleKeys = new Set(["redOdds"]);
         let bgRuleColors = Object.fromEntries(BACKGROUND_RULES.map(rule => [rule.key, rule.color]));
-        let jockeyLastWeekWinIds = null;
-        let jockeyLastWeekWinIdsPromise = null;
-        let jockeyLastWeekWinIdsTargetDate = "";
+        let jockeyPreviousWin5WinIds = null;
+        let jockeyPreviousWin5WinIdsPromise = null;
+        let jockeyPreviousWin5WinIdsTargetDate = "";
         let jockeyDailyMultiWinIds5Years = null;
         let jockeyDailyMultiWinIds5YearsPromise = null;
         const statsFetchCache = new Map();
@@ -1605,7 +1605,7 @@
         async function ensureBackgroundRuleStats(activeRules) {
             const needsJockeyProb3 = activeRules.some(rule => rule.key === "jockeyWins1Prob3");
             const needsTrainerProb3 = activeRules.some(rule => rule.key === "trainerWins1Prob3");
-            const needsJockeyLastWeekWin = activeRules.some(rule => rule.key === "jockeyLastWeekWin");
+            const needsJockeyPreviousWin5Win = activeRules.some(rule => rule.key === "jockeyPreviousWin5Win");
             const needsJockeyNoDailyMultiWin5 = activeRules.some(rule => rule.key === "jockeyNoDailyMultiWin5");
             const jobs = [];
             if (needsJockeyProb3) {
@@ -1632,7 +1632,7 @@
                 }));
                 if (!needsJockeyProb3) jobs.push(fetchWins1ProbabilityThresholds("trainer"));
             }
-            if (needsJockeyLastWeekWin) jobs.push(fetchJockeyLastWeekWinIds());
+            if (needsJockeyPreviousWin5Win) jobs.push(fetchJockeyPreviousWin5WinIds());
             if (needsJockeyNoDailyMultiWin5) jobs.push(fetchJockeyDailyMultiWinIds5Years());
             await Promise.all(jobs);
         }
@@ -2328,6 +2328,7 @@
                         .flatMap(key => {
                             if (key === "rank3") return ["redOdds"];
                             if (key === "wins1") return ["jockeyWins1Prob3", "trainerWins1Prob3"];
+                            if (key === "jockeyLastWeekWin") return ["jockeyPreviousWin5Win"];
                             return [key];
                         })
                         .filter(key => valid.has(key)));
@@ -2494,9 +2495,9 @@
             window.raceCourses = ["", "", "", "", ""];
             window.win5Source = "";
             window.win5SourceDate = "";
-            jockeyLastWeekWinIds = null;
-            jockeyLastWeekWinIdsPromise = null;
-            jockeyLastWeekWinIdsTargetDate = "";
+            jockeyPreviousWin5WinIds = null;
+            jockeyPreviousWin5WinIdsPromise = null;
+            jockeyPreviousWin5WinIdsTargetDate = "";
             updateRaceHeaders(window.raceInfo);
 
             saveState();
@@ -3032,9 +3033,9 @@
             window.win5Source = json.source || "";
             const nextSourceDate = json.sourceDate || "";
             if (window.win5SourceDate !== nextSourceDate) {
-                jockeyLastWeekWinIds = null;
-                jockeyLastWeekWinIdsPromise = null;
-                jockeyLastWeekWinIdsTargetDate = "";
+                jockeyPreviousWin5WinIds = null;
+                jockeyPreviousWin5WinIdsPromise = null;
+                jockeyPreviousWin5WinIdsTargetDate = "";
             }
             window.win5SourceDate = nextSourceDate;
             updateRaceHeaders(window.raceInfo);
@@ -3250,9 +3251,9 @@
                 window.win5Source = json.source || "";
                 const nextSourceDate = json.sourceDate || "";
                 if (window.win5SourceDate !== nextSourceDate) {
-                    jockeyLastWeekWinIds = null;
-                    jockeyLastWeekWinIdsPromise = null;
-                    jockeyLastWeekWinIdsTargetDate = "";
+                    jockeyPreviousWin5WinIds = null;
+                    jockeyPreviousWin5WinIdsPromise = null;
+                    jockeyPreviousWin5WinIdsTargetDate = "";
                 }
                 window.win5SourceDate = nextSourceDate;
                 if (window.win5Source && window.win5Source !== "upcoming") {
@@ -4387,11 +4388,11 @@
             return jockeyDailyMultiWinIds5YearsPromise;
         }
 
-        async function fetchJockeyLastWeekWinIds() {
+        async function fetchJockeyPreviousWin5WinIds() {
             const targetDate = String(window.win5SourceDate || "").trim();
-            if (jockeyLastWeekWinIds && jockeyLastWeekWinIdsTargetDate === targetDate) return;
-            if (jockeyLastWeekWinIdsPromise) return jockeyLastWeekWinIdsPromise;
-            jockeyLastWeekWinIdsPromise = (async () => {
+            if (jockeyPreviousWin5WinIds && jockeyPreviousWin5WinIdsTargetDate === targetDate) return;
+            if (jockeyPreviousWin5WinIdsPromise) return jockeyPreviousWin5WinIdsPromise;
+            jockeyPreviousWin5WinIdsPromise = (async () => {
             try {
                 const u = new URL("recent-win-persons", WIN5_API);
                 u.searchParams.set("person", "jockey");
@@ -4401,15 +4402,15 @@
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
                 if (!json.ok || !Array.isArray(json.ids)) return;
-                jockeyLastWeekWinIds = new Set(json.ids.map(id => String(id)));
-                jockeyLastWeekWinIdsTargetDate = targetDate;
+                jockeyPreviousWin5WinIds = new Set(json.ids.map(id => String(id)));
+                jockeyPreviousWin5WinIdsTargetDate = targetDate;
             } catch (e) {
-                console.warn("fetchJockeyLastWeekWinIds:", e);
+                console.warn("fetchJockeyPreviousWin5WinIds:", e);
             } finally {
-                jockeyLastWeekWinIdsPromise = null;
+                jockeyPreviousWin5WinIdsPromise = null;
             }
             })();
-            return jockeyLastWeekWinIdsPromise;
+            return jockeyPreviousWin5WinIdsPromise;
         }
 
         function isJockeyWins1Prob3Band(row) {
@@ -4431,10 +4432,10 @@
             return !jockeyDailyMultiWinIds5Years.has(jid);
         }
 
-        function isJockeyLastWeekWinner(row) {
+        function isJockeyPreviousWin5Winner(row) {
             const jid = String(row?.dataset?.jid || "").trim();
-            if (!jid || !jockeyLastWeekWinIds) return false;
-            return jockeyLastWeekWinIds.has(jid);
+            if (!jid || !jockeyPreviousWin5WinIds) return false;
+            return jockeyPreviousWin5WinIds.has(jid);
         }
 
         function getSelectedJockeyRaceCount(row) {
