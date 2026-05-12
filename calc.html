@@ -1642,11 +1642,22 @@
             const activeRules = BACKGROUND_RULES.filter(rule => selectedBgRuleKeys.has(rule.key));
             await ensureBackgroundRuleStats(activeRules);
             if (activeRules.length > 0) {
-                document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)').forEach(row => {
+                const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)'));
+                const ruleRaceCounts = new Map(activeRules.map(rule => [rule.key, new Set()]));
+                rows.forEach(row => {
+                    const race = String(row.dataset.race || "").trim();
+                    if (!race) return;
+                    activeRules.forEach(rule => {
+                        if (rule.match(row)) ruleRaceCounts.get(rule.key)?.add(race);
+                    });
+                });
+
+                rows.forEach(row => {
                     const box = row.querySelector(".selected");
                     if (!box) return;
                     if ((box.dataset.bg || "none") !== "none" && box.dataset.bgSource !== "rule") return;
                     const matchedColors = activeRules
+                        .filter(rule => (ruleRaceCounts.get(rule.key)?.size || 0) >= 2)
                         .filter(rule => rule.match(row))
                         .map(rule => getBgRuleColor(rule, row));
                     if (!matchedColors.length) return;
