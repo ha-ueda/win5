@@ -356,14 +356,26 @@
             cursor: pointer;
         }
 
-        .bg-rule-label {
+        .bg-rule-text {
             position: relative;
             z-index: 1;
+            display: flex;
+            min-width: 0;
+            flex-direction: column;
+            gap: 2px;
+            background: #fff;
+        }
+
+        .bg-rule-label {
             font-size: 14px;
             color: #333;
             line-height: 1.3;
-            text-align: center;
-            background: #fff;
+        }
+
+        .bg-rule-prob {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.25;
         }
 
         .bg-rule-switch {
@@ -420,6 +432,37 @@
             border-color: #3251BC;
             color: #fff;
         }
+
+        .bg-detail-popover {
+            position: absolute;
+            z-index: 40000;
+            min-width: 220px;
+            max-width: min(320px, calc(100vw - 20px));
+            padding: 10px 12px;
+            border: 1px solid #d7d7d7;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+            color: #333;
+            font-size: 13px;
+            line-height: 1.35;
+        }
+
+        .bg-detail-row {
+            display: grid;
+            grid-template-columns: 14px 1fr;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+        }
+
+        .bg-detail-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 4px;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18);
+        }
+
 
         .shutuba-wrap {
             width: 100%;
@@ -1188,13 +1231,13 @@
             <button id="modeToggle" class="race-clear clear-pc" type="button">個別背景</button>
             <button id="bgRuleBtn" class="race-clear clear-pc" type="button">条件背景</button>
             <button id="bgClearAllBtn" class="race-clear clear-pc" type="button">色クリア</button>
-            <button class="race-clear clear-pc" type="button" onclick="if(confirm('印をすべてクリアしますか？'))clearAllMarks()">印クリア</button>
+            <button class="race-clear clear-pc" type="button" onclick="if(confirm('印と背景をすべてクリアしますか？'))clearAllMarks()">クリア</button>
         </div>
         <div class="toggle-row toggle-row-sp-2">
             <button id="modeToggleSp" class="race-clear" type="button">個別背景</button>
             <button id="bgRuleBtnSp" class="race-clear" type="button">条件背景</button>
             <button class="race-clear" type="button" onclick="document.getElementById('bgClearAllBtn').click()">色クリア</button>
-            <button class="race-clear" type="button" onclick="if(confirm('印をすべてクリアしますか？'))clearAllMarks()">印クリア</button>
+            <button class="race-clear" type="button" onclick="if(confirm('印と背景をすべてクリアしますか？'))clearAllMarks()">クリア</button>
         </div>
     </div>
 
@@ -1340,13 +1383,6 @@
         const STORAGE_KEY_OLD = 'win5_state_v8';
         const WIN5_API = "https://win5.cooopew.workers.dev/";
         const BG_COLORS = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4"];
-        const JOCKEY_NO_DAILY_MULTI_WIN_COLORS = [
-            "#ffadad", "#ffd6a5", "#fdffb6", "#caffbf", "#9bf6ff", "#a0c4ff",
-            "#bdb2ff", "#ffc6ff", "#ff8fab", "#f9c74f", "#90be6d", "#43aa8b",
-            "#4d96ff", "#845ec2", "#f3722c", "#ef476f", "#06d6a0", "#118ab2",
-            "#c77dff", "#f8961e", "#84dcc6", "#f28482", "#b8f2e6", "#f6bd60",
-            "#8ecae6", "#ffb703", "#a7c957", "#e5989b", "#80ed99", "#cdb4db"
-        ];
         const SHARE_COLOR_TABLE_V1 = [
             "#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d",
             "#e761a4", "#ffadad", "#ffd6a5", "#fdffb6", "#caffbf", "#9bf6ff",
@@ -1356,9 +1392,15 @@
             "#f6bd60", "#8ecae6", "#ffb703", "#a7c957", "#e5989b", "#80ed99",
             "#cdb4db"
         ];
-        const JOCKEY_NO_DAILY_MULTI_WIN_COLOR_POOL = JOCKEY_NO_DAILY_MULTI_WIN_COLORS
-            .filter(color => !BG_COLORS.includes(color));
-        const RULE_BG_COLOR = "#b3d1ff";
+        const BG_RULE_COLOR_PALETTE = [
+            "#6aa7d8", "#f28e2b", "#69b45f", "#b07aa1", "#edc948"
+        ].filter(color => !BG_COLORS.includes(color));
+        const PERSON_RULE_COLOR_POOL = [
+            "#e15759", "#76b7b2", "#ffe066", "#ff9da7", "#79706e", "#8cd17d",
+            "#499894", "#fabfd2", "#b6992d", "#a0cbe8", "#d37295", "#b07aa1"
+        ].filter(color => !BG_COLORS.includes(color) && !BG_RULE_COLOR_PALETTE.includes(color));
+        const AUTO_RULE_SWATCH_BACKGROUND = "linear-gradient(90deg, #e15759 0%, #e15759 20%, #76b7b2 20%, #76b7b2 40%, #ffe066 40%, #ffe066 60%, #ff9da7 60%, #ff9da7 80%, #79706e 80%, #79706e 100%)";
+        const RULE_BG_COLOR = BG_RULE_COLOR_PALETTE[0];
         const BG_PROBABILITY_TARGET = 3;
         let jockeyWins1ProbabilityTable = {
             "芝": [
@@ -1393,6 +1435,7 @@
             {
                 key: "redOdds",
                 label: "人気紐",
+                probabilityLabel: "-",
                 color: RULE_BG_COLOR,
                 match: row => {
                     const mark = (row.querySelector(".selected")?.textContent || "").trim();
@@ -1404,41 +1447,79 @@
             {
                 key: "jockeyWins1Prob3",
                 label: "直近1年間で1勝以下の騎手",
-                color: "#ffc800",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[1],
                 match: row => hasAnyMark(row) && isJockeyWins1Prob3Band(row)
             },
             {
                 key: "trainerWins1Prob3",
                 label: "直近1年間で1勝以下の調教師",
-                color: "#96c78c",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[2],
                 match: row => hasAnyMark(row) && isWins1Prob3Band(row, "trainer")
             },
             {
                 key: "jockeyPreviousWin5Win",
                 label: "前回勝利騎手",
-                color: "#e0b3ff",
-                match: row => hasAnyMark(row) && isJockeyPreviousWin5Winner(row)
+                probabilityLabel: "-",
+                getColor: row => getJockeyPreviousWin5Color(row),
+                swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
+                colorEditable: false,
+                match: row => hasAnyMark(row)
+                    && isJockeyPreviousWin5Winner(row)
+                    && getSelectedJockeyPreviousWin5WinnerRaceCount(row) >= 2
+            },
+            {
+                key: "trainerPreviousWin5Win",
+                label: "前回勝利調教師",
+                probabilityLabel: "-",
+                getColor: row => getTrainerPreviousWin5Color(row),
+                swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
+                colorEditable: false,
+                match: row => hasAnyMark(row)
+                    && isTrainerPreviousWin5Winner(row)
+                    && getSelectedTrainerPreviousWin5WinnerRaceCount(row) >= 2
             },
             {
                 key: "jockeyNoDailyMultiWin5",
                 label: "5年間で1日2勝以上しない騎手",
+                probabilityLabel: "-",
                 getColor: row => getJockeyColor(row),
-                swatchBackground: "linear-gradient(90deg, #ffadad 0%, #ffadad 20%, #9bf6ff 20%, #9bf6ff 40%, #bdb2ff 40%, #bdb2ff 60%, #f9c74f 60%, #f9c74f 80%, #43aa8b 80%, #43aa8b 100%)",
+                swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
                 colorEditable: false,
                 match: row => hasAnyMark(row)
                     && isJockeyWithoutDailyMultiWin5Years(row)
                     && getSelectedJockeyRaceCount(row) >= 2
+            },
+            {
+                key: "trainerNoDailyMultiWin5",
+                label: "5年間で1日2勝以上しない調教師",
+                probabilityLabel: "-",
+                getColor: row => getTrainerColor(row),
+                swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
+                colorEditable: false,
+                match: row => hasAnyMark(row)
+                    && isTrainerWithoutDailyMultiWin5Years(row)
+                    && getSelectedTrainerRaceCount(row) >= 2
             }
         ];
 
         let backgroundMode = false;
         let selectedBgRuleKeys = new Set(["redOdds"]);
         let bgRuleColors = Object.fromEntries(BACKGROUND_RULES.map(rule => [rule.key, rule.color]));
+        ensureUniqueBgRuleColors();
         let jockeyPreviousWin5WinIds = null;
         let jockeyPreviousWin5WinIdsPromise = null;
         let jockeyPreviousWin5WinIdsTargetDate = "";
+        let trainerPreviousWin5WinIds = null;
+        let trainerPreviousWin5WinIdsPromise = null;
+        let trainerPreviousWin5WinIdsTargetDate = "";
+
         let jockeyDailyMultiWinIds5Years = null;
         let jockeyDailyMultiWinIds5YearsPromise = null;
+        let trainerDailyMultiWinIds5Years = null;
+        let trainerDailyMultiWinIds5YearsPromise = null;
+        let backgroundRuleProbabilitiesPromise = null;
         const statsFetchCache = new Map();
         const modeBtn = document.getElementById("modeToggle");
 
@@ -1483,6 +1564,9 @@
                 if (box) {
                     box.dataset.bg = "none";
                     box.dataset.bgSource = "";
+                    box.dataset.manualBg = "";
+                    box.dataset.ruleBg = "";
+                    box.dataset.bgRuleDetails = "";
                 }
                 applyBg(r, "none");
             });
@@ -1492,7 +1576,7 @@
         const bgClearAllBtn = document.getElementById("bgClearAllBtn");
         if (bgClearAllBtn) {
             bgClearAllBtn.addEventListener("click", () => {
-                if (!confirm("背景色をすべてクリアしますか？")) return;
+                if (!confirm("背景をすべてクリアしますか？")) return;
                 clearAllRowBackgrounds();
             });
         }
@@ -1514,25 +1598,98 @@
             return colors.length ? colors.join(",") : "none";
         }
 
+        function getStoredBgColors(box, key) {
+            return normalizeBgColors(box?.dataset?.[key] || "");
+        }
+
+        function getManualBgColors(box) {
+            const raw = box?.dataset?.manualBg;
+            if (raw !== undefined && raw !== null && String(raw).trim() !== "") {
+                return normalizeBgColors(raw);
+            }
+            if ((box?.dataset?.bgSource || "") === "manual") return normalizeBgColors(box.dataset.bg);
+            return [];
+        }
+
+        function getRuleBgColors(box) {
+            const raw = box?.dataset?.ruleBg;
+            if (raw !== undefined && raw !== null && String(raw).trim() !== "") {
+                return normalizeBgColors(raw);
+            }
+            if ((box?.dataset?.bgSource || "") === "rule") return normalizeBgColors(box.dataset.bg);
+            return [];
+        }
+
+        function syncEffectiveRowBackground(rowEl) {
+            const box = rowEl?.querySelector(".selected");
+            if (!box) return;
+            const manualColors = getManualBgColors(box);
+            const ruleColors = getRuleBgColors(box);
+            const colors = [...manualColors, ...ruleColors];
+            box.dataset.bg = serializeBg(colors);
+            box.dataset.bgSource = manualColors.length && ruleColors.length
+                ? "mixed"
+                : (ruleColors.length ? "rule" : (manualColors.length ? "manual" : ""));
+            if (!ruleColors.length) box.dataset.bgRuleDetails = "";
+            applyBg(rowEl, box.dataset.bg);
+        }
+
         function setRowBackground(rowEl, bg, source = "") {
             const box = rowEl?.querySelector(".selected");
             if (!box) return;
             const c = serializeBg(bg);
-            box.dataset.bg = c;
-            box.dataset.bgSource = c === "none" ? "" : String(source || "");
-            applyBg(rowEl, c);
+            if (source === "rule") {
+                box.dataset.ruleBg = c;
+            } else if (source === "manual") {
+                box.dataset.manualBg = c;
+            } else {
+                box.dataset.manualBg = "";
+                box.dataset.ruleBg = "";
+                box.dataset.bgRuleDetails = "";
+            }
+            syncEffectiveRowBackground(rowEl);
+        }
+
+        function keepManualBackgroundColorsOnly(box) {
+            if (!box) return;
+            const manualColors = getManualBgColors(box).filter(color => BG_COLORS.includes(color));
+            box.dataset.manualBg = serializeBg(manualColors);
         }
 
         function clearAppliedRuleBackgrounds() {
             document.querySelectorAll('.custom-select:not(.is-empty)').forEach(row => {
                 const box = row.querySelector(".selected");
-                if (!box || box.dataset.bgSource !== "rule") return;
-                setRowBackground(row, "none");
+                if (!box) return;
+                keepManualBackgroundColorsOnly(box);
+                box.dataset.ruleBg = "";
+                box.dataset.bgRuleDetails = "";
+                box.dataset.bgSource = "";
+                box.dataset.bg = box.dataset.manualBg || "none";
+                syncEffectiveRowBackground(row);
+            });
+        }
+
+
+        function isFixedColorRule(rule) {
+            return rule && rule.colorEditable !== false && typeof rule.getColor !== "function";
+        }
+
+        function ensureUniqueBgRuleColors() {
+            const used = new Set(BG_COLORS);
+            BACKGROUND_RULES.filter(isFixedColorRule).forEach(rule => {
+                const saved = bgRuleColors[rule.key];
+                let color = BG_RULE_COLOR_PALETTE.includes(saved) ? saved : rule.color;
+                if (!BG_RULE_COLOR_PALETTE.includes(color) || used.has(color)) {
+                    color = BG_RULE_COLOR_PALETTE.find(candidate => !used.has(candidate)) || color;
+                }
+                bgRuleColors[rule.key] = color;
+                used.add(color);
             });
         }
 
         function getBgRuleColor(rule, row = null) {
             if (row && typeof rule.getColor === "function") return rule.getColor(row);
+            ensureUniqueBgRuleColors();
             return bgRuleColors[rule.key] || rule.color || RULE_BG_COLOR;
         }
 
@@ -1553,7 +1710,15 @@
             palette.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
             palette.style.maxWidth = Math.min(window.innerWidth - 20, 400) + "px";
 
-            BG_COLORS.forEach(color => {
+            ensureUniqueBgRuleColors();
+            const usedByOtherRules = new Set(
+                BACKGROUND_RULES
+                    .filter(item => item.key !== rule.key && isFixedColorRule(item))
+                    .map(item => bgRuleColors[item.key])
+                    .filter(Boolean)
+            );
+            BG_RULE_COLOR_PALETTE.forEach(color => {
+                if (usedByOtherRules.has(color)) return;
                 const btn = document.createElement("button");
                 btn.type = "button";
                 btn.style.width = "36px";
@@ -1605,10 +1770,18 @@
         async function ensureBackgroundRuleStats(activeRules) {
             const needsJockeyProb3 = activeRules.some(rule => rule.key === "jockeyWins1Prob3");
             const needsTrainerProb3 = activeRules.some(rule => rule.key === "trainerWins1Prob3");
+            const needsJockeySurfaceStats = activeRules.some(rule =>
+                rule.key === "jockeyWins1Prob3"
+            );
+            const needsTrainerSurfaceStats = activeRules.some(rule =>
+                rule.key === "trainerWins1Prob3"
+            );
             const needsJockeyPreviousWin5Win = activeRules.some(rule => rule.key === "jockeyPreviousWin5Win");
+            const needsTrainerPreviousWin5Win = activeRules.some(rule => rule.key === "trainerPreviousWin5Win");
             const needsJockeyNoDailyMultiWin5 = activeRules.some(rule => rule.key === "jockeyNoDailyMultiWin5");
+            const needsTrainerNoDailyMultiWin5 = activeRules.some(rule => rule.key === "trainerNoDailyMultiWin5");
             const jobs = [];
-            if (needsJockeyProb3) {
+            if (needsJockeySurfaceStats) {
                 jobs.push(fetchAndApplyJockeyStats("jockey", {
                     updateDisplay: false,
                     years: "1",
@@ -1622,7 +1795,7 @@
             } else if (needsJockeyProb3) {
                 jobs.push(fetchWins1ProbabilityThresholds("jockey"));
             }
-            if (needsTrainerProb3) {
+            if (needsTrainerSurfaceStats) {
                 jobs.push(fetchAndApplyJockeyStats("trainer", {
                     updateDisplay: false,
                     years: "1",
@@ -1630,11 +1803,73 @@
                     datasetKey: "tstatsSurface1",
                     save: false
                 }));
-                if (!needsJockeyProb3) jobs.push(fetchWins1ProbabilityThresholds("trainer"));
+                if (needsTrainerProb3 && !needsJockeyProb3) jobs.push(fetchWins1ProbabilityThresholds("trainer"));
             }
             if (needsJockeyPreviousWin5Win) jobs.push(fetchJockeyPreviousWin5WinIds());
+            if (needsTrainerPreviousWin5Win) jobs.push(fetchTrainerPreviousWin5WinIds());
             if (needsJockeyNoDailyMultiWin5) jobs.push(fetchJockeyDailyMultiWinIds5Years());
+            if (needsTrainerNoDailyMultiWin5) jobs.push(fetchTrainerDailyMultiWinIds5Years());
             await Promise.all(jobs);
+        }
+
+        function formatRuleProbability(value) {
+            if (value === null || value === undefined || value === "") return "-";
+            const n = Number(value);
+            if (!Number.isFinite(n)) return "-";
+            return `${n.toFixed(2)}%`;
+        }
+
+        function formatSurfaceProbability(row) {
+            const probability = formatRuleProbability(row?.probability);
+            const starts = Number(row?.starts);
+            return Number.isFinite(starts) && starts > 0 ? `${probability}(${starts}走)` : probability;
+        }
+
+        function applyBackgroundRuleProbabilityPayload(payload) {
+            const rules = payload?.rules;
+            if (!rules || typeof rules !== "object") return;
+            const byKey = new Map(BACKGROUND_RULES.map(rule => [rule.key, rule]));
+
+            const jockeyWins = byKey.get("jockeyWins1Prob3");
+            if (jockeyWins) {
+                jockeyWins.probabilityLabel = `芝${formatSurfaceProbability(rules.jockeyWins1Prob3?.surfaces?.["芝"])} / ダ${formatSurfaceProbability(rules.jockeyWins1Prob3?.surfaces?.["ダ"])}`;
+            }
+            const trainerWins = byKey.get("trainerWins1Prob3");
+            if (trainerWins) {
+                trainerWins.probabilityLabel = `芝${formatSurfaceProbability(rules.trainerWins1Prob3?.surfaces?.["芝"])} / ダ${formatSurfaceProbability(rules.trainerWins1Prob3?.surfaces?.["ダ"])}`;
+            }
+
+            [
+                "jockeyPreviousWin5Win",
+                "trainerPreviousWin5Win",
+                "jockeyNoDailyMultiWin5",
+                "trainerNoDailyMultiWin5",
+            ].forEach(key => {
+                const rule = byKey.get(key);
+                if (rule) rule.probabilityLabel = formatRuleProbability(rules[key]?.probability);
+            });
+            const redOdds = byKey.get("redOdds");
+            if (redOdds) redOdds.probabilityLabel = formatRuleProbability(rules.redOdds?.probability);
+        }
+
+        async function fetchBackgroundRuleProbabilities() {
+            if (backgroundRuleProbabilitiesPromise) return backgroundRuleProbabilitiesPromise;
+            backgroundRuleProbabilitiesPromise = (async () => {
+                try {
+                    const u = new URL("background-rule-probabilities", WIN5_API);
+                    const res = await fetch(u.toString(), { cache: "no-store" });
+                    const json = await res.json();
+                    if (json.ok) {
+                        applyBackgroundRuleProbabilityPayload(json);
+                        renderBgRuleList();
+                    }
+                } catch (e) {
+                    console.warn("fetchBackgroundRuleProbabilities:", e);
+                } finally {
+                    backgroundRuleProbabilitiesPromise = null;
+                }
+            })();
+            return backgroundRuleProbabilitiesPromise;
         }
 
         async function applySelectedBackgroundRules() {
@@ -1655,13 +1890,17 @@
                 rows.forEach(row => {
                     const box = row.querySelector(".selected");
                     if (!box) return;
-                    if ((box.dataset.bg || "none") !== "none" && box.dataset.bgSource !== "rule") return;
-                    const matchedColors = activeRules
+                    const matchedRules = activeRules
                         .filter(rule => (ruleRaceCounts.get(rule.key)?.size || 0) >= 2)
-                        .filter(rule => rule.match(row))
-                        .map(rule => getBgRuleColor(rule, row));
+                        .filter(rule => rule.match(row));
+                    const matchedColors = matchedRules.map(rule => getBgRuleColor(rule, row));
                     if (!matchedColors.length) return;
                     setRowBackground(row, matchedColors, "rule");
+                    box.dataset.bgRuleDetails = JSON.stringify(matchedRules.map((rule, index) => ({
+                        label: getBgRuleDetailLabel(rule, row),
+                        probability: rule.probabilityLabel || "",
+                        color: matchedColors[index] || ""
+                    })));
                 });
             }
             saveState();
@@ -1679,7 +1918,10 @@
                 item.classList.toggle("active", selectedBgRuleKeys.has(rule.key));
                 item.innerHTML = `
                     <span class="bg-rule-swatch"></span>
-                    <span class="bg-rule-label"></span>
+                    <span class="bg-rule-text">
+                        <span class="bg-rule-label"></span>
+                        <span class="bg-rule-prob"></span>
+                    </span>
                     <button class="bg-rule-switch" type="button" aria-label="${rule.label}を切り替え"></button>
                 `;
                 const swatch = item.querySelector(".bg-rule-swatch");
@@ -1694,6 +1936,8 @@
                 }
                 const label = item.querySelector(".bg-rule-label");
                 if (label) label.textContent = rule.label;
+                const probability = item.querySelector(".bg-rule-prob");
+                if (probability) probability.textContent = rule.probabilityLabel || "";
                 const switchBtn = item.querySelector(".bg-rule-switch");
                 if (switchBtn) {
                     switchBtn.setAttribute("aria-pressed", String(selectedBgRuleKeys.has(rule.key)));
@@ -1711,6 +1955,7 @@
 
         function openBgRuleModal() {
             renderBgRuleList();
+            fetchBackgroundRuleProbabilities();
             const modal = document.getElementById("bgRuleModal");
             if (!modal) return;
             modal.style.display = "flex";
@@ -1789,6 +2034,9 @@
                 box.textContent = "";
                 box.dataset.bg = "none";
                 box.dataset.bgSource = "";
+                box.dataset.manualBg = "";
+                box.dataset.ruleBg = "";
+                box.dataset.bgRuleDetails = "";
             }
             if (sel) {
                 applyMarkBackground(sel, false);
@@ -1908,9 +2156,11 @@
         function applyBg(rowEl, bg) {
             const el = rowEl?.querySelector(".person-name");
             if (!el) return;
+            const box = rowEl?.querySelector(".selected");
             const colors = normalizeBgColors(bg);
             el.style.backgroundImage = "";
             el.style.backgroundColor = "";
+            el.style.cursor = colors.length && (box?.dataset?.bgRuleDetails || getRuleBgColors(box).length) ? "pointer" : "";
             if (colors.length === 1) {
                 el.style.backgroundColor = colors[0];
                 return;
@@ -1926,6 +2176,90 @@
             }
         }
 
+        function closeBgDetailPopover() {
+            document.querySelector(".bg-detail-popover")?.remove();
+        }
+
+        function parseBgRuleDetails(rowEl) {
+            const box = rowEl?.querySelector(".selected");
+            if (!box || !getRuleBgColors(box).length) return [];
+            try {
+                if (!box.dataset.bgRuleDetails) return getCurrentBgRuleDetails(rowEl);
+                const rows = JSON.parse(box.dataset.bgRuleDetails);
+                return Array.isArray(rows) && rows.length ? rows : getCurrentBgRuleDetails(rowEl);
+            } catch {
+                return getCurrentBgRuleDetails(rowEl);
+            }
+        }
+
+        function getCurrentBgRuleDetails(rowEl) {
+            const box = rowEl?.querySelector(".selected");
+            if (!box || !getRuleBgColors(box).length) return [];
+            const colors = getRuleBgColors(box);
+            const activeRules = BACKGROUND_RULES.filter(rule => selectedBgRuleKeys.has(rule.key));
+            const matchedRules = activeRules.filter(rule => rule.match(rowEl));
+            return matchedRules.map((rule, index) => ({
+                label: getBgRuleDetailLabel(rule, rowEl),
+                probability: rule.probabilityLabel || "",
+                color: colors[index] || getBgRuleColor(rule, rowEl)
+            }));
+        }
+
+        function getBgRuleDetailLabel(rule, rowEl) {
+            return rule?.label || "";
+        }
+
+        function showBgRuleDetails(rowEl, anchorEl, event) {
+            const details = parseBgRuleDetails(rowEl);
+            if (!details.length) return false;
+            closeBgDetailPopover();
+            const popover = document.createElement("div");
+            popover.className = "bg-detail-popover";
+            details.forEach(item => {
+                const row = document.createElement("div");
+                row.className = "bg-detail-row";
+
+                const swatch = document.createElement("span");
+                swatch.className = "bg-detail-color";
+                swatch.style.backgroundColor = item.color || "#fff";
+                row.appendChild(swatch);
+
+                const label = document.createElement("span");
+                label.textContent = item.label || "";
+                row.appendChild(label);
+
+                popover.appendChild(row);
+            });
+            document.body.appendChild(popover);
+
+            const rect = anchorEl.getBoundingClientRect();
+            const sx = window.scrollX || document.documentElement.scrollLeft;
+            const sy = window.scrollY || document.documentElement.scrollTop;
+            let left = rect.left + sx;
+            let top = rect.bottom + sy + 6;
+            const pw = popover.offsetWidth;
+            const ph = popover.offsetHeight;
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            if (left + pw > sx + vw - 10) left = sx + vw - pw - 10;
+            if (top + ph > sy + vh - 10) top = rect.top + sy - ph - 6;
+            popover.style.left = Math.max(sx + 10, left) + "px";
+            popover.style.top = Math.max(sy + 10, top) + "px";
+
+            event?.preventDefault();
+            event?.stopPropagation();
+            setTimeout(() => {
+                const close = ev => {
+                    if (!popover.contains(ev.target)) {
+                        closeBgDetailPopover();
+                        document.removeEventListener("click", close, true);
+                    }
+                };
+                document.addEventListener("click", close, true);
+            }, 0);
+            return true;
+        }
+
         function applyMarkBackground(rowEl, hasMark) {
             if (!rowEl) return;
             rowEl.classList.toggle("has-mark", !!hasMark);
@@ -1939,11 +2273,11 @@
             const box = rowEl.querySelector(".selected");
             if (!box) return;
 
-            const selectedColors = new Set(normalizeBgColors(box.dataset.bg));
+            const selectedColors = new Set(getManualBgColors(box));
             const getSelectedList = () => BG_COLORS.filter(color => selectedColors.has(color));
             const applySelectedColors = () => {
                 const colors = getSelectedList();
-                setRowBackground(rowEl, colors, colors.length ? "manual" : "");
+                setRowBackground(rowEl, colors, "manual");
                 saveState();
             };
 
@@ -2037,6 +2371,9 @@
             selected.dataset.role = "mark-box";
             selected.dataset.bg = "none";
             selected.dataset.bgSource = "";
+            selected.dataset.manualBg = "";
+            selected.dataset.ruleBg = "";
+            selected.dataset.bgRuleDetails = "";
 
             const cycleMark = () => {
                 if (rowEl.classList.contains("is-scratched")) return;
@@ -2103,6 +2440,9 @@
             const jName = document.createElement("span");
             jName.className = "person-name";
             jName.textContent = "";
+            jName.addEventListener("click", (e) => {
+                showBgRuleDetails(tr, jName, e);
+            });
             jWrap.appendChild(jName);
             const jStats = document.createElement("span");
             jStats.className = "person-stats";
@@ -2173,7 +2513,7 @@
                 clearBtn.className = "race-clear";
                 clearBtn.textContent = "クリア";
                 clearBtn.addEventListener("click", () => {
-                    if (confirm("このレースの印と背景色をクリアしますか？")) clearColumn(r);
+                    if (confirm("このレースの印と背景をクリアしますか？")) clearColumn(r);
                 });
 
                 headRight.appendChild(clearBtn);
@@ -2278,6 +2618,9 @@
                         mark: (box?.textContent || "").trim(),
                         bg: (box?.dataset.bg || "none").trim(),
                         bgSource: (box?.dataset.bgSource || "").trim(),
+                        manualBg: (box?.dataset.manualBg || "").trim(),
+                        ruleBg: (box?.dataset.ruleBg || "").trim(),
+                        bgRuleDetails: (box?.dataset.bgRuleDetails || "").trim(),
                         name: isEmpty ? null : name,
                         jockey: jockey || null,
                         trainer: trainer || null,
@@ -2345,14 +2688,15 @@
                         .filter(key => valid.has(key)));
                 }
                 if (state.bgRuleColors && typeof state.bgRuleColors === "object") {
-                    if (BG_COLORS.includes(state.bgRuleColors.wins1)) {
+                    if (BG_RULE_COLOR_PALETTE.includes(state.bgRuleColors.wins1)) {
                         bgRuleColors.jockeyWins1 = state.bgRuleColors.wins1;
                         bgRuleColors.trainerWins1 = state.bgRuleColors.wins1;
                     }
                     for (const rule of BACKGROUND_RULES) {
                         const saved = state.bgRuleColors[rule.key];
-                        if (BG_COLORS.includes(saved)) bgRuleColors[rule.key] = saved;
+                        if (BG_RULE_COLOR_PALETTE.includes(saved)) bgRuleColors[rule.key] = saved;
                     }
+                    ensureUniqueBgRuleColors();
                 }
                 if (state.sortKey === "no" || state.sortKey === "odds") {
                     currentSortKey = state.sortKey;
@@ -2378,11 +2722,14 @@
                             box.textContent = m;
                             box.dataset.bg = b;
                             box.dataset.bgSource = (val.bgSource || "").toString();
+                            const source = (val.bgSource || "").toString();
+                            box.dataset.manualBg = (val.manualBg || ((source === "manual" || source === "mixed") ? b : "") || "").toString();
+                            box.dataset.ruleBg = (val.ruleBg || (source === "rule" ? b : "") || "").toString();
+                            box.dataset.bgRuleDetails = (val.bgRuleDetails || "").toString();
                         }
 
                         applyMarkBackground(sel, !!m);
-                        const effBg = (b && b !== "none") ? b : "none";
-                        applyBg(sel, effBg);
+                        syncEffectiveRowBackground(sel);
                         const name = val.name;
                         if (name === null) {
                             sel.classList.add("is-empty");
@@ -2410,6 +2757,9 @@
                                 box.textContent = "";
                                 box.dataset.bg = "none";
                                 box.dataset.bgSource = "";
+                                box.dataset.manualBg = "";
+                                box.dataset.ruleBg = "";
+                                box.dataset.bgRuleDetails = "";
                             }
                             applyMarkBackground(sel, false);
                             applyBg(sel, "none");
@@ -2453,6 +2803,9 @@
                     box.textContent = "";
                     box.dataset.bg = "none";
                     box.dataset.bgSource = "";
+                    box.dataset.manualBg = "";
+                    box.dataset.ruleBg = "";
+                    box.dataset.bgRuleDetails = "";
                 }
                 applyMarkBackground(sel, false);
                 applyBg(sel, "none");
@@ -2495,6 +2848,9 @@
                     box.textContent = "";
                     box.dataset.bg = "none";
                     box.dataset.bgSource = "";
+                    box.dataset.manualBg = "";
+                    box.dataset.ruleBg = "";
+                    box.dataset.bgRuleDetails = "";
                 }
                 applyMarkBackground(sel, false);
                 applyBg(sel, "none");
@@ -3147,6 +3503,9 @@
                             box.textContent = "";
                             box.dataset.bg = "none";
                             box.dataset.bgSource = "";
+                            box.dataset.manualBg = "";
+                            box.dataset.ruleBg = "";
+                            box.dataset.bgRuleDetails = "";
                         }
                         applyMarkBackground(sel, false);
                         applyBg(sel, "none");
@@ -3476,6 +3835,9 @@
                 box.textContent = "";
                 box.dataset.bg = "none";
                 box.dataset.bgSource = "";
+                box.dataset.manualBg = "";
+                box.dataset.ruleBg = "";
+                box.dataset.bgRuleDetails = "";
                 applyMarkBackground(sel, false);
                 applyBg(sel, "none");
             });
@@ -4031,10 +4393,16 @@
         function clearAllMarks() {
             document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)').forEach(sel => {
                 const box = sel.querySelector('.selected');
-                if (box) box.textContent = "";
+                if (box) {
+                    box.textContent = "";
+                    box.dataset.bg = "none";
+                    box.dataset.bgSource = "";
+                    box.dataset.manualBg = "";
+                    box.dataset.ruleBg = "";
+                    box.dataset.bgRuleDetails = "";
+                }
                 applyMarkBackground(sel, false);
-                const manual = box?.dataset?.bg;
-                if (!manual || manual === "none") applyBg(sel, "none");
+                applyBg(sel, "none");
             });
             saveState();
         }
@@ -4399,6 +4767,28 @@
             return jockeyDailyMultiWinIds5YearsPromise;
         }
 
+        async function fetchTrainerDailyMultiWinIds5Years() {
+            if (trainerDailyMultiWinIds5Years) return;
+            if (trainerDailyMultiWinIds5YearsPromise) return trainerDailyMultiWinIds5YearsPromise;
+            trainerDailyMultiWinIds5YearsPromise = (async () => {
+            try {
+                const u = new URL("daily-multi-win-persons", WIN5_API);
+                u.searchParams.set("person", "trainer");
+                u.searchParams.set("years", "5");
+                u.searchParams.set("winsMin", "2");
+                const res = await fetch(u.toString(), { cache: "no-store" });
+                const json = await res.json();
+                if (!json.ok || !Array.isArray(json.ids)) return;
+                trainerDailyMultiWinIds5Years = new Set(json.ids.map(id => String(id)));
+            } catch (e) {
+                console.warn("fetchTrainerDailyMultiWinIds5Years:", e);
+            } finally {
+                trainerDailyMultiWinIds5YearsPromise = null;
+            }
+            })();
+            return trainerDailyMultiWinIds5YearsPromise;
+        }
+
         async function fetchJockeyPreviousWin5WinIds() {
             const targetDate = String(window.win5SourceDate || "").trim();
             if (jockeyPreviousWin5WinIds && jockeyPreviousWin5WinIdsTargetDate === targetDate) return;
@@ -4424,6 +4814,31 @@
             return jockeyPreviousWin5WinIdsPromise;
         }
 
+        async function fetchTrainerPreviousWin5WinIds() {
+            const targetDate = String(window.win5SourceDate || "").trim();
+            if (trainerPreviousWin5WinIds && trainerPreviousWin5WinIdsTargetDate === targetDate) return;
+            if (trainerPreviousWin5WinIdsPromise) return trainerPreviousWin5WinIdsPromise;
+            trainerPreviousWin5WinIdsPromise = (async () => {
+            try {
+                const u = new URL("recent-win-persons", WIN5_API);
+                u.searchParams.set("person", "trainer");
+                u.searchParams.set("period", "previous-win5");
+                u.searchParams.set("winsMin", "1");
+                if (targetDate) u.searchParams.set("date", targetDate);
+                const res = await fetch(u.toString(), { cache: "no-store" });
+                const json = await res.json();
+                if (!json.ok || !Array.isArray(json.ids)) return;
+                trainerPreviousWin5WinIds = new Set(json.ids.map(id => String(id)));
+                trainerPreviousWin5WinIdsTargetDate = targetDate;
+            } catch (e) {
+                console.warn("fetchTrainerPreviousWin5WinIds:", e);
+            } finally {
+                trainerPreviousWin5WinIdsPromise = null;
+            }
+            })();
+            return trainerPreviousWin5WinIdsPromise;
+        }
+
         function isJockeyWins1Prob3Band(row) {
             return isWins1Prob3Band(row, "jockey");
         }
@@ -4443,10 +4858,22 @@
             return !jockeyDailyMultiWinIds5Years.has(jid);
         }
 
+        function isTrainerWithoutDailyMultiWin5Years(row) {
+            const tid = String(row?.dataset?.tid || "").trim();
+            if (!tid || !trainerDailyMultiWinIds5Years) return false;
+            return !trainerDailyMultiWinIds5Years.has(tid);
+        }
+
         function isJockeyPreviousWin5Winner(row) {
             const jid = String(row?.dataset?.jid || "").trim();
             if (!jid || !jockeyPreviousWin5WinIds) return false;
             return jockeyPreviousWin5WinIds.has(jid);
+        }
+
+        function isTrainerPreviousWin5Winner(row) {
+            const tid = String(row?.dataset?.tid || "").trim();
+            if (!tid || !trainerPreviousWin5WinIds) return false;
+            return trainerPreviousWin5WinIds.has(tid);
         }
 
         function getSelectedJockeyRaceCount(row) {
@@ -4462,6 +4889,47 @@
             return races.size;
         }
 
+        function getSelectedJockeyPreviousWin5WinnerRaceCount(row) {
+            const jid = String(row?.dataset?.jid || "").trim();
+            if (!jid || !jockeyPreviousWin5WinIds?.has(jid)) return 0;
+            const races = new Set();
+            document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
+                if (!hasAnyMark(sel)) return;
+                if (String(sel.dataset.jid || "").trim() !== jid) return;
+                if (!isJockeyPreviousWin5Winner(sel)) return;
+                const race = String(sel.dataset.race || "").trim();
+                if (race) races.add(race);
+            });
+            return races.size;
+        }
+
+        function getSelectedTrainerRaceCount(row) {
+            const tid = String(row?.dataset?.tid || "").trim();
+            if (!tid) return 0;
+            const races = new Set();
+            document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
+                if (!hasAnyMark(sel)) return;
+                if (String(sel.dataset.tid || "").trim() !== tid) return;
+                const race = String(sel.dataset.race || "").trim();
+                if (race) races.add(race);
+            });
+            return races.size;
+        }
+
+        function getSelectedTrainerPreviousWin5WinnerRaceCount(row) {
+            const tid = String(row?.dataset?.tid || "").trim();
+            if (!tid || !trainerPreviousWin5WinIds?.has(tid)) return 0;
+            const races = new Set();
+            document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
+                if (!hasAnyMark(sel)) return;
+                if (String(sel.dataset.tid || "").trim() !== tid) return;
+                if (!isTrainerPreviousWin5Winner(sel)) return;
+                const race = String(sel.dataset.race || "").trim();
+                if (race) races.add(race);
+            });
+            return races.size;
+        }
+
         function hashString(value) {
             let hash = 0;
             const text = String(value || "");
@@ -4471,23 +4939,94 @@
             return Math.abs(hash);
         }
 
-        function getJockeyColor(row) {
-            const jid = String(row?.dataset?.jid || "").trim();
-            const colors = JOCKEY_NO_DAILY_MULTI_WIN_COLOR_POOL.length
-                ? JOCKEY_NO_DAILY_MULTI_WIN_COLOR_POOL
-                : JOCKEY_NO_DAILY_MULTI_WIN_COLORS;
-            if (!jid) return colors[0];
-            const ids = [...new Set(
+        function componentToHex(value) {
+            const hex = Math.max(0, Math.min(255, Math.round(value))).toString(16);
+            return hex.length === 1 ? "0" + hex : hex;
+        }
+
+        function hslToHex(h, s, l) {
+            const hue = (((h % 360) + 360) % 360) / 360;
+            const sat = Math.max(0, Math.min(100, s)) / 100;
+            const light = Math.max(0, Math.min(100, l)) / 100;
+            const q = light < 0.5 ? light * (1 + sat) : light + sat - light * sat;
+            const p = 2 * light - q;
+            const toRgb = t => {
+                let v = t;
+                if (v < 0) v += 1;
+                if (v > 1) v -= 1;
+                if (v < 1 / 6) return p + (q - p) * 6 * v;
+                if (v < 1 / 2) return q;
+                if (v < 2 / 3) return p + (q - p) * (2 / 3 - v) * 6;
+                return p;
+            };
+            return `#${componentToHex(toRgb(hue + 1 / 3) * 255)}${componentToHex(toRgb(hue) * 255)}${componentToHex(toRgb(hue - 1 / 3) * 255)}`;
+        }
+
+        function generatedPersonRuleColor(index, usedColors) {
+            let i = Math.max(0, Number(index) || 0);
+            while (i < index + 720) {
+                const color = hslToHex((i * 137.508 + 23) % 360, 72, 82);
+                if (!usedColors.has(color)) return color;
+                i++;
+            }
+            return hslToHex((index * 97 + 41) % 360, 65, 75);
+        }
+
+        function getPersonRuleColor(type, id) {
+            const normalizedId = String(id || "").trim();
+            const usedColors = new Set([...BG_COLORS, ...BG_RULE_COLOR_PALETTE]);
+            const baseColors = PERSON_RULE_COLOR_POOL.filter(color => !usedColors.has(color));
+            if (!normalizedId) return baseColors[0] || generatedPersonRuleColor(0, usedColors);
+
+            const keys = [...new Set(
                 Array.from(document.querySelectorAll(".custom-select"))
-                    .filter(sel => hasAnyMark(sel) && isJockeyWithoutDailyMultiWin5Years(sel))
-                    .filter(sel => getSelectedJockeyRaceCount(sel) >= 2)
-                    .map(sel => String(sel.dataset.jid || "").trim())
-                    .filter(Boolean)
+                    .flatMap(sel => {
+                        if (!hasAnyMark(sel)) return [];
+                        const items = [];
+                        const jid = String(sel.dataset.jid || "").trim();
+                        const tid = String(sel.dataset.tid || "").trim();
+                        if (jid && isJockeyWithoutDailyMultiWin5Years(sel) && getSelectedJockeyRaceCount(sel) >= 2) {
+                            items.push(`jockeyNoDaily:${jid}`);
+                        }
+                        if (tid && isTrainerWithoutDailyMultiWin5Years(sel) && getSelectedTrainerRaceCount(sel) >= 2) {
+                            items.push(`trainerNoDaily:${tid}`);
+                        }
+                        if (jid && isJockeyPreviousWin5Winner(sel) && getSelectedJockeyPreviousWin5WinnerRaceCount(sel) >= 2) {
+                            items.push(`jockeyPrevious:${jid}`);
+                        }
+                        if (tid && isTrainerPreviousWin5Winner(sel) && getSelectedTrainerPreviousWin5WinnerRaceCount(sel) >= 2) {
+                            items.push(`trainerPrevious:${tid}`);
+                        }
+                        return items;
+                    })
             )].sort();
-            const index = ids.indexOf(jid);
-            if (index >= 0) return colors[index % colors.length];
-            const hash = hashString(jid);
-            return colors[hash % colors.length];
+            const targetKey = `${type}:${normalizedId}`;
+            let index = keys.indexOf(targetKey);
+            if (index < 0) index = keys.length + (hashString(targetKey) % 1000);
+            if (index < baseColors.length) return baseColors[index];
+            for (const color of baseColors) usedColors.add(color);
+            let generated = "";
+            for (let i = baseColors.length; i <= index; i++) {
+                generated = generatedPersonRuleColor(i - baseColors.length, usedColors);
+                usedColors.add(generated);
+            }
+            return generated;
+        }
+
+        function getJockeyColor(row) {
+            return getPersonRuleColor("jockeyNoDaily", row?.dataset?.jid);
+        }
+
+        function getTrainerColor(row) {
+            return getPersonRuleColor("trainerNoDaily", row?.dataset?.tid);
+        }
+
+        function getJockeyPreviousWin5Color(row) {
+            return getPersonRuleColor("jockeyPrevious", row?.dataset?.jid);
+        }
+
+        function getTrainerPreviousWin5Color(row) {
+            return getPersonRuleColor("trainerPrevious", row?.dataset?.tid);
         }
 
         function applyPersonDisplay() {
