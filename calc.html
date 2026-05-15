@@ -437,7 +437,10 @@
             position: absolute;
             z-index: 40000;
             min-width: 220px;
-            max-width: min(320px, calc(100vw - 20px));
+            width: max-content;
+            max-width: calc(100vw - 20px);
+            overflow-x: auto;
+            white-space: nowrap;
             padding: 10px 12px;
             border: 1px solid #d7d7d7;
             border-radius: 8px;
@@ -1382,7 +1385,6 @@
         const STORAGE_KEY = 'win5_state_v9';
         const STORAGE_KEY_OLD = 'win5_state_v8';
         const WIN5_API = "https://win5.cooopew.workers.dev/";
-        const BG_COLORS = ["#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d", "#e761a4"];
         const SHARE_COLOR_TABLE_V1 = [
             "#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d",
             "#e761a4", "#ffadad", "#ffd6a5", "#fdffb6", "#caffbf", "#9bf6ff",
@@ -1392,14 +1394,15 @@
             "#f6bd60", "#8ecae6", "#ffb703", "#a7c957", "#e5989b", "#80ed99",
             "#cdb4db"
         ];
-        const BG_RULE_COLOR_PALETTE = [
-            "#6aa7d8", "#f28e2b", "#69b45f", "#b07aa1", "#edc948"
-        ].filter(color => !BG_COLORS.includes(color));
-        const PERSON_RULE_COLOR_POOL = [
-            "#e15759", "#76b7b2", "#ffe066", "#ff9da7", "#79706e", "#8cd17d",
-            "#499894", "#fabfd2", "#b6992d", "#a0cbe8", "#d37295", "#b07aa1"
-        ].filter(color => !BG_COLORS.includes(color) && !BG_RULE_COLOR_PALETTE.includes(color));
-        const AUTO_RULE_SWATCH_BACKGROUND = "linear-gradient(90deg, #e15759 0%, #e15759 20%, #76b7b2 20%, #76b7b2 40%, #ffe066 40%, #ffe066 60%, #ff9da7 60%, #ff9da7 80%, #79706e 80%, #79706e 100%)";
+        const BG_COLORS = SHARE_COLOR_TABLE_V1.slice(0, 15);
+        const BG_RULE_COLOR_PALETTE = BG_COLORS;
+        const PERSON_RULE_COLOR_POOL = BG_COLORS;
+        const AUTO_RULE_SWATCH_COLORS = BG_COLORS.slice(0, 5);
+        const AUTO_RULE_SWATCH_BACKGROUND = `linear-gradient(90deg, ${AUTO_RULE_SWATCH_COLORS.map((color, index) => {
+            const start = (100 / AUTO_RULE_SWATCH_COLORS.length) * index;
+            const end = (100 / AUTO_RULE_SWATCH_COLORS.length) * (index + 1);
+            return `${color} ${start}%, ${color} ${end}%`;
+        }).join(", ")})`;
         const RULE_BG_COLOR = BG_RULE_COLOR_PALETTE[0];
         const BG_PROBABILITY_TARGET = 3;
         let jockeyWins1ProbabilityTable = {
@@ -1435,7 +1438,7 @@
             {
                 key: "redOdds",
                 label: "人気紐",
-                probabilityLabel: "-",
+                probabilityLabel: "",
                 color: RULE_BG_COLOR,
                 match: row => {
                     const mark = (row.querySelector(".selected")?.textContent || "").trim();
@@ -1632,6 +1635,31 @@
             applyBg(rowEl, box.dataset.bg);
         }
 
+        function filterBgRuleDetailsByColors(box, colors) {
+            if (!box?.dataset?.bgRuleDetails) return;
+            const remaining = normalizeBgColors(colors);
+            if (!remaining.length) {
+                box.dataset.bgRuleDetails = "";
+                return;
+            }
+            try {
+                const details = JSON.parse(box.dataset.bgRuleDetails);
+                if (!Array.isArray(details)) return;
+                const counts = new Map();
+                remaining.forEach(color => counts.set(color, (counts.get(color) || 0) + 1));
+                const filtered = details.filter(item => {
+                    const color = String(item?.color || "").trim();
+                    const count = counts.get(color) || 0;
+                    if (count <= 0) return false;
+                    counts.set(color, count - 1);
+                    return true;
+                });
+                box.dataset.bgRuleDetails = filtered.length ? JSON.stringify(filtered) : "";
+            } catch {
+                box.dataset.bgRuleDetails = "";
+            }
+        }
+
         function setRowBackground(rowEl, bg, source = "") {
             const box = rowEl?.querySelector(".selected");
             if (!box) return;
@@ -1673,15 +1701,11 @@
         }
 
         function ensureUniqueBgRuleColors() {
-            const used = new Set(BG_COLORS);
             BACKGROUND_RULES.filter(isFixedColorRule).forEach(rule => {
                 const saved = bgRuleColors[rule.key];
                 let color = BG_RULE_COLOR_PALETTE.includes(saved) ? saved : rule.color;
-                if (!BG_RULE_COLOR_PALETTE.includes(color) || used.has(color)) {
-                    color = BG_RULE_COLOR_PALETTE.find(candidate => !used.has(candidate)) || color;
-                }
+                if (!BG_RULE_COLOR_PALETTE.includes(color)) color = rule.color;
                 bgRuleColors[rule.key] = color;
-                used.add(color);
             });
         }
 
@@ -1689,6 +1713,13 @@
             if (row && typeof rule.getColor === "function") return rule.getColor(row);
             ensureUniqueBgRuleColors();
             return bgRuleColors[rule.key] || rule.color || RULE_BG_COLOR;
+        }
+
+        function getPaletteContentWidth(itemCount, maxColumns = 8) {
+            const size = 36;
+            const gap = 10;
+            const columns = Math.max(1, Math.min(maxColumns, itemCount));
+            return columns * size + (columns - 1) * gap;
         }
 
         function openBgRulePalette(rule, swatch, e) {
@@ -1700,6 +1731,7 @@
             palette.style.zIndex = 30000;
             palette.style.display = "flex";
             palette.style.flexWrap = "wrap";
+            palette.style.boxSizing = "content-box";
             palette.style.gap = "10px";
             palette.style.background = "#fff";
             palette.style.border = "1px solid #999";
@@ -1709,18 +1741,15 @@
             palette.style.maxWidth = Math.min(window.innerWidth - 20, 400) + "px";
 
             ensureUniqueBgRuleColors();
-            const usedByOtherRules = new Set(
-                BACKGROUND_RULES
-                    .filter(item => item.key !== rule.key && isFixedColorRule(item))
-                    .map(item => bgRuleColors[item.key])
-                    .filter(Boolean)
-            );
+            palette.style.width = getPaletteContentWidth(BG_RULE_COLOR_PALETTE.length) + "px";
             BG_RULE_COLOR_PALETTE.forEach(color => {
-                if (usedByOtherRules.has(color)) return;
                 const btn = document.createElement("button");
                 btn.type = "button";
                 btn.style.width = "36px";
                 btn.style.height = "36px";
+                btn.style.flex = "0 0 36px";
+                btn.style.boxSizing = "border-box";
+                btn.style.padding = "0";
                 btn.style.backgroundColor = color;
                 btn.style.border = "1px solid #777";
                 btn.style.borderRadius = "8px";
@@ -1729,6 +1758,7 @@
                     ev.preventDefault();
                     ev.stopPropagation();
                     bgRuleColors[rule.key] = color;
+                    swatch.style.background = "";
                     swatch.style.backgroundColor = color;
                     palette.remove();
                     saveState();
@@ -1847,7 +1877,10 @@
                 if (rule) rule.probabilityLabel = formatRuleProbability(rules[key]?.probability);
             });
             const redOdds = byKey.get("redOdds");
-            if (redOdds) redOdds.probabilityLabel = formatRuleProbability(rules.redOdds?.probability);
+            if (redOdds) {
+                const probability = formatRuleProbability(rules.redOdds?.probability);
+                redOdds.probabilityLabel = probability === "-" ? "" : probability;
+            }
         }
 
         async function fetchBackgroundRuleProbabilities() {
@@ -2240,9 +2273,11 @@
             const vw = window.innerWidth;
             const vh = window.innerHeight;
             if (left + pw > sx + vw - 10) left = sx + vw - pw - 10;
+            if (left < sx + 10) left = sx + 10;
             if (top + ph > sy + vh - 10) top = rect.top + sy - ph - 6;
-            popover.style.left = Math.max(sx + 10, left) + "px";
-            popover.style.top = Math.max(sy + 10, top) + "px";
+            if (top < sy + 10) top = sy + 10;
+            popover.style.left = left + "px";
+            popover.style.top = top + "px";
 
             event?.preventDefault();
             event?.stopPropagation();
@@ -2271,11 +2306,23 @@
             const box = rowEl.querySelector(".selected");
             if (!box) return;
 
-            const selectedColors = new Set(getManualBgColors(box));
-            const getSelectedList = () => BG_COLORS.filter(color => selectedColors.has(color));
-            const applySelectedColors = () => {
-                const colors = getSelectedList();
-                setRowBackground(rowEl, colors, "manual");
+            const paletteColors = BG_COLORS;
+            const selectedColors = new Set([
+                ...getManualBgColors(box),
+                ...getRuleBgColors(box)
+            ].filter(color => paletteColors.includes(color)));
+            const getSelectedList = () => paletteColors.filter(color => selectedColors.has(color));
+            const applySelectedColors = ({ clearAllRuleColors = false } = {}) => {
+                const selectedList = getSelectedList();
+                const nextRuleColors = getRuleBgColors(box).filter(color =>
+                    !clearAllRuleColors && (!paletteColors.includes(color) || selectedColors.has(color))
+                );
+                const nextRuleColorSet = new Set(nextRuleColors);
+                const nextManualColors = selectedList.filter(color => !nextRuleColorSet.has(color));
+                box.dataset.manualBg = serializeBg(nextManualColors);
+                box.dataset.ruleBg = serializeBg(nextRuleColors);
+                filterBgRuleDetailsByColors(box, nextRuleColors);
+                syncEffectiveRowBackground(rowEl);
                 saveState();
             };
 
@@ -2284,6 +2331,7 @@
             palette.style.zIndex = 9999;
             palette.style.display = "flex";
             palette.style.flexWrap = "wrap";
+            palette.style.boxSizing = "content-box";
             palette.style.gap = "10px";
             palette.style.background = "#fff";
             palette.style.border = "1px solid #999";
@@ -2292,18 +2340,21 @@
             palette.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
             palette.style.maxWidth = Math.min(window.innerWidth - 20, 400) + "px";
 
-            const colors = BG_COLORS;
+            const colors = paletteColors;
+            palette.style.width = getPaletteContentWidth(colors.length + 1) + "px";
             const colorButtons = [];
             const updateColorButton = (btn, color) => {
                 const active = selectedColors.has(color);
-                btn.style.boxShadow = active ? "0 0 0 3px #3251BC" : "none";
-                btn.style.transform = active ? "scale(1.06)" : "scale(1)";
+                btn.style.outline = "none";
+                btn.style.boxShadow = active ? "0 0 0 4px #3251BC" : "none";
             };
 
             colors.forEach(c => {
                 const btn = document.createElement("div");
                 btn.style.width = "36px";
                 btn.style.height = "36px";
+                btn.style.flex = "0 0 36px";
+                btn.style.boxSizing = "border-box";
                 btn.style.backgroundColor = c;
                 btn.style.border = "1px solid #777";
                 btn.style.borderRadius = "8px";
@@ -2322,6 +2373,8 @@
             const noneBtn = document.createElement("div");
             noneBtn.style.width = "36px";
             noneBtn.style.height = "36px";
+            noneBtn.style.flex = "0 0 36px";
+            noneBtn.style.boxSizing = "border-box";
             noneBtn.style.background = "#fff";
             noneBtn.style.border = "1px solid #777";
             noneBtn.style.borderRadius = "8px";
@@ -2329,7 +2382,7 @@
             noneBtn.addEventListener("click", () => {
                 selectedColors.clear();
                 colorButtons.forEach((btn, i) => updateColorButton(btn, colors[i]));
-                applySelectedColors();
+                applySelectedColors({ clearAllRuleColors: true });
             });
             palette.appendChild(noneBtn);
 
@@ -3857,8 +3910,9 @@
 
             if (!obj || obj.v !== 1 || !Array.isArray(obj.items) || obj.items.length === 0) return legacy();
 
+            const legacyMaskColors = BG_COLORS.slice(0, 7);
             const colorToId = new Map();
-            for (let i = 0; i < BG_COLORS.length; i++) colorToId.set(BG_COLORS[i], i + 1);
+            for (let i = 0; i < legacyMaskColors.length; i++) colorToId.set(legacyMaskColors[i], i + 1);
 
             const markToId = (m) => {
                 if (m === "") return 0;
@@ -4953,9 +5007,16 @@
 
         function getPersonRuleColor(type, id) {
             const normalizedId = String(id || "").trim();
-            const usedColors = new Set([...BG_COLORS, ...BG_RULE_COLOR_PALETTE]);
-            const baseColors = PERSON_RULE_COLOR_POOL.filter(color => !usedColors.has(color));
-            if (!normalizedId) return baseColors[0] || generatedPersonRuleColor(0, usedColors);
+            ensureUniqueBgRuleColors();
+            const fixedRuleColors = new Set(
+                BACKGROUND_RULES
+                    .filter(isFixedColorRule)
+                    .map(rule => bgRuleColors[rule.key])
+                    .filter(Boolean)
+            );
+            const availableColors = PERSON_RULE_COLOR_POOL.filter(color => !fixedRuleColors.has(color));
+            const baseColors = availableColors.length ? availableColors : PERSON_RULE_COLOR_POOL;
+            if (!normalizedId) return baseColors[0];
 
             const keys = [...new Set(
                 Array.from(document.querySelectorAll(".custom-select"))
@@ -4983,7 +5044,7 @@
             let index = keys.indexOf(targetKey);
             if (index < 0) index = keys.length + (hashString(targetKey) % 1000);
             if (index < baseColors.length) return baseColors[index];
-            for (const color of baseColors) usedColors.add(color);
+            const usedColors = new Set([...fixedRuleColors, ...baseColors]);
             let generated = "";
             for (let i = baseColors.length; i <= index; i++) {
                 generated = generatedPersonRuleColor(i - baseColors.length, usedColors);
