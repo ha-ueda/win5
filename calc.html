@@ -1510,10 +1510,8 @@
         ensureUniqueBgRuleColors();
         let jockeyPreviousWin5WinIds = null;
         let jockeyPreviousWin5WinIdsPromise = null;
-        let jockeyPreviousWin5WinIdsTargetDate = "";
         let trainerPreviousWin5WinIds = null;
         let trainerPreviousWin5WinIdsPromise = null;
-        let trainerPreviousWin5WinIdsTargetDate = "";
 
         let jockeyDailyMultiWinIds5Years = null;
         let jockeyDailyMultiWinIds5YearsPromise = null;
@@ -2862,9 +2860,6 @@
             window.raceCourses = ["", "", "", "", ""];
             window.win5Source = "";
             window.win5SourceDate = "";
-            jockeyPreviousWin5WinIds = null;
-            jockeyPreviousWin5WinIdsPromise = null;
-            jockeyPreviousWin5WinIdsTargetDate = "";
             updateRaceHeaders(window.raceInfo);
 
             saveState();
@@ -3399,11 +3394,6 @@
             window.win5Sales = json.sales || null;
             window.win5Source = json.source || "";
             const nextSourceDate = json.sourceDate || "";
-            if (window.win5SourceDate !== nextSourceDate) {
-                jockeyPreviousWin5WinIds = null;
-                jockeyPreviousWin5WinIdsPromise = null;
-                jockeyPreviousWin5WinIdsTargetDate = "";
-            }
             window.win5SourceDate = nextSourceDate;
             updateRaceHeaders(window.raceInfo);
 
@@ -3620,11 +3610,6 @@
                 }
                 window.win5Source = json.source || "";
                 const nextSourceDate = json.sourceDate || "";
-                if (window.win5SourceDate !== nextSourceDate) {
-                    jockeyPreviousWin5WinIds = null;
-                    jockeyPreviousWin5WinIdsPromise = null;
-                    jockeyPreviousWin5WinIdsTargetDate = "";
-                }
                 window.win5SourceDate = nextSourceDate;
                 if (window.win5Source && window.win5Source !== "upcoming") {
                     showToast("オッズデータがありません");
@@ -4790,8 +4775,7 @@
         }
 
         async function fetchJockeyPreviousWin5WinIds() {
-            const targetDate = String(window.win5SourceDate || "").trim();
-            if (jockeyPreviousWin5WinIds && jockeyPreviousWin5WinIdsTargetDate === targetDate) return;
+            if (jockeyPreviousWin5WinIds) return;
             if (jockeyPreviousWin5WinIdsPromise) return jockeyPreviousWin5WinIdsPromise;
             jockeyPreviousWin5WinIdsPromise = (async () => {
             try {
@@ -4799,12 +4783,10 @@
                 u.searchParams.set("person", "jockey");
                 u.searchParams.set("period", "previous-win5");
                 u.searchParams.set("winsMin", "1");
-                if (targetDate) u.searchParams.set("date", targetDate);
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
                 if (!json.ok || !Array.isArray(json.ids)) return;
                 jockeyPreviousWin5WinIds = new Set(json.ids.map(id => String(id)));
-                jockeyPreviousWin5WinIdsTargetDate = targetDate;
             } catch (e) {
                 console.warn("fetchJockeyPreviousWin5WinIds:", e);
             } finally {
@@ -4815,8 +4797,7 @@
         }
 
         async function fetchTrainerPreviousWin5WinIds() {
-            const targetDate = String(window.win5SourceDate || "").trim();
-            if (trainerPreviousWin5WinIds && trainerPreviousWin5WinIdsTargetDate === targetDate) return;
+            if (trainerPreviousWin5WinIds) return;
             if (trainerPreviousWin5WinIdsPromise) return trainerPreviousWin5WinIdsPromise;
             trainerPreviousWin5WinIdsPromise = (async () => {
             try {
@@ -4824,12 +4805,10 @@
                 u.searchParams.set("person", "trainer");
                 u.searchParams.set("period", "previous-win5");
                 u.searchParams.set("winsMin", "1");
-                if (targetDate) u.searchParams.set("date", targetDate);
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
                 if (!json.ok || !Array.isArray(json.ids)) return;
                 trainerPreviousWin5WinIds = new Set(json.ids.map(id => String(id)));
-                trainerPreviousWin5WinIdsTargetDate = targetDate;
             } catch (e) {
                 console.warn("fetchTrainerPreviousWin5WinIds:", e);
             } finally {
