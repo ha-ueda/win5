@@ -299,6 +299,64 @@
             width: min(420px, 100%);
         }
 
+        .stats-title-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats-info-btn {
+            width: auto;
+            height: auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            color: #777;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: none;
+        }
+
+        .stats-info-panel {
+            display: none;
+            padding: 10px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f7f7f7;
+            color: #444;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .stats-info-panel.open {
+            display: block;
+        }
+
+        .stats-info-panel p {
+            margin: 0 0 6px;
+        }
+
+        .stats-info-panel p:last-child {
+            margin-bottom: 0;
+        }
+
+        .stats-info-list {
+            margin: 2px 0 0;
+            padding: 0 0 0 0.8em;
+            list-style: none;
+        }
+
+        .stats-info-list li {
+            padding: 2px 0;
+        }
+
         .stats-modal-row {
             display: flex;
             align-items: center;
@@ -1289,9 +1347,22 @@
         <div class="modal-card stats-modal-card" onclick="event.stopPropagation()">
             <div class="modal-header">
                 <div class="modal-title">
-                    <span>表示設定</span>
+                    <span class="stats-title-wrap">
+                        <span>表示設定</span>
+                        <button id="statsInfoBtn" class="stats-info-btn" type="button" aria-label="表示設定の仕様" aria-controls="statsInfoPanel" aria-expanded="false">？</button>
+                    </span>
                 </div>
                 <button class="modal-close-btn" onclick="closeStatsModal()" aria-label="閉じる">&times;</button>
+            </div>
+            <div id="statsInfoPanel" class="stats-info-panel">
+                <p>「距離」選択時は、同じ距離カテゴリの成績を表示します。</p>
+                <ul class="stats-info-list">
+                    <li>・1000m 〜 1300m</li>
+                    <li>・1301m 〜 1899m</li>
+                    <li>・1900m 〜 2100m</li>
+                    <li>・2101m 〜 2700m</li>
+                    <li>・2701m 〜</li>
+                </ul>
             </div>
             <div class="stats-modal-row">
                 <div id="personToggle" class="sort-switch">
@@ -1609,6 +1680,9 @@
                 return normalizeBgColors(raw);
             }
             if ((box?.dataset?.bgSource || "") === "manual") return normalizeBgColors(box.dataset.bg);
+            if (!(box?.dataset?.bgSource || "") && !getStoredBgColors(box, "ruleBg").length) {
+                return normalizeBgColors(box?.dataset?.bg || "");
+            }
             return [];
         }
 
@@ -2191,7 +2265,7 @@
             const colors = normalizeBgColors(bg);
             el.style.backgroundImage = "";
             el.style.backgroundColor = "";
-            el.style.cursor = colors.length && (box?.dataset?.bgRuleDetails || getRuleBgColors(box).length) ? "pointer" : "";
+            el.style.cursor = colors.length && (getManualBgColors(box).length || box?.dataset?.bgRuleDetails || getRuleBgColors(box).length) ? "pointer" : "";
             if (colors.length === 1) {
                 el.style.backgroundColor = colors[0];
                 return;
@@ -2217,18 +2291,28 @@
             try {
                 if (!box.dataset.bgRuleDetails) return getCurrentBgRuleDetails(rowEl);
                 const rows = JSON.parse(box.dataset.bgRuleDetails);
-                return Array.isArray(rows) && rows.length ? rows : getCurrentBgRuleDetails(rowEl);
+                const filteredRows = filterBgRuleDetailsToSelectedRules(rows);
+                return filteredRows.length ? filteredRows : getCurrentBgRuleDetails(rowEl);
             } catch {
                 return getCurrentBgRuleDetails(rowEl);
             }
+        }
+
+        function filterBgRuleDetailsToSelectedRules(rows) {
+            if (!Array.isArray(rows)) return [];
+            const labelToRule = new Map(BACKGROUND_RULES.map(rule => [rule.label, rule]));
+            return rows.filter(item => {
+                const label = String(item?.label || "").trim();
+                const rule = labelToRule.get(label);
+                return !rule || selectedBgRuleKeys.has(rule.key);
+            });
         }
 
         function getCurrentBgRuleDetails(rowEl) {
             const box = rowEl?.querySelector(".selected");
             if (!box || !getRuleBgColors(box).length) return [];
             const colors = getRuleBgColors(box);
-            const activeRules = BACKGROUND_RULES.filter(rule => selectedBgRuleKeys.has(rule.key));
-            const matchedRules = activeRules.filter(rule => rule.match(rowEl));
+            const matchedRules = getActiveMatchingBgRules(rowEl);
             return matchedRules.map((rule, index) => ({
                 label: getBgRuleDetailLabel(rule, rowEl),
                 probability: rule.probabilityLabel || "",
@@ -2240,8 +2324,149 @@
             return rule?.label || "";
         }
 
+        function getActiveMatchingBgRules(rowEl) {
+            if (!rowEl) return [];
+            const activeRules = BACKGROUND_RULES.filter(rule => selectedBgRuleKeys.has(rule.key));
+            if (!activeRules.length) return [];
+            const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)'));
+            const ruleRaceCounts = new Map(activeRules.map(rule => [rule.key, new Set()]));
+            rows.forEach(row => {
+                const race = String(row.dataset.race || "").trim();
+                if (!race) return;
+                activeRules.forEach(rule => {
+                    if (rule.match(row)) ruleRaceCounts.get(rule.key)?.add(race);
+                });
+            });
+            return activeRules
+                .filter(rule => (ruleRaceCounts.get(rule.key)?.size || 0) >= 2)
+                .filter(rule => rule.match(rowEl));
+        }
+
+        function getCurrentMatchingBgRuleDetails(rowEl) {
+            return getActiveMatchingBgRules(rowEl).map(rule => ({
+                label: getBgRuleDetailLabel(rule, rowEl),
+                probability: rule.probabilityLabel || "",
+                color: getBgRuleColor(rule, rowEl)
+            }));
+        }
+
+        function getSelectedBgRuleDetailsByColor() {
+            const activeRules = BACKGROUND_RULES.filter(rule => selectedBgRuleKeys.has(rule.key));
+            const details = activeRules
+                .filter(isFixedColorRule)
+                .map(rule => ({
+                    label: getBgRuleDetailLabel(rule),
+                    probability: rule.probabilityLabel || "",
+                    color: getBgRuleColor(rule)
+                }));
+
+            const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)'));
+            const ruleRaceCounts = new Map(activeRules.map(rule => [rule.key, new Set()]));
+            rows.forEach(row => {
+                const race = String(row.dataset.race || "").trim();
+                if (!race) return;
+                activeRules.forEach(rule => {
+                    if (rule.match(row)) ruleRaceCounts.get(rule.key)?.add(race);
+                });
+            });
+
+            activeRules
+                .filter(rule => !isFixedColorRule(rule))
+                .filter(rule => (ruleRaceCounts.get(rule.key)?.size || 0) >= 2)
+                .forEach(rule => {
+                    rows
+                        .filter(row => rule.match(row))
+                        .forEach(row => {
+                            details.push({
+                                label: getBgRuleDetailLabel(rule, row),
+                                probability: rule.probabilityLabel || "",
+                                color: getBgRuleColor(rule, row)
+                            });
+                        });
+                });
+
+            const seen = new Set();
+            return details.filter(item => {
+                const key = `${item.color}\n${item.label}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+        }
+
+        function getBgDetailRows(rowEl) {
+            const box = rowEl?.querySelector(".selected");
+            if (!box) return [];
+
+            const ruleDetails = parseBgRuleDetails(rowEl);
+            const currentRuleDetails = getCurrentMatchingBgRuleDetails(rowEl);
+            const selectedRuleDetails = getSelectedBgRuleDetailsByColor();
+            const ruleBgColors = getRuleBgColors(box);
+            const ruleColorCounts = new Map();
+            ruleDetails.forEach(item => {
+                const color = String(item?.color || "").trim();
+                if (color) ruleColorCounts.set(color, (ruleColorCounts.get(color) || 0) + 1);
+            });
+            const duplicateRuleColorCounts = new Map();
+            ruleBgColors.forEach(color => duplicateRuleColorCounts.set(color, (duplicateRuleColorCounts.get(color) || 0) + 1));
+            const currentRuleColorCounts = new Map();
+            currentRuleDetails.forEach(item => {
+                const color = String(item?.color || "").trim();
+                if (color) currentRuleColorCounts.set(color, (currentRuleColorCounts.get(color) || 0) + 1);
+            });
+
+            const details = [...ruleDetails];
+            if (!ruleDetails.length) {
+                ruleBgColors.forEach(color => {
+                    const currentRuleCount = currentRuleColorCounts.get(color) || 0;
+                    if (currentRuleCount > 0) {
+                        const matchedRule = currentRuleDetails.find(item => item.color === color);
+                        currentRuleColorCounts.set(color, currentRuleCount - 1);
+                        if (matchedRule) {
+                            details.push(matchedRule);
+                            return;
+                        }
+                    }
+
+                    const sameColorRule = selectedRuleDetails.find(item => item.color === color);
+                    if (sameColorRule) {
+                        details.push(sameColorRule);
+                        return;
+                    }
+
+                    details.push({
+                        label: "条件背景",
+                        probability: "",
+                        color
+                    });
+                });
+            }
+
+            getManualBgColors(box).forEach(color => {
+                const ruleDuplicateCount = duplicateRuleColorCounts.get(color) || 0;
+                if (ruleDuplicateCount > 0) {
+                    duplicateRuleColorCounts.set(color, ruleDuplicateCount - 1);
+                    return;
+                }
+
+                const sameColorRule = selectedRuleDetails.find(item => item.color === color);
+                if (sameColorRule) {
+                    details.push(sameColorRule);
+                    return;
+                }
+
+                details.push({
+                    label: "個別背景",
+                    probability: "",
+                    color
+                });
+            });
+
+            return details;
+        }
+
         function showBgRuleDetails(rowEl, anchorEl, event) {
-            const details = parseBgRuleDetails(rowEl);
+            const details = getBgDetailRows(rowEl);
             if (!details.length) return false;
             closeBgDetailPopover();
             const popover = document.createElement("div");
@@ -3817,6 +4042,7 @@
 
         function buildSharePayload() {
             const items = [];
+            let hasBgMeta = false;
             document.querySelectorAll(".custom-select").forEach(sel => {
                 if (sel.classList.contains("is-empty")) return;
                 if (sel.classList.contains("is-scratched")) return;
@@ -3825,15 +4051,51 @@
                 const box = sel.querySelector(".selected");
                 const mark = (box?.textContent || "").trim();
                 const bg = (box?.dataset.bg || "none").trim();
+                const bgSource = (box?.dataset.bgSource || "").trim();
+                const manualBg = (box?.dataset.manualBg || "").trim();
+                const ruleBg = (box?.dataset.ruleBg || "").trim();
+                const bgRuleDetails = (box?.dataset.bgRuleDetails || "").trim();
 
                 if (mark || (bg && bg !== "none")) {
-                    items.push([r, h, mark, bg]);
+                    if (bg && bg !== "none") {
+                        hasBgMeta = true;
+                        items.push([r, h, mark, bg, bgSource, manualBg, ruleBg, bgRuleDetails]);
+                    } else {
+                        items.push([r, h, mark, bg]);
+                    }
                 }
             });
+            if (hasBgMeta) {
+                return {
+                    v: 2,
+                    bgRuleKeys: [...selectedBgRuleKeys],
+                    bgRuleColors: { ...bgRuleColors },
+                    items
+                };
+            }
             return { v: 1, items };
         }
 
-        function normalizeShareItem(it) {
+        function normalizeSharedBgRuleDetails(value) {
+            if (!value) return "";
+            try {
+                const rows = typeof value === "string" ? JSON.parse(value) : value;
+                if (!Array.isArray(rows)) return "";
+                const normalized = rows.slice(0, 20).map(item => {
+                    const color = normalizeBgColors(item?.color || "")[0] || "";
+                    return {
+                        label: String(item?.label || "").trim().slice(0, 80),
+                        probability: String(item?.probability || "").trim().slice(0, 40),
+                        color
+                    };
+                }).filter(item => item.label || item.color);
+                return normalized.length ? JSON.stringify(normalized) : "";
+            } catch {
+                return "";
+            }
+        }
+
+        function normalizeShareItem(it, version = 1) {
             if (!Array.isArray(it) || it.length < 4) return null;
             const r = Number(it[0]);
             const h = Number(it[1]);
@@ -3843,24 +4105,48 @@
             if (!MARKS.includes(mark)) return null;
 
             const bg = serializeBg(it[3] ?? "none");
-            return [r, h, mark, bg];
+            if (version !== 2) return { r, h, mark, bg };
+
+            const rawSource = String(it[4] ?? "").trim();
+            const bgSource = ["manual", "rule", "mixed"].includes(rawSource) ? rawSource : "";
+            const manualBg = serializeBg(it[5] ?? "");
+            const ruleBg = serializeBg(it[6] ?? "");
+            const bgRuleDetails = normalizeSharedBgRuleDetails(it[7] ?? "");
+            return { r, h, mark, bg, bgSource, manualBg, ruleBg, bgRuleDetails };
         }
 
         function normalizeSharePayload(payload) {
-            if (!payload || payload.v !== 1 || !Array.isArray(payload.items)) return null;
+            if (!payload || (payload.v !== 1 && payload.v !== 2) || !Array.isArray(payload.items)) return null;
             const items = [];
             const seen = new Set();
 
             for (const it of payload.items) {
-                const normalized = normalizeShareItem(it);
+                const normalized = normalizeShareItem(it, payload.v);
                 if (!normalized) return null;
-                const key = `${normalized[0]}:${normalized[1]}`;
+                const key = `${normalized.r}:${normalized.h}`;
                 if (seen.has(key)) return null;
                 seen.add(key);
                 items.push(normalized);
             }
 
-            return { v: 1, items };
+            const validRuleKeys = new Set(BACKGROUND_RULES.map(rule => rule.key));
+            const bgRuleKeys = payload.v === 2 && Array.isArray(payload.bgRuleKeys)
+                ? payload.bgRuleKeys.map(key => String(key || "").trim()).filter(key => validRuleKeys.has(key))
+                : null;
+            const normalizedBgRuleColors = {};
+            if (payload.v === 2 && payload.bgRuleColors && typeof payload.bgRuleColors === "object") {
+                for (const rule of BACKGROUND_RULES) {
+                    const saved = payload.bgRuleColors[rule.key];
+                    if (BG_RULE_COLOR_PALETTE.includes(saved)) normalizedBgRuleColors[rule.key] = saved;
+                }
+            }
+
+            return {
+                v: payload.v,
+                bgRuleKeys,
+                bgRuleColors: normalizedBgRuleColors,
+                items
+            };
         }
 
         function applySharePayload(payload) {
@@ -3880,25 +4166,213 @@
                 applyBg(sel, "none");
             });
 
-            for (const it of normalizedPayload.items) {
-                const [r, h, mark, bg] = it;
+            if (normalizedPayload.v === 2) {
+                if (Array.isArray(normalizedPayload.bgRuleKeys)) {
+                    selectedBgRuleKeys = new Set(normalizedPayload.bgRuleKeys);
+                }
+                if (normalizedPayload.bgRuleColors && Object.keys(normalizedPayload.bgRuleColors).length) {
+                    bgRuleColors = { ...bgRuleColors, ...normalizedPayload.bgRuleColors };
+                    ensureUniqueBgRuleColors();
+                }
+                renderBgRuleList();
+            }
 
-                const sel = document.querySelector(`.custom-select[data-race="${r}"][data-horse="${h}"]`);
+            for (const it of normalizedPayload.items) {
+                const sel = document.querySelector(`.custom-select[data-race="${it.r}"][data-horse="${it.h}"]`);
                 if (!sel || sel.classList.contains("is-empty") || sel.classList.contains("is-scratched")) continue;
 
                 const box = sel.querySelector(".selected");
                 if (!box) continue;
 
-                const m = (mark || "").toString();
-                const b = (bg || "none").toString();
+                const m = (it.mark || "").toString();
+                const b = (it.bg || "none").toString();
 
                 box.textContent = m;
                 applyMarkBackground(sel, !!m);
 
-                setRowBackground(sel, b, b === "none" ? "" : "manual");
+                if (normalizedPayload.v === 2) {
+                    box.dataset.bgSource = it.bgSource || "";
+                    box.dataset.manualBg = it.manualBg || "";
+                    box.dataset.ruleBg = it.ruleBg || "";
+                    box.dataset.bgRuleDetails = normalizeSharedBgRuleDetails(filterBgRuleDetailsToSelectedRules(
+                        it.bgRuleDetails ? JSON.parse(it.bgRuleDetails) : []
+                    ));
+                    if (b !== "none" && !normalizeBgColors(box.dataset.manualBg).length && !normalizeBgColors(box.dataset.ruleBg).length) {
+                        box.dataset.manualBg = b;
+                    }
+                    syncEffectiveRowBackground(sel);
+                } else {
+                    setRowBackground(sel, b, b === "none" ? "" : "manual");
+                }
             }
 
             saveState();
+        }
+
+        function parseShareHexColor(color) {
+            const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(color || "").trim());
+            if (!m) return null;
+            const hex = m[1].length === 3
+                ? m[1].split("").map(ch => ch + ch).join("")
+                : m[1];
+            return {
+                color: `#${hex.toLowerCase()}`,
+                r: parseInt(hex.slice(0, 2), 16),
+                g: parseInt(hex.slice(2, 4), 16),
+                b: parseInt(hex.slice(4, 6), 16),
+            };
+        }
+
+        function getShareKnownColors() {
+            return [...new Set(SHARE_COLOR_TABLE_V1.map(c => {
+                const parsed = parseShareHexColor(c);
+                return parsed ? parsed.color : String(c || "").toLowerCase();
+            }))];
+        }
+
+        function makeShareToken(prefix, bytes) {
+            let bin = "";
+            for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+            const b64 = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+            return prefix + b64;
+        }
+
+        function encodeSharePayloadV2(obj, fallback) {
+            if (!obj || obj.v !== 2 || !Array.isArray(obj.items) || obj.items.length === 0) return fallback();
+            const markToId = (m) => {
+                if (m === "") return 0;
+                if (m === "✓") return 1;
+                if (m === "◎") return 2;
+                return null;
+            };
+            const knownColorToId = new Map(getShareKnownColors().map((color, i) => [color, i]));
+            const ruleKeyToBit = new Map(BACKGROUND_RULES.map((rule, index) => [rule.key, index]));
+            let selectedRuleMask = 0;
+            (obj.bgRuleKeys || []).forEach(key => {
+                const bit = ruleKeyToBit.get(key);
+                if (bit !== undefined && bit < 8) selectedRuleMask |= 1 << bit;
+            });
+
+            const fixedRules = BACKGROUND_RULES.filter(isFixedColorRule);
+            const fixedRuleColorIds = fixedRules.map(rule => {
+                const parsed = parseShareHexColor(obj.bgRuleColors?.[rule.key] || getBgRuleColor(rule));
+                if (!parsed) return null;
+                const id = knownColorToId.get(parsed.color);
+                return id === undefined || id > 63 ? null : id;
+            });
+            if (fixedRuleColorIds.some(id => id === null)) return fallback();
+
+            const selectedMask = new Array(12).fill(0);
+            const itemByPos = new Map();
+            const colorSet = new Set();
+            const addColor = (color) => {
+                const parsed = parseShareHexColor(color);
+                if (!parsed) return null;
+                colorSet.add(parsed.color);
+                return parsed.color;
+            };
+
+            for (const it of obj.items) {
+                if (!Array.isArray(it) || it.length < 4) continue;
+                const r = Number(it[0]);
+                const h = Number(it[1]);
+                if (!Number.isFinite(r) || !Number.isFinite(h) || r < 1 || r > TOTAL_RACES || h < 1 || h > HORSE_MAX) return fallback();
+                const mid = markToId(String(it[2] ?? "").trim());
+                if (mid === null) return fallback();
+                const manualColors = normalizeBgColors(it[5] || "");
+                const ruleColors = normalizeBgColors(it[6] || "");
+                const fallbackColors = normalizeBgColors(it[3] || "");
+                const normalizedManualColors = manualColors.length || ruleColors.length ? manualColors : fallbackColors;
+                const normalizedRuleColors = ruleColors;
+                const detailRules = (() => {
+                    try {
+                        const details = typeof it[7] === "string" ? JSON.parse(it[7]) : it[7];
+                        if (!Array.isArray(details)) return [];
+                        return details.flatMap((detail, detailIndex) => {
+                            const label = String(detail?.label || "").trim();
+                            const index = BACKGROUND_RULES.findIndex(rule => rule.label === label);
+                            const sourceColor = normalizedRuleColors[detailIndex] || detail?.color || "";
+                            const color = addColor(sourceColor);
+                            if (index >= 0 && index < 8 && color && (selectedRuleMask & (1 << index))) {
+                                return [{ ruleIndex: index, color }];
+                            }
+                            return [];
+                        });
+                    } catch {
+                        return [];
+                    }
+                })();
+                const pos = ((r - 1) * HORSE_MAX) + (h - 1);
+                selectedMask[pos >> 3] |= 1 << (pos & 7);
+                const item = { mid, detailRules, manualColors: [], ruleColors: [] };
+                for (const color of normalizedManualColors) {
+                    const normalized = addColor(color);
+                    if (!normalized) return fallback();
+                    item.manualColors.push(normalized);
+                }
+                for (const color of normalizedRuleColors) {
+                    const normalized = addColor(color);
+                    if (!normalized) return fallback();
+                    item.ruleColors.push(normalized);
+                }
+                itemByPos.set(pos, item);
+            }
+
+            const positions = [];
+            for (let pos = 0; pos < TOTAL_RACES * HORSE_MAX; pos++) {
+                if (selectedMask[pos >> 3] & (1 << (pos & 7))) positions.push(pos);
+            }
+            if (!positions.length) return fallback();
+
+            const markBytes = new Array(Math.ceil((positions.length * 2) / 8)).fill(0);
+            positions.forEach((pos, index) => {
+                const bit = index * 2;
+                markBytes[bit >> 3] |= (itemByPos.get(pos)?.mid || 0) << (bit & 7);
+            });
+            const colorList = [...colorSet];
+            if (colorList.length > 63) return fallback();
+            const colorToIndex = new Map(colorList.map((color, index) => [color, index]));
+            const maskSize = Math.ceil(positions.length / 8);
+            const detailRuleEntries = positions
+                .map((pos, index) => ({ index, details: itemByPos.get(pos)?.detailRules || [] }))
+                .filter(item => item.details.length);
+            const detailBytes = detailRuleEntries.length
+                ? [
+                    3,
+                    detailRuleEntries.length & 0xff,
+                    ...detailRuleEntries.flatMap(item => [
+                        item.index & 0xff,
+                        item.details.length & 0xff,
+                        ...item.details.flatMap(detail => [
+                            detail.ruleIndex & 0xff,
+                            colorToIndex.get(detail.color) ?? 0
+                        ])
+                    ])
+                ]
+                : [0];
+            const bytes = [selectedRuleMask & 0xff, fixedRuleColorIds.length & 0xff, ...fixedRuleColorIds, ...selectedMask, ...markBytes, ...detailBytes, colorList.length & 0x3f];
+
+            for (const color of colorList) {
+                const knownId = knownColorToId.get(color);
+                if (knownId !== undefined && knownId !== null && knownId <= 63) {
+                    bytes.push(knownId & 0x3f);
+                } else {
+                    const parsed = parseShareHexColor(color);
+                    if (!parsed) return fallback();
+                    bytes.push(0x80, parsed.r, parsed.g, parsed.b);
+                }
+
+                const manualMask = new Array(maskSize).fill(0);
+                const ruleMask = new Array(maskSize).fill(0);
+                positions.forEach((pos, index) => {
+                    const item = itemByPos.get(pos);
+                    if (item?.manualColors?.includes(color)) manualMask[index >> 3] |= 1 << (index & 7);
+                    if (item?.ruleColors?.includes(color)) ruleMask[index >> 3] |= 1 << (index & 7);
+                });
+                bytes.push(...manualMask, ...ruleMask);
+            }
+
+            return makeShareToken("A", bytes);
         }
 
         function encodeSharePayload(obj) {
@@ -3908,6 +4382,7 @@
                 return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
             };
 
+            if (obj?.v === 2) return encodeSharePayloadV2(obj, legacy);
             if (!obj || obj.v !== 1 || !Array.isArray(obj.items) || obj.items.length === 0) return legacy();
 
             const legacyMaskColors = BG_COLORS.slice(0, 7);
@@ -3921,32 +4396,11 @@
                 return null;
             };
 
-            const parseHexColor = (color) => {
-                const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(color || "").trim());
-                if (!m) return null;
-                const hex = m[1].length === 3
-                    ? m[1].split("").map(ch => ch + ch).join("")
-                    : m[1];
-                return {
-                    color: `#${hex.toLowerCase()}`,
-                    r: parseInt(hex.slice(0, 2), 16),
-                    g: parseInt(hex.slice(2, 4), 16),
-                    b: parseInt(hex.slice(4, 6), 16),
-                };
-            };
-
-            const shareKnownColors = [...new Set(SHARE_COLOR_TABLE_V1.map(c => {
-                const parsed = parseHexColor(c);
-                return parsed ? parsed.color : String(c || "").toLowerCase();
-            }))];
+            const parseHexColor = parseShareHexColor;
+            const shareKnownColors = getShareKnownColors();
             const knownColorToId = new Map(shareKnownColors.map((color, i) => [color, i]));
 
-            const makeToken = (prefix, bytes) => {
-                let bin = "";
-                for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-                const b64 = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-                return prefix + b64;
-            };
+            const makeToken = makeShareToken;
 
             const setBit = (bytes, index) => {
                 bytes[index >> 3] |= 1 << (index & 7);
@@ -4143,6 +4597,172 @@
 
             const tok = String(token ?? "").trim();
             const shareKnownColors = SHARE_COLOR_TABLE_V1.map(c => String(c || "").toLowerCase());
+
+            if (tok && (tok[0] === "8" || tok[0] === "A")) {
+                try {
+                    const raw = tok.slice(1).replace(/-/g, "+").replace(/_/g, "/");
+                    const pad = raw.length % 4 ? "=".repeat(4 - (raw.length % 4)) : "";
+                    const bin = atob(raw + pad);
+                    const bytes = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    if (bytes.length < 15) return legacy(tok);
+
+                    let offset = 0;
+                    const selectedRuleMask = bytes[offset++];
+                    const fixedColorCount = bytes[offset++];
+                    const fixedRules = BACKGROUND_RULES.filter(isFixedColorRule);
+                    if (fixedColorCount > fixedRules.length || offset + fixedColorCount + 12 > bytes.length) return legacy(tok);
+
+                    const bgRuleColors = {};
+                    for (let i = 0; i < fixedColorCount; i++) {
+                        const color = shareKnownColors[bytes[offset++]];
+                        if (!color) return legacy(tok);
+                        if (fixedRules[i]) bgRuleColors[fixedRules[i].key] = color;
+                    }
+
+                    const bgRuleKeys = BACKGROUND_RULES
+                        .filter((rule, index) => selectedRuleMask & (1 << index))
+                        .map(rule => rule.key);
+
+                    const hasBit = (arr, index) => !!(arr[index >> 3] & (1 << (index & 7)));
+                    const selectedMask = bytes.slice(offset, offset + 12);
+                    offset += 12;
+
+                    const positions = [];
+                    for (let pos = 0; pos < TOTAL_RACES * HORSE_MAX; pos++) {
+                        if (hasBit(selectedMask, pos)) positions.push(pos);
+                    }
+                    const markBytesLength = Math.ceil((positions.length * 2) / 8);
+                    if (!positions.length || bytes.length < offset + markBytesLength + 1) return legacy(tok);
+
+                    const markBytes = bytes.slice(offset, offset + markBytesLength);
+                    offset += markBytesLength;
+                    let detailRuleMasks = new Uint8Array(positions.length);
+                    const pendingDetailPairs = Array.from({ length: positions.length }, () => []);
+                    if (tok[0] === "A") {
+                        if (bytes.length < offset + 1) return legacy(tok);
+                        const detailMode = bytes[offset++];
+                        if (detailMode === 1) {
+                            if (bytes.length < offset + positions.length + 1) return legacy(tok);
+                            detailRuleMasks = bytes.slice(offset, offset + positions.length);
+                            offset += positions.length;
+                        } else if (detailMode === 2) {
+                            if (bytes.length < offset + 1) return legacy(tok);
+                            const detailCount = bytes[offset++];
+                            if (bytes.length < offset + (detailCount * 2) + 1) return legacy(tok);
+                            for (let i = 0; i < detailCount; i++) {
+                                const detailIndex = bytes[offset++];
+                                const detailMask = bytes[offset++];
+                                if (detailIndex >= positions.length) return legacy(tok);
+                                detailRuleMasks[detailIndex] = detailMask;
+                            }
+                        } else if (detailMode === 3) {
+                            if (bytes.length < offset + 1) return legacy(tok);
+                            const detailCount = bytes[offset++];
+                            for (let i = 0; i < detailCount; i++) {
+                                if (bytes.length < offset + 2) return legacy(tok);
+                                const detailIndex = bytes[offset++];
+                                const pairCount = bytes[offset++];
+                                if (detailIndex >= positions.length || bytes.length < offset + (pairCount * 2) + 1) return legacy(tok);
+                                for (let j = 0; j < pairCount; j++) {
+                                    const ruleIndex = bytes[offset++];
+                                    const colorIndex = bytes[offset++];
+                                    if (!BACKGROUND_RULES[ruleIndex]) return legacy(tok);
+                                    pendingDetailPairs[detailIndex].push({ ruleIndex, colorIndex });
+                                }
+                            }
+                        } else if (detailMode !== 0) {
+                            return legacy(tok);
+                        }
+                    }
+
+                    const idToMark = ["", "✓", "◎", ""];
+                    const itemsByPos = new Map();
+                    positions.forEach((pos, index) => {
+                        const bit = index * 2;
+                        const mid = (markBytes[bit >> 3] >> (bit & 7)) & 0x3;
+                        const r = Math.floor(pos / HORSE_MAX) + 1;
+                        const h = (pos % HORSE_MAX) + 1;
+                        itemsByPos.set(pos, {
+                            r,
+                            h,
+                            mark: idToMark[mid] ?? "",
+                            detailRuleMask: detailRuleMasks[index] || 0,
+                            detailRulePairs: pendingDetailPairs[index] || [],
+                            manualColors: [],
+                            ruleColors: []
+                        });
+                    });
+
+                    const colorCount = bytes[offset++];
+                    const colorMaskLength = Math.ceil(positions.length / 8);
+                    const decodedColors = [];
+                    for (let i = 0; i < colorCount; i++) {
+                        if (offset >= bytes.length) return legacy(tok);
+
+                        let color = "";
+                        const descriptor = bytes[offset++];
+                        if (descriptor & 0x80) {
+                            if (offset + 3 > bytes.length) return legacy(tok);
+                            const r = bytes[offset++];
+                            const g = bytes[offset++];
+                            const b = bytes[offset++];
+                            color = `#${[r, g, b].map(v => v.toString(16).padStart(2, "0")).join("")}`;
+                        } else {
+                            color = shareKnownColors[descriptor];
+                            if (!color) return legacy(tok);
+                        }
+                        decodedColors.push(color);
+
+                        if (offset + (colorMaskLength * 2) > bytes.length) return legacy(tok);
+                        const manualMask = bytes.slice(offset, offset + colorMaskLength);
+                        offset += colorMaskLength;
+                        const ruleMask = bytes.slice(offset, offset + colorMaskLength);
+                        offset += colorMaskLength;
+
+                        positions.forEach((pos, index) => {
+                            const item = itemsByPos.get(pos);
+                            if (hasBit(manualMask, index)) item?.manualColors.push(color);
+                            if (hasBit(ruleMask, index)) item?.ruleColors.push(color);
+                        });
+                    }
+
+                    if (offset !== bytes.length) return legacy(tok);
+
+                    const items = positions.map(pos => {
+                        const item = itemsByPos.get(pos);
+                        const manualBg = item.manualColors.length ? item.manualColors.join(",") : "none";
+                        const ruleBg = item.ruleColors.length ? item.ruleColors.join(",") : "none";
+                        const bg = serializeBg([...item.manualColors, ...item.ruleColors]);
+                        const bgSource = item.manualColors.length && item.ruleColors.length
+                            ? "mixed"
+                            : (item.ruleColors.length ? "rule" : (item.manualColors.length ? "manual" : ""));
+                        const details = item.detailRulePairs.length
+                            ? item.detailRulePairs
+                                .filter(pair => selectedRuleMask & (1 << pair.ruleIndex))
+                                .map(pair => {
+                                    const rule = BACKGROUND_RULES[pair.ruleIndex];
+                                    return {
+                                        label: rule.label,
+                                        probability: rule.probabilityLabel || "",
+                                        color: decodedColors[pair.colorIndex] || bgRuleColors[rule.key] || getBgRuleColor(rule)
+                                    };
+                                })
+                            : BACKGROUND_RULES
+                                .filter((rule, index) => (selectedRuleMask & (1 << index)) && (item.detailRuleMask & (1 << index)))
+                                .map((rule, index) => ({
+                                    label: rule.label,
+                                    probability: rule.probabilityLabel || "",
+                                    color: item.ruleColors[index] || bgRuleColors[rule.key] || getBgRuleColor(rule)
+                                }));
+                        return [item.r, item.h, item.mark, bg, bgSource, manualBg, ruleBg, details.length ? JSON.stringify(details) : ""];
+                    });
+
+                    return { v: 2, bgRuleKeys, bgRuleColors, items };
+                } catch (e) {
+                    return legacy(tok);
+                }
+            }
 
             if (tok && tok[0] === "3") {
                 try {
@@ -4630,6 +5250,8 @@
         const statsPopBtn = document.getElementById("statsPopBtn");
         const statsModal = document.getElementById("statsModal");
         const statsPopLabel = document.getElementById("statsPopLabel");
+        const statsInfoBtn = document.getElementById("statsInfoBtn");
+        const statsInfoPanel = document.getElementById("statsInfoPanel");
         const allStatsOptions = [...statsToggleEl.querySelectorAll(".sort-option")];
         const allYearsOptions = [...yearsToggleEl.querySelectorAll(".sort-option")];
         const allPersonOptions = [...personToggleEl.querySelectorAll(".sort-option")];
@@ -4674,9 +5296,24 @@
         function closeStatsModal() {
             statsModal.style.display = "none";
             document.body.style.overflow = "";
+            closeStatsInfo();
+        }
+
+        function closeStatsInfo() {
+            statsInfoPanel?.classList.remove("open");
+            statsInfoBtn?.setAttribute("aria-expanded", "false");
+        }
+
+        function toggleStatsInfo(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const open = !statsInfoPanel?.classList.contains("open");
+            statsInfoPanel?.classList.toggle("open", open);
+            statsInfoBtn?.setAttribute("aria-expanded", String(open));
         }
 
         statsPopBtn.addEventListener("click", openStatsModal);
+        statsInfoBtn?.addEventListener("click", toggleStatsInfo);
         statsModal.addEventListener("click", closeStatsModal);
         document.addEventListener("keydown", (e) => {
             if (e.key === "Escape" && statsModal.style.display === "flex") closeStatsModal();
