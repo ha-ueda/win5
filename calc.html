@@ -406,12 +406,18 @@
         .bg-rule-swatch {
             width: 36px;
             height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 8px;
             border: 0;
             box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18);
             background-clip: border-box;
             overflow: hidden;
             cursor: pointer;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1;
         }
 
         .bg-rule-text {
@@ -511,17 +517,23 @@
 
         .bg-detail-row {
             display: grid;
-            grid-template-columns: 14px 1fr;
+            grid-template-columns: 24px 1fr;
             align-items: center;
             gap: 8px;
             padding: 4px 0;
         }
 
         .bg-detail-color {
-            width: 14px;
-            height: 14px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 4px;
             box-shadow: inset 0 0 0 1px rgba(0,0,0,0.18);
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
         }
 
 
@@ -672,6 +684,11 @@
             white-space: nowrap;
             display: block;
             padding: 0px 5px;
+        }
+
+        .horse-name.bg-detail-highlight {
+            color: rgb(0, 51, 170);
+            background: rgba(255, 235, 59, 0.72);
         }
 
         .info-bottom {
@@ -1796,6 +1813,28 @@
             return columns * size + (columns - 1) * gap;
         }
 
+        function getPaletteNumberColor(color) {
+            const m = /^#([0-9a-f]{6})$/i.exec(String(color || "").trim());
+            if (!m) return "#111";
+            const r = parseInt(m[1].slice(0, 2), 16);
+            const g = parseInt(m[1].slice(2, 4), 16);
+            const b = parseInt(m[1].slice(4, 6), 16);
+            return ((r * 299 + g * 587 + b * 114) / 1000) < 150 ? "#fff" : "#111";
+        }
+
+        function getPaletteColorNumber(color) {
+            const index = BG_COLORS.indexOf(String(color || "").trim());
+            return index >= 0 ? String(index + 1) : "";
+        }
+
+        function setNumberedColorSwatch(swatch, color) {
+            if (!swatch) return;
+            swatch.style.background = "";
+            swatch.style.backgroundColor = color;
+            swatch.style.color = getPaletteNumberColor(color);
+            swatch.textContent = getPaletteColorNumber(color);
+        }
+
         function openBgRulePalette(rule, swatch, e) {
             e.preventDefault();
             e.stopPropagation();
@@ -1816,24 +1855,30 @@
 
             ensureUniqueBgRuleColors();
             palette.style.width = getPaletteContentWidth(BG_RULE_COLOR_PALETTE.length) + "px";
-            BG_RULE_COLOR_PALETTE.forEach(color => {
+            BG_RULE_COLOR_PALETTE.forEach((color, index) => {
                 const btn = document.createElement("button");
                 btn.type = "button";
+                btn.textContent = String(index + 1);
                 btn.style.width = "36px";
                 btn.style.height = "36px";
                 btn.style.flex = "0 0 36px";
+                btn.style.display = "flex";
+                btn.style.alignItems = "center";
+                btn.style.justifyContent = "center";
                 btn.style.boxSizing = "border-box";
                 btn.style.padding = "0";
                 btn.style.backgroundColor = color;
+                btn.style.color = getPaletteNumberColor(color);
                 btn.style.border = "1px solid #777";
                 btn.style.borderRadius = "8px";
                 btn.style.cursor = "pointer";
+                btn.style.fontSize = "13px";
+                btn.style.fontWeight = "700";
                 btn.addEventListener("click", (ev) => {
                     ev.preventDefault();
                     ev.stopPropagation();
                     bgRuleColors[rule.key] = color;
-                    swatch.style.background = "";
-                    swatch.style.backgroundColor = color;
+                    setNumberedColorSwatch(swatch, color);
                     palette.remove();
                     saveState();
                 });
@@ -2032,10 +2077,11 @@
                 const swatch = item.querySelector(".bg-rule-swatch");
                 if (swatch) {
                     if (rule.swatchBackground) swatch.style.background = rule.swatchBackground;
-                    else swatch.style.backgroundColor = rule.swatchColor || getBgRuleColor(rule);
+                    else setNumberedColorSwatch(swatch, rule.swatchColor || getBgRuleColor(rule));
                     if (rule.colorEditable !== false) {
                         swatch.addEventListener("click", (e) => openBgRulePalette(rule, swatch, e));
                     } else {
+                        swatch.textContent = "";
                         swatch.style.cursor = "default";
                     }
                 }
@@ -2283,6 +2329,28 @@
 
         function closeBgDetailPopover() {
             document.querySelector(".bg-detail-popover")?.remove();
+            clearBgDetailHorseHighlights();
+        }
+
+        function clearBgDetailHorseHighlights() {
+            document.querySelectorAll(".horse-name.bg-detail-highlight").forEach(el => {
+                el.classList.remove("bg-detail-highlight");
+            });
+        }
+
+        function applyBgDetailHorseHighlights(colors) {
+            clearBgDetailHorseHighlights();
+            const targetColors = new Set(normalizeBgColors(colors));
+            if (!targetColors.size) return;
+            document.querySelectorAll(".custom-select:not(.is-empty)").forEach(row => {
+                const box = row.querySelector(".selected");
+                const horseName = row.querySelector(".horse-name");
+                if (!box || !horseName) return;
+                const rowColors = normalizeBgColors(box.dataset.bg || "");
+                const matchedColors = rowColors.filter(color => targetColors.has(color));
+                if (!matchedColors.length) return;
+                horseName.classList.add("bg-detail-highlight");
+            });
         }
 
         function parseBgRuleDetails(rowEl) {
@@ -2469,6 +2537,7 @@
             const details = getBgDetailRows(rowEl);
             if (!details.length) return false;
             closeBgDetailPopover();
+            applyBgDetailHorseHighlights(details.map(item => item.color));
             const popover = document.createElement("div");
             popover.className = "bg-detail-popover";
             details.forEach(item => {
@@ -2478,6 +2547,8 @@
                 const swatch = document.createElement("span");
                 swatch.className = "bg-detail-color";
                 swatch.style.backgroundColor = item.color || "#fff";
+                swatch.style.color = getPaletteNumberColor(item.color);
+                swatch.textContent = getPaletteColorNumber(item.color);
                 row.appendChild(swatch);
 
                 const label = document.createElement("span");
@@ -2574,16 +2645,23 @@
                 btn.style.boxShadow = active ? "0 0 0 4px #3251BC" : "none";
             };
 
-            colors.forEach(c => {
+            colors.forEach((c, index) => {
                 const btn = document.createElement("div");
+                btn.textContent = String(index + 1);
                 btn.style.width = "36px";
                 btn.style.height = "36px";
                 btn.style.flex = "0 0 36px";
+                btn.style.display = "flex";
+                btn.style.alignItems = "center";
+                btn.style.justifyContent = "center";
                 btn.style.boxSizing = "border-box";
                 btn.style.backgroundColor = c;
+                btn.style.color = getPaletteNumberColor(c);
                 btn.style.border = "1px solid #777";
                 btn.style.borderRadius = "8px";
                 btn.style.cursor = "pointer";
+                btn.style.fontSize = "13px";
+                btn.style.fontWeight = "700";
                 btn.addEventListener("click", () => {
                     if (selectedColors.has(c)) selectedColors.delete(c);
                     else selectedColors.add(c);
