@@ -1547,15 +1547,15 @@
                 match: row => hasAnyMark(row) && isWins1Prob3Band(row, "trainer")
             },
             {
-                key: "odds27_8Plus",
-                label: "単勝オッズ27.8倍以上",
+                key: "winOddsThreshold5",
+                label: "単勝オッズしきい値以上",
                 probabilityLabel: "4.11%",
                 threshold: 27.8,
                 color: BG_RULE_COLOR_PALETTE[3],
                 match: row => {
                     if (!hasAnyMark(row)) return false;
                     const odds = parseNum(row.dataset.odds);
-                    const rule = BACKGROUND_RULES.find(item => item.key === "odds27_8Plus");
+                    const rule = BACKGROUND_RULES.find(item => item.key === "winOddsThreshold5");
                     const threshold = Number(rule?.threshold ?? 27.8);
                     return odds !== null && Number.isFinite(threshold) && odds >= threshold;
                 }
@@ -2001,8 +2001,8 @@
             if (trainerWins) {
                 trainerWins.probabilityLabel = `芝${formatSurfaceProbability(rules.trainerWins1Prob3?.surfaces?.["芝"])} / ダ${formatSurfaceProbability(rules.trainerWins1Prob3?.surfaces?.["ダ"])}`;
             }
-            const oddsThreshold = byKey.get("odds27_8Plus");
-            const oddsThresholdPayload = rules.odds27_8Plus;
+            const oddsThreshold = byKey.get("winOddsThreshold5");
+            const oddsThresholdPayload = rules.winOddsThreshold5;
             if (oddsThreshold && oddsThresholdPayload) {
                 const threshold = Number(oddsThresholdPayload.threshold);
                 if (Number.isFinite(threshold) && threshold > 0) {
@@ -4234,7 +4234,9 @@
 
             const validRuleKeys = new Set(BACKGROUND_RULES.map(rule => rule.key));
             const bgRuleKeys = payload.v === 2 && Array.isArray(payload.bgRuleKeys)
-                ? payload.bgRuleKeys.map(key => String(key || "").trim()).filter(key => validRuleKeys.has(key))
+                ? payload.bgRuleKeys
+                    .map(key => String(key || "").trim())
+                    .filter(key => validRuleKeys.has(key))
                 : null;
             const normalizedBgRuleColors = {};
             if (payload.v === 2 && payload.bgRuleColors && typeof payload.bgRuleColors === "object") {
