@@ -5422,14 +5422,15 @@
             return m ? m[1] : "";
         }
 
-        function getClosestProbabilityStarts(table, targetProbability) {
+        function getProbabilityThresholdStarts(table, targetProbability) {
             if (!Array.isArray(table) || !table.length) return null;
             let best = null;
             for (const item of table) {
                 const starts = Number(item?.starts);
                 const probability = Number(item?.probability);
                 if (!Number.isFinite(starts) || !Number.isFinite(probability)) continue;
-                const diff = Math.abs(probability - targetProbability);
+                if (probability > targetProbability) continue;
+                const diff = targetProbability - probability;
                 if (!best || diff < best.diff || (diff === best.diff && starts < best.starts)) {
                     best = { starts, probability, diff };
                 }
@@ -5450,7 +5451,7 @@
         }
 
         function getWins1ProbabilityThreshold(surface, person) {
-            return getClosestProbabilityStarts(getWins1ProbabilityTable(person)[surface], BG_PROBABILITY_TARGET);
+            return getProbabilityThresholdStarts(getWins1ProbabilityTable(person)[surface], BG_PROBABILITY_TARGET);
         }
 
         function applyProbabilityThresholdPayload(person, thresholds) {
