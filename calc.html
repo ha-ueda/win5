@@ -1372,10 +1372,10 @@
                 <p>「距離」選択時は、同じ距離カテゴリの成績を表示します。</p>
                 <ul class="stats-info-list">
                     <li>・1000m 〜 1300m</li>
-                    <li>・1301m 〜 1899m</li>
-                    <li>・1900m 〜 2100m</li>
-                    <li>・2101m 〜 2700m</li>
-                    <li>・2701m 〜</li>
+                    <li>・1400m 〜 1600m</li>
+                    <li>・1700m 〜 2000m</li>
+                    <li>・2100m 〜 2400m</li>
+                    <li>・2500m 〜</li>
                 </ul>
             </div>
             <div class="stats-modal-row">
@@ -5337,10 +5337,10 @@
             const d = Number(distance);
             if (!Number.isFinite(d)) return "";
             if (d >= 1000 && d <= 1300) return "S";
-            if (d >= 1301 && d <= 1899) return "M";
-            if (d >= 1900 && d <= 2100) return "I";
-            if (d >= 2101 && d <= 2700) return "L";
-            if (d >= 2701) return "E";
+            if (d >= 1400 && d <= 1600) return "M";
+            if (d >= 1700 && d <= 2000) return "I";
+            if (d >= 2100 && d <= 2400) return "L";
+            if (d >= 2500) return "E";
             return "";
         }
 
