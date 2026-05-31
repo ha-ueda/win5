@@ -794,7 +794,7 @@
 
         .combo-grid {
             display: grid;
-            grid-template-columns: 32px repeat(5, max-content) max-content;
+            grid-template-columns: 32px repeat(5, max-content) max-content max-content max-content max-content;
             column-gap: 0;
             row-gap: 2px;
             padding: 4px 0;
@@ -822,9 +822,42 @@
             display: flex;
             align-items: center;
             justify-content: flex-end;
+            gap: 10px;
             white-space: nowrap;
-            padding: 0 12px 0 8px;
+            padding: 0 12px;
             color: #7a7a7a;
+        }
+
+        .combo-count-value {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .combo-payout-min,
+        .combo-payout-sep,
+        .combo-payout-max {
+            min-height: 32px;
+            display: flex;
+            align-items: center;
+            font-variant-numeric: tabular-nums;
+            color: #7a7a7a;
+        }
+
+        .combo-payout-min,
+        .combo-payout-max {
+            justify-content: flex-end;
+            padding: 0 12px;
+        }
+
+        .combo-payout-min {
+            padding-right: 6px;
+        }
+
+        .combo-payout-max {
+            padding-left: 6px;
+        }
+
+        .combo-payout-sep {
+            justify-content: center;
         }
 
         .combo-expansion {
@@ -884,7 +917,10 @@
 
         .combo-row.checked .combo-check-wrap,
         .combo-row.checked .combo-cell,
-        .combo-row.checked .combo-count {
+        .combo-row.checked .combo-count,
+        .combo-row.checked .combo-payout-min,
+        .combo-row.checked .combo-payout-sep,
+        .combo-row.checked .combo-payout-max {
             background-color: #fff0f0;
         }
 
@@ -3287,19 +3323,19 @@
                     const row = chk.closest('.combo-row');
                     if (!row) return;
                     if (chk.checked) {
-                        row.classList.add('checked');
-                        const idx = Number(row.dataset.idx);
-                        const blocks = window.__lastDisplayBlocks || [];
-                        const ctx = window.__payoutCtx;
-                        if (Number.isFinite(idx) && blocks[idx] && ctx) {
-                            const html = buildComboExpansion(blocks[idx], ctx.supportRates, ctx.sales);
-                            row.insertAdjacentHTML('afterend', html);
-                        }
-                    } else {
-                        row.classList.remove('checked');
-                        const next = row.nextElementSibling;
-                        if (next && next.classList.contains('combo-expansion')) {
-                            next.remove();
+                    row.classList.add('checked');
+                    const idx = Number(row.dataset.idx);
+                    const blocks = window.__lastDisplayBlocks || [];
+                    const ctx = window.__payoutCtx;
+                    if (Number.isFinite(idx) && blocks[idx] && ctx) {
+                        const html = buildComboExpansion(blocks[idx], ctx.supportRates, ctx.sales);
+                        row.insertAdjacentHTML('afterend', html);
+                    }
+                } else {
+                    row.classList.remove('checked');
+                    const next = row.nextElementSibling;
+                    if (next && next.classList.contains('combo-expansion')) {
+                        next.remove();
                         }
                     }
                 });
@@ -3437,7 +3473,7 @@
             const displayBlocks = fullyMergeBlocksStableBit(blocks);
             comboList.push('<div class="combo-grid">');
             for (let i = 0; i < displayBlocks.length; i++) {
-                comboList.push(blockToLineBit(displayBlocks[i], i));
+                comboList.push(blockToLineBit(displayBlocks[i], i, supportRates, sales));
             }
             comboList.push('</div>');
 
@@ -3659,6 +3695,41 @@
             return virtualPayout(prod, sales);
         }
 
+        function computeBlockPayoutRange(block, supportRates, sales) {
+            let minProd = 1;
+            let maxProd = 1;
+            for (let r = 0; r < TOTAL_RACES; r++) {
+                const mask = block[r] >>> 0;
+                let minRate = Infinity;
+                let maxRate = 0;
+                for (let i = 0; i < HORSE_MAX; i++) {
+                    if (!(mask & (1 << i))) continue;
+                    const rate = supportRates[r][i];
+                    if (!(rate > 0)) continue;
+                    minRate = Math.min(minRate, rate);
+                    maxRate = Math.max(maxRate, rate);
+                }
+                if (!Number.isFinite(minRate) || !(maxRate > 0)) return null;
+                minProd *= minRate;
+                maxProd *= maxRate;
+            }
+
+            const minPayout = virtualPayout(maxProd, sales);
+            const maxPayout = virtualPayout(minProd, sales);
+            if (minPayout == null || maxPayout == null) return null;
+            return {
+                min: Math.round(Math.min(minPayout, maxPayout)),
+                max: Math.round(Math.max(minPayout, maxPayout))
+            };
+        }
+
+        function formatPayoutRange(range) {
+            if (!range) return null;
+            const min = String(Math.round(range.min / 10000));
+            const max = String(Math.round(range.max / 10000));
+            return { min: `${min}万円`, max: `${max}万円` };
+        }
+
         function buildComboExpansion(block, supportRates, sales) {
             const bets = enumerateBlockBets(block);
             bets.sort((a, b) => {
@@ -3687,7 +3758,7 @@
             return lines.join('');
         }
 
-        function blockToLineBit(block, idx) {
+        function blockToLineBit(block, idx, supportRates, sales) {
             const bitCount = (m) => {
                 let x = (m >>> 0);
                 let c = 0;
@@ -3712,6 +3783,12 @@
                 return nums.join('');
             });
             const cells = parts.map(p => `<span class="combo-cell">${p}</span>`).join('');
+            const payoutRange = formatPayoutRange(computeBlockPayoutRange(block, supportRates, sales));
+            const payoutCells = payoutRange
+                ? `<span class="combo-payout-min">${payoutRange.min}</span>` +
+                    '<span class="combo-payout-sep">〜</span>' +
+                    `<span class="combo-payout-max">${payoutRange.max}</span>`
+                : '<span class="combo-payout-min"></span><span class="combo-payout-sep"></span><span class="combo-payout-max"></span>';
             return (
                 `<div class="combo-row" data-idx="${idx}">` +
                 '<label class="combo-check-wrap">' +
@@ -3719,7 +3796,8 @@
                 '<span class="combo-check-visual">✓</span>' +
                 '</label>' +
                 cells +
-                `<span class="combo-count">${countLabel}組</span>` +
+                `<span class="combo-count"><span class="combo-count-value">${countLabel}組</span></span>` +
+                payoutCells +
                 '</div>'
             );
         }
