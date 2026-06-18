@@ -956,14 +956,51 @@
             height: 0;
         }
 
+        .combo-pager {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 6px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .combo-page-label {
+            color: #666;
+            font-size: 14px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .combo-page-btn {
+            min-width: 30px;
+            height: 30px;
+            padding: 0 8px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            background: #fff;
+            color: #333;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .combo-page-btn.active {
+            background: #333;
+            border-color: #333;
+            color: #fff;
+        }
+
         .button-row {
             display: flex;
             justify-content: flex-end;
+            flex-wrap: wrap;
             gap: 8px;
             width: 100%;
         }
 
-        #minFav {
+        #minFav,
+        #minPopularitySum {
             font-size: 16px;
             border: 1px solid #cfcfcf;
             height: 44px;
@@ -985,12 +1022,19 @@
             text-align: center;
         }
 
-        #minFav::-ms-expand {
+        #minPopularitySum option {
+            text-align: center;
+        }
+
+        #minFav::-ms-expand,
+        #minPopularitySum::-ms-expand {
             display: none;
         }
 
         #minFav:focus,
-        #minFav:focus-visible {
+        #minFav:focus-visible,
+        #minPopularitySum:focus,
+        #minPopularitySum:focus-visible {
             outline: none;
             box-shadow: none;
             border-color: #cfcfcf;
@@ -998,7 +1042,7 @@
 
         .fav-calc-row {
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             justify-content: space-between;
             gap: 10px;
             width: 100%;
@@ -1007,9 +1051,16 @@
 
         .fav-calc-left {
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            align-items: flex-start;
             gap: 8px;
             font-size: 20px;
+        }
+
+        .fav-filter-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .fav-calc-row .calc-btn {
@@ -1356,15 +1407,39 @@
 
     <div class="fav-calc-row">
         <div class="fav-calc-left">
-            <span class="fav-label">本命</span>
-            <select id="minFav">
-                <option value="1" selected>1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-            </select>
-            <span class="fav-suffix">勝</span>
+            <div class="fav-filter-line">
+                <span class="fav-label">本命</span>
+                <select id="minFav">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5" selected>5</option>
+                </select>
+                <span class="fav-suffix">勝</span>
+            </div>
+            <div class="fav-filter-line">
+                <span class="fav-label">人気</span>
+                <select id="minPopularitySum">
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                    <option value="13">13</option>
+                    <option value="14">14</option>
+                    <option value="15">15</option>
+                    <option value="16">16</option>
+                    <option value="17">17</option>
+                    <option value="18">18</option>
+                    <option value="19">19</option>
+                    <option value="20">20</option>
+                </select>
+                <span class="fav-suffix">以上</span>
+            </div>
         </div>
         <button class="calc-btn" onclick="calc()">計算</button>
     </div>
@@ -1373,6 +1448,7 @@
     <div id="copyBetsRow" class="button-row" style="display:none;">
         <button id="copyBetsBtn" class="calc-btn" type="button">投票</button>
     </div>
+    <div id="comboPager" class="combo-pager" style="display:none;"></div>
     <div id="combos"></div>
 
     <div id="shareModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="印共有">
@@ -1501,6 +1577,7 @@
 
         const TOTAL_RACES = 5;
         const HORSE_MAX = 18;
+        const UMACA_MAX_ROWS_PER_PAGE = 50;
         const MARKS = ["", "✓", "◎"];
         const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱'];
         const STORAGE_KEY = 'win5_state_v9';
@@ -2977,6 +3054,7 @@
                 bgRuleColors: { ...bgRuleColors },
                 sortKey: currentSortKey,
                 minFav: document.getElementById('minFav').value,
+                minPopularitySum: document.getElementById('minPopularitySum')?.value || "",
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
                 raceCourses: window.raceCourses || ["", "", "", "", ""],
@@ -3060,6 +3138,20 @@
                 updateRaceHeaders(window.raceInfo || ["", "", "", "", ""]);
 
                 if (state.minFav) document.getElementById('minFav').value = state.minFav;
+                if (state.minPopularitySum !== undefined) {
+                    const minPopularitySelect = document.getElementById('minPopularitySum');
+                    const value = String(state.minPopularitySum || "0");
+                    const hasOption = minPopularitySelect
+                        ? Array.from(minPopularitySelect.options).some(option => option.value === value)
+                        : false;
+                    if (minPopularitySelect && !hasOption) {
+                        const option = document.createElement("option");
+                        option.value = value;
+                        option.textContent = value;
+                        minPopularitySelect.appendChild(option);
+                    }
+                    if (minPopularitySelect) minPopularitySelect.value = value;
+                }
                 currentStatsModes = normalizeStatsModes(Array.isArray(state.statsModes) ? state.statsModes : []);
                 currentStatsMode = 'combo';
                 syncStatsToggleUI();
@@ -3263,7 +3355,7 @@
         }
 
         function getRaceData(r) {
-            const favs = [], himo = [], colorMap = {};
+            const favs = [], himo = [], colorMap = {}, popularityMap = {};
             document.querySelectorAll(`.custom-select[data-race="${r}"]`).forEach(sel => {
                 if (sel.classList.contains("is-empty")) return;
                 if (sel.classList.contains("is-scratched")) return;
@@ -3274,11 +3366,12 @@
 
                 const num = Number(sel.dataset.horse);
                 colorMap[num] = bg;
+                popularityMap[num] = parseNum(sel.dataset.ninki);
                 if (v === "◎") favs.push(num);
                 if (v === "✓") himo.push(num);
             });
             const all = [...new Set([...favs, ...himo])];
-            return { fav: favs, horse: all, colorMap };
+            return { fav: favs, horse: all, colorMap, popularityMap };
         }
 
         function combinations(arr, k) {
@@ -3323,15 +3416,18 @@
         }
 
         function calc() {
-            const races = [], favs = [], colorArray = [];
+            const races = [], favs = [], colorArray = [], popularityArray = [];
 
             for (let i = 1; i <= TOTAL_RACES; i++) {
                 const d = getRaceData(i);
                 races.push(d.horse);
                 favs.push(d.fav);
                 const colors = new Array(HORSE_MAX + 1);
+                const popularities = new Array(HORSE_MAX + 1);
                 for (let h = 1; h <= HORSE_MAX; h++) colors[h] = d.colorMap[h] || "none";
+                for (let h = 1; h <= HORSE_MAX; h++) popularities[h] = d.popularityMap[h] || null;
                 colorArray.push(colors);
+                popularityArray.push(popularities);
             }
 
             const favMaskList = favs.map(a => a.map(x => 1 << (x - 1)));
@@ -3424,11 +3520,25 @@
             const supportRates = buildRaceSupportRates();
             const sales = window.win5Sales || null;
             let total = 0;
-            const comboList = [];
 
             const minFav = Number(document.getElementById('minFav').value);
+            const minPopularitySumRaw = Number(document.getElementById('minPopularitySum')?.value || 0);
+            const minPopularitySum = Number.isFinite(minPopularitySumRaw) && minPopularitySumRaw > 0
+                ? minPopularitySumRaw
+                : 0;
             const masks = getMasks(minFav);
             const blocks = [];
+
+            const blockToHorses = block => block.map(mask => (Math.log2(mask >>> 0) | 0) + 1);
+            const getPopularitySum = horses => {
+                let sum = 0;
+                for (let r = 0; r < TOTAL_RACES; r++) {
+                    const ninki = popularityArray[r][horses[r]];
+                    if (!Number.isFinite(ninki)) return null;
+                    sum += ninki;
+                }
+                return sum;
+            };
 
             for (let m = 0; m < masks.length; m++) {
                 const maskArr = masks[m];
@@ -3445,39 +3555,31 @@
                 const res = countCombosDFS(candidates);
 
                 for (let i = 0; i < res.blocks.length; i++) {
-                    blocks.push(res.blocks[i]);
+                    const block = res.blocks[i];
+                    const horses = minPopularitySum > 0 ? blockToHorses(block) : null;
+                    if (minPopularitySum > 0) {
+                        const popularitySum = getPopularitySum(horses);
+                        if (popularitySum == null || popularitySum < minPopularitySum) continue;
+                    }
+                    blocks.push(block);
                 }
             }
 
             const count = blocks.length;
             const displayBlocks = fullyMergeBlocksStableBit(blocks);
-            comboList.push('<div class="combo-grid">');
-            for (let i = 0; i < displayBlocks.length; i++) {
-                comboList.push(blockToLineBit(displayBlocks[i], i, supportRates, sales));
-            }
-            comboList.push('</div>');
+            const displayPages = splitBetBlocksForVoting(displayBlocks);
 
             total = count;
 
-            window.__lastDisplayBlocks = displayBlocks;
+            window.__lastDisplayBlocks = [];
+            window.__lastBetPages = displayPages;
+            window.__comboPageRowCounts = displayPages.map(pageBlocks => pageBlocks.length);
             window.__payoutCtx = { supportRates, sales };
-            const copyRow = document.getElementById('copyBetsRow');
-            if (copyRow) copyRow.style.display = (total > 0 && displayBlocks.length) ? 'flex' : 'none';
+            renderBetPageButtons();
+            renderComboPage(0);
 
             document.getElementById('result').innerHTML =
                 `買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 組`;
-
-            const combosEl = document.getElementById('combos');
-            const combosHtml = comboList.join('');
-
-            if (!combosHtml.trim()) {
-                combosEl.replaceChildren();
-            } else {
-                const container = document.createElement('div');
-                container.innerHTML = combosHtml;
-                combosEl.replaceChildren(container);
-                attachComboEvents();
-            }
             saveState();
         }
 
@@ -3509,8 +3611,100 @@
             return lines.join("\n");
         }
 
-        async function copyBets() {
-            const blocks = window.__lastDisplayBlocks;
+        function splitBetBlocksForVoting(blocks) {
+            const pages = [];
+            for (let i = 0; i < blocks.length; i += UMACA_MAX_ROWS_PER_PAGE) {
+                pages.push(blocks.slice(i, i + UMACA_MAX_ROWS_PER_PAGE));
+            }
+            return pages;
+        }
+
+        function renderComboPage(pageIndex = 0) {
+            const combosEl = document.getElementById('combos');
+            const pager = document.getElementById('comboPager');
+            if (!combosEl) return;
+
+            const pages = window.__lastBetPages || [];
+            const rowCounts = window.__comboPageRowCounts || [];
+            const ctx = window.__payoutCtx;
+            if (!pages.length || !ctx) {
+                window.__lastDisplayBlocks = [];
+                combosEl.replaceChildren();
+                if (pager) {
+                    pager.replaceChildren();
+                    pager.style.display = 'none';
+                }
+                return;
+            }
+
+            const safeIndex = Math.max(0, Math.min(pageIndex, pages.length - 1));
+            const displayBlocks = pages[safeIndex] || [];
+            window.__lastDisplayBlocks = displayBlocks;
+            window.__currentComboPageIndex = safeIndex;
+
+            const comboList = ['<div class="combo-grid">'];
+            for (let i = 0; i < displayBlocks.length; i++) {
+                comboList.push(blockToLineBit(displayBlocks[i], i, ctx.supportRates, ctx.sales));
+            }
+            comboList.push('</div>');
+
+            const container = document.createElement('div');
+            container.innerHTML = comboList.join('');
+            combosEl.replaceChildren(container);
+            attachComboEvents();
+
+            if (!pager) return;
+            pager.replaceChildren();
+            if (pages.length <= 1) {
+                pager.style.display = 'none';
+                return;
+            }
+
+            pager.style.display = 'flex';
+            const start = safeIndex * UMACA_MAX_ROWS_PER_PAGE + 1;
+            const end = start + (rowCounts[safeIndex] || 0) - 1;
+            const label = document.createElement('span');
+            label.className = 'combo-page-label';
+            label.textContent = `${start}-${end}行 / ${pages.length}ページ`;
+            pager.appendChild(label);
+
+            pages.forEach((_, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'combo-page-btn';
+                btn.type = 'button';
+                btn.textContent = String(index + 1);
+                btn.classList.toggle('active', index === safeIndex);
+                btn.addEventListener('click', () => renderComboPage(index));
+                pager.appendChild(btn);
+            });
+        }
+
+        function renderBetPageButtons() {
+            const row = document.getElementById('copyBetsRow');
+            if (!row) return;
+            row.replaceChildren();
+
+            const pages = window.__lastBetPages || [];
+            if (!pages.length) {
+                row.style.display = 'none';
+                return;
+            }
+
+            row.style.display = 'flex';
+            const btn = document.createElement('button');
+            btn.className = 'calc-btn';
+            btn.type = 'button';
+            btn.textContent = '投票';
+            btn.addEventListener('click', () => {
+                openIpatTab();
+                copyBets(window.__currentComboPageIndex || 0);
+            });
+            row.appendChild(btn);
+        }
+
+        async function copyBets(pageIndex = 0) {
+            const pages = window.__lastBetPages || [];
+            const blocks = pages[pageIndex] || window.__lastDisplayBlocks;
             if (!blocks || !blocks.length) return;
 
             const text = buildBetsCopyTextFromBlocks(blocks);
@@ -3528,13 +3722,6 @@
                 window.location.href = url;
             }
         }
-
-
-        const copyBetsBtn = document.getElementById("copyBetsBtn");
-        if (copyBetsBtn) copyBetsBtn.addEventListener("click", () => {
-            openIpatTab();
-            copyBets();
-        });
 
         function fullyMergeBlocksStableBit(blocks) {
             const n = TOTAL_RACES | 0;
