@@ -1419,14 +1419,14 @@
                     <option value="2">2</option>
                     <option value="3">3</option>
                     <option value="4">4</option>
-                    <option value="5" selected>5</option>
+                    <option value="5">5</option>
                 </select>
                 <span class="fav-suffix">勝</span>
             </div>
             <div class="fav-filter-line">
                 <span class="fav-label">人気</span>
                 <select id="minPopularitySum">
-                    <option value="5">5</option>
+                    <option value="5" selected>5</option>
                     <option value="6">6</option>
                     <option value="7">7</option>
                     <option value="8">8</option>
@@ -1450,9 +1450,7 @@
     </div>
 
     <div id="result"></div>
-    <div id="copyBetsRow" class="button-row" style="display:none;">
-        <button id="copyBetsBtn" class="calc-btn" type="button">投票</button>
-    </div>
+    <div id="copyBetsRow" class="button-row" style="display:none;"></div>
     <div id="comboPager" class="combo-pager" style="display:none;"></div>
     <div id="combos"></div>
 
@@ -3145,17 +3143,13 @@
                 if (state.minFav) document.getElementById('minFav').value = state.minFav;
                 if (state.minPopularitySum !== undefined) {
                     const minPopularitySelect = document.getElementById('minPopularitySum');
-                    const value = String(state.minPopularitySum || "0");
-                    const hasOption = minPopularitySelect
-                        ? Array.from(minPopularitySelect.options).some(option => option.value === value)
-                        : false;
-                    if (minPopularitySelect && !hasOption) {
-                        const option = document.createElement("option");
-                        option.value = value;
-                        option.textContent = value;
-                        minPopularitySelect.appendChild(option);
+                    const rawValue = Number(state.minPopularitySum);
+                    const value = Number.isFinite(rawValue) && rawValue >= 5 && rawValue <= 20
+                        ? String(Math.trunc(rawValue))
+                        : "5";
+                    if (minPopularitySelect) {
+                        minPopularitySelect.value = value;
                     }
-                    if (minPopularitySelect) minPopularitySelect.value = value;
                 }
                 currentStatsModes = normalizeStatsModes(Array.isArray(state.statsModes) ? state.statsModes : []);
                 currentStatsMode = 'combo';
@@ -3401,19 +3395,19 @@
                     const row = chk.closest('.combo-row');
                     if (!row) return;
                     if (chk.checked) {
-                    row.classList.add('checked');
-                    const idx = Number(row.dataset.idx);
-                    const blocks = window.__lastDisplayBlocks || [];
-                    const ctx = window.__payoutCtx;
-                    if (Number.isFinite(idx) && blocks[idx] && ctx) {
-                        const html = buildComboExpansion(blocks[idx], ctx.supportRates, ctx.sales);
-                        row.insertAdjacentHTML('afterend', html);
-                    }
-                } else {
-                    row.classList.remove('checked');
-                    const next = row.nextElementSibling;
-                    if (next && next.classList.contains('combo-expansion')) {
-                        next.remove();
+                        row.classList.add('checked');
+                        const idx = Number(row.dataset.idx);
+                        const blocks = window.__lastDisplayBlocks || [];
+                        const ctx = window.__payoutCtx;
+                        if (Number.isFinite(idx) && blocks[idx] && ctx) {
+                            const html = buildComboExpansion(blocks[idx], ctx.supportRates, ctx.sales);
+                            row.insertAdjacentHTML('afterend', html);
+                        }
+                    } else {
+                        row.classList.remove('checked');
+                        const next = row.nextElementSibling;
+                        if (next && next.classList.contains('combo-expansion')) {
+                            next.remove();
                         }
                     }
                 });
