@@ -713,6 +713,11 @@
             border-radius: 1em;
         }
 
+        .person-name.high-win-rate {
+            color: rgb(198, 40, 40);
+            font-weight: 700;
+        }
+
         .col-odds {
             width: 67px;
             font-feature-settings: "tnum" 1;
@@ -6057,11 +6062,18 @@
             return getPersonRuleColor("trainerPrevious", row?.dataset?.tid);
         }
 
+        function isStatsWinRateAtLeast(statsText, thresholdPercent) {
+            const stats = parseStatsRecord(statsText);
+            if (!stats || !stats.starts) return false;
+            return (stats.wins / stats.starts) * 100 >= thresholdPercent;
+        }
+
         function applyPersonDisplay() {
             document.querySelectorAll('.custom-select').forEach(sel => {
                 const nameEl = sel.querySelector('.person-name');
                 const statsEl = sel.querySelector('.person-stats');
                 if (!nameEl || !statsEl) return;
+                nameEl.classList.remove("high-win-rate");
                 if (sel.classList.contains("is-scratched")) {
                     nameEl.textContent = "";
                     statsEl.textContent = "";
@@ -6078,6 +6090,10 @@
                 const stats = currentPerson === 'trainer' ? (sel.dataset.tstats || "") : (sel.dataset.jstats || "");
                 nameEl.textContent = name;
                 statsEl.textContent = stats;
+                nameEl.classList.toggle(
+                    "high-win-rate",
+                    isStatsWinRateAtLeast(stats, 5)
+                );
             });
         }
 
