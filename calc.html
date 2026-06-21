@@ -1650,24 +1650,17 @@
             },
             {
                 key: "jockeyWins1Prob3",
-                label: "直近1年間で1勝以下の騎手",
+                label: "1年間で1勝以下の騎手",
                 probabilityLabel: "-",
                 color: BG_RULE_COLOR_PALETTE[1],
                 match: row => hasAnyMark(row) && isJockeyWins1Prob3Band(row)
             },
             {
                 key: "trainerWins1Prob3",
-                label: "直近1年間で1勝以下の調教師",
+                label: "1年間で1勝以下の調教師",
                 probabilityLabel: "-",
                 color: BG_RULE_COLOR_PALETTE[2],
                 match: row => hasAnyMark(row) && isWins1Prob3Band(row, "trainer")
-            },
-            {
-                key: "winOddsThreshold5",
-                label: "単勝オッズN倍以上",
-                deprecated: true,
-                colorEditable: false,
-                match: () => false
             },
             {
                 key: "jockeyPreviousWin5Win",
