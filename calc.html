@@ -4250,7 +4250,7 @@
 
         async function loadWin5Tabs() {
             try {
-                const u = new URL(WIN5_API);
+                const u = new URL("tabs", WIN5_API);
                 u.searchParams.set("_", String(Date.now()));
 
                 const res = await fetch(u.toString(), { cache: "no-store" });
