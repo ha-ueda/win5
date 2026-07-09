@@ -4131,6 +4131,43 @@
                 .some(el => el.textContent.trim() !== "");
         }
 
+        function collectMissingLoadedData() {
+            const fieldLabels = {
+                name: "馬名",
+                jockey: "騎手",
+                trainer: "調教師",
+                jid: "騎手ID",
+                tid: "調教師ID",
+            };
+            const byRace = new Map();
+
+            document.querySelectorAll('.custom-select:not(.is-empty)').forEach(sel => {
+                const race = Number(sel.dataset.race);
+                if (!Number.isInteger(race) || race < 1 || race > TOTAL_RACES) return;
+
+                const missing = [];
+                for (const key of Object.keys(fieldLabels)) {
+                    if (!String(sel.dataset[key] || "").trim()) missing.push(fieldLabels[key]);
+                }
+                if (!missing.length) return;
+
+                if (!byRace.has(race)) byRace.set(race, new Map());
+                const raceMap = byRace.get(race);
+                for (const label of missing) {
+                    raceMap.set(label, (raceMap.get(label) || 0) + 1);
+                }
+            });
+
+            return [...byRace.entries()]
+                .sort((a, b) => a[0] - b[0])
+                .map(([race, raceMap]) => {
+                    const fields = [...raceMap.entries()]
+                        .map(([label, count]) => count > 1 ? `${label}${count}件` : label)
+                        .join("・");
+                    return `${race}R ${fields}`;
+                });
+        }
+
         function handleLoad() {
             if (!confirm("データを取得しますか？")) return;
             loadWin5Data();
@@ -4171,7 +4208,14 @@
                 applyWin5Data(json);
                 await fetchAndApplyJockeyStats();
 
-                showToast("取得しました");
+                const missing = collectMissingLoadedData();
+                if (missing.length) {
+                    const detail = missing.slice(0, 3).join(" / ");
+                    const more = missing.length > 3 ? ` ほか${missing.length - 3}件` : "";
+                    showToast(`一部データ未取得: ${detail}${more}`, { type: "error", duration: 5000 });
+                } else {
+                    showToast("取得しました");
+                }
             } catch (e) {
                 showToast("取得に失敗しました");
             }
