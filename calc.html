@@ -4212,7 +4212,7 @@
                 if (missing.length) {
                     const detail = missing.slice(0, 3).join(" / ");
                     const more = missing.length > 3 ? ` ほか${missing.length - 3}件` : "";
-                    showToast(`一部データ未取得: ${detail}${more}`, { type: "error", duration: 5000 });
+                    showToast("一部データが未取得です");
                 } else {
                     showToast("取得しました");
                 }
