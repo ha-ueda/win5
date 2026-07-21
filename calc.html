@@ -1512,7 +1512,6 @@
                     <span class="fav-label">1〜4番人気</span>
                     <select id="minPopWins1to4">
                         <option value="" selected></option>
-                        <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -1522,7 +1521,6 @@
                     <span class="fav-range-sep">〜</span>
                     <select id="maxPopWins1to4">
                         <option value="" selected></option>
-                        <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -1536,7 +1534,6 @@
                     <span class="fav-label">5〜9番人気</span>
                     <select id="minPopWins5to9">
                         <option value="" selected></option>
-                        <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -1546,7 +1543,6 @@
                     <span class="fav-range-sep">〜</span>
                     <select id="maxPopWins5to9">
                         <option value="" selected></option>
-                        <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -1560,7 +1556,6 @@
                     <span class="fav-label">10番人気以下</span>
                     <select id="minPopWins10plus">
                         <option value="" selected></option>
-                        <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -1570,7 +1565,6 @@
                     <span class="fav-range-sep">〜</span>
                     <select id="maxPopWins10plus">
                         <option value="" selected></option>
-                        <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -3325,7 +3319,7 @@
                         return;
                     }
                     const n = Number(raw);
-                    select.value = Number.isFinite(n) && n >= 0 && n <= TOTAL_RACES
+                    select.value = Number.isFinite(n) && n >= 1 && n <= TOTAL_RACES
                         ? String(Math.trunc(n))
                         : "";
                 };
