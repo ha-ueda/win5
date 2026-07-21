@@ -8,6 +8,7 @@
     <style>
         :root {
             --calc-btn-width: clamp(110px, 18vw, 150px);
+            --page-content-max: 640px;
         }
 
         body {
@@ -20,6 +21,15 @@
             -ms-user-select: none !important;
         }
 
+        body > .top-bar-right,
+        body > .toggle-container,
+        body > .fav-calc-row {
+            max-width: var(--page-content-max);
+            width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
         * {
             -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
             box-sizing: border-box;
@@ -28,9 +38,15 @@
         .top-bar-right {
             display: flex;
             gap: 8px;
-            justify-content: flex-end;
-            flex-wrap: wrap;
+            justify-content: flex-start;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            width: 100%;
             margin-bottom: 20px;
+        }
+
+        .top-bar-right > * {
+            flex: 1 1 0;
         }
 
         #win5TabSelect {
@@ -89,7 +105,9 @@
             gap: 8px;
             margin: 10px 0;
             font-size: 16px;
-            overflow: hidden;
+            overflow: visible;
+            height: auto;
+            transform: none;
         }
 
         .toggle-row {
@@ -97,33 +115,74 @@
             align-items: center;
             gap: 8px;
             white-space: nowrap;
-            transform-origin: top left;
+            width: 100%;
+            transform: none;
+        }
+
+        .toggle-row:not(.toggle-row-sp-2) {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .toggle-row:not(.toggle-row-sp-2) > #sortToggle,
+        .toggle-row:not(.toggle-row-sp-2) > #statsPopBtn {
+            width: auto;
+        }
+
+        .toggle-row .race-clear,
+        .toggle-row .sort-switch {
+            flex: 1 1 0;
+            width: auto;
+            min-width: 0;
         }
 
         .toggle-row .race-clear {
-            width: 80px;
             min-height: 40px;
             text-align: center;
             padding: 6px 0;
         }
 
-        .toggle-row > #sortToggle,
-        .toggle-row > #statsPopBtn {
-            width: 200px;
-        }
-
-        .toggle-row > #sortToggle .sort-option,
-        .toggle-row > #statsPopBtn {
+        .toggle-row .sort-option {
+            flex: 1 1 0;
+            justify-content: center;
+            width: auto;
+            min-width: 0;
             min-height: 40px;
         }
 
-        #sortToggle .sort-option {
+        .clear-pc {
+            display: none !important;
+        }
+
+        .stats-pop-btn {
             flex: 1 1 0;
+            width: auto;
             min-width: 0;
+            justify-content: center;
+        }
+
+        #statsPopLabel {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .toggle-row-sp-2 {
-            display: none;
+            display: flex;
+            width: 100%;
+            height: 44px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .toggle-row-sp-2 .race-clear {
+            flex: 1 1 0;
+            width: auto;
+            height: 100%;
+            min-height: 0;
+            padding: 0 10px;
+            box-sizing: border-box;
         }
 
         #raceTables {
@@ -935,10 +994,18 @@
             color: #ffffff;
         }
 
+        .result-combos {
+            width: max-content;
+            max-width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
         #result {
             margin-top: 10px;
             font-weight: bold;
             font-size: 18px;
+            text-align: left;
         }
 
         #combos {
@@ -996,16 +1063,14 @@
             color: #fff;
         }
 
-        .button-row {
-            display: flex;
-            justify-content: flex-end;
-            flex-wrap: wrap;
-            gap: 8px;
-            width: 100%;
-        }
-
         #minFav,
-        #minPopularitySum {
+        #maxFav,
+        #minPopWins1to4,
+        #maxPopWins1to4,
+        #minPopWins5to9,
+        #maxPopWins5to9,
+        #minPopWins10plus,
+        #maxPopWins10plus {
             font-size: 16px;
             border: 1px solid #cfcfcf;
             height: 44px;
@@ -1023,23 +1088,44 @@
             background-image: none;
         }
 
-        #minFav option {
-            text-align: center;
-        }
-
-        #minPopularitySum option {
+        #minFav option,
+        #maxFav option,
+        #minPopWins1to4 option,
+        #maxPopWins1to4 option,
+        #minPopWins5to9 option,
+        #maxPopWins5to9 option,
+        #minPopWins10plus option,
+        #maxPopWins10plus option {
             text-align: center;
         }
 
         #minFav::-ms-expand,
-        #minPopularitySum::-ms-expand {
+        #maxFav::-ms-expand,
+        #minPopWins1to4::-ms-expand,
+        #maxPopWins1to4::-ms-expand,
+        #minPopWins5to9::-ms-expand,
+        #maxPopWins5to9::-ms-expand,
+        #minPopWins10plus::-ms-expand,
+        #maxPopWins10plus::-ms-expand {
             display: none;
         }
 
         #minFav:focus,
         #minFav:focus-visible,
-        #minPopularitySum:focus,
-        #minPopularitySum:focus-visible {
+        #maxFav:focus,
+        #maxFav:focus-visible,
+        #minPopWins1to4:focus,
+        #minPopWins1to4:focus-visible,
+        #maxPopWins1to4:focus,
+        #maxPopWins1to4:focus-visible,
+        #minPopWins5to9:focus,
+        #minPopWins5to9:focus-visible,
+        #maxPopWins5to9:focus,
+        #maxPopWins5to9:focus-visible,
+        #minPopWins10plus:focus,
+        #minPopWins10plus:focus-visible,
+        #maxPopWins10plus:focus,
+        #maxPopWins10plus:focus-visible {
             outline: none;
             box-shadow: none;
             border-color: #cfcfcf;
@@ -1047,28 +1133,92 @@
 
         .fav-calc-row {
             display: flex;
-            align-items: flex-end;
+            flex-direction: column;
+            align-items: stretch;
             justify-content: space-between;
             gap: 10px;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 12px;
         }
 
         .fav-calc-left {
+            flex: 1 1 auto;
+            min-width: 0;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
-            font-size: 20px;
+            align-items: stretch;
+            gap: 0;
+            font-size: 16px;
+            line-height: 1.3;
+        }
+
+        .fav-filter-group {
+            display: grid;
+            gap: 6px;
+            min-width: 0;
+            padding: 10px 12px;
+            border: 1px solid #cfcfcf;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .fav-filter-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 28px;
+            color: #888;
+            font-size: 18px;
+            line-height: 1;
+            user-select: none;
         }
 
         .fav-filter-line {
-            display: flex;
+            display: grid;
+            grid-template-columns: 8em 50px auto 50px 2.5em minmax(3.2em, auto);
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            column-gap: 6px;
+            min-height: 44px;
+        }
+
+        .fav-label {
+            color: #333;
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+
+        .fav-range-sep {
+            color: #555;
+            font-size: 15px;
+            text-align: center;
+            user-select: none;
+        }
+
+        .fav-suffix {
+            color: #555;
+            font-size: 15px;
+            white-space: nowrap;
+        }
+
+        .fav-rate {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.25;
+            white-space: nowrap;
+            justify-self: end;
+        }
+
+        .fav-rate:empty {
+            display: none;
         }
 
         .fav-calc-row .calc-btn {
+            flex: 0 0 auto;
+            align-self: stretch;
+            width: 100%;
             padding: 0 clamp(14px, 2.4vw, 22px);
         }
 
@@ -1254,83 +1404,6 @@
         }
 
         @media (max-width: 640px) {
-            .top-bar-right {
-                justify-content: flex-start;
-                gap: 8px;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                width: 100%;
-            }
-
-            .top-bar-right>* {
-                flex: 1 1 0;
-            }
-
-            .toggle-container {
-                overflow: visible !important;
-                height: auto !important;
-                transform: none !important;
-            }
-
-            .toggle-row {
-                width: 100%;
-                transform: none !important;
-            }
-
-            .toggle-row:not(.toggle-row-sp-2) {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-            }
-
-            .toggle-row:not(.toggle-row-sp-2) > #sortToggle,
-            .toggle-row:not(.toggle-row-sp-2) > #statsPopBtn {
-                width: auto;
-            }
-
-            .toggle-row .race-clear,
-            .toggle-row .sort-switch {
-                flex: 1 1 0;
-                width: auto;
-                min-width: 0;
-            }
-
-            .toggle-row .sort-option {
-                flex: 1 1 0;
-                justify-content: center;
-                width: auto;
-                min-width: 0;
-            }
-
-            .clear-pc {
-                display: none !important;
-            }
-
-            .stats-pop-btn {
-                flex: 1 1 0;
-                width: auto;
-                min-width: 0;
-                justify-content: center;
-            }
-
-            #statsPopLabel {
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-
-            .toggle-row-sp-2 {
-                display: flex;
-                width: 100%;
-                position: relative;
-                z-index: 1;
-            }
-
-            .toggle-row-sp-2 .race-clear {
-                flex: 1 1 0;
-                width: auto;
-            }
-
             #raceTables {
                 width: calc(100% + 20px);
                 max-width: none;
@@ -1412,47 +1485,112 @@
 
     <div class="fav-calc-row">
         <div class="fav-calc-left">
-            <div class="fav-filter-line">
-                <span class="fav-label">本命馬</span>
-                <select id="minFav">
-                    <option value="1" selected>1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                </select>
-                <span class="fav-suffix">勝</span>
+            <div class="fav-filter-group">
+                <div class="fav-filter-line">
+                    <span class="fav-label">本命馬</span>
+                    <select id="minFav">
+                        <option value="1" selected>1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                    <span class="fav-range-sep">〜</span>
+                    <select id="maxFav">
+                        <option value="1" selected>1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                    <span class="fav-suffix">勝</span>
+                </div>
             </div>
-            <div class="fav-filter-line">
-                <span class="fav-label">人気和</span>
-                <select id="minPopularitySum">
-                    <option value="5" selected>5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
-                    <option value="10">10</option>
-                    <option value="11">11</option>
-                    <option value="12">12</option>
-                    <option value="13">13</option>
-                    <option value="14">14</option>
-                    <option value="15">15</option>
-                    <option value="16">16</option>
-                    <option value="17">17</option>
-                    <option value="18">18</option>
-                    <option value="19">19</option>
-                    <option value="20">20</option>
-                </select>
-                <span class="fav-suffix">以上</span>
+            <div class="fav-filter-arrow" aria-hidden="true">↓</div>
+            <div class="fav-filter-group">
+                <div class="fav-filter-line">
+                    <span class="fav-label">1〜4番人気</span>
+                    <select id="minPopWins1to4">
+                        <option value="" selected></option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                    <span class="fav-range-sep">〜</span>
+                    <select id="maxPopWins1to4">
+                        <option value="" selected></option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                    <span class="fav-suffix">勝</span>
+                    <span class="fav-rate" data-pop-band="1to4"></span>
+                </div>
+                <div class="fav-filter-line">
+                    <span class="fav-label">5〜9番人気</span>
+                    <select id="minPopWins5to9">
+                        <option value="" selected></option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                    <span class="fav-range-sep">〜</span>
+                    <select id="maxPopWins5to9">
+                        <option value="" selected></option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                    <span class="fav-suffix">勝</span>
+                    <span class="fav-rate" data-pop-band="5to9"></span>
+                </div>
+                <div class="fav-filter-line">
+                    <span class="fav-label">10番人気以下</span>
+                    <select id="minPopWins10plus">
+                        <option value="" selected></option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                    <span class="fav-range-sep">〜</span>
+                    <select id="maxPopWins10plus">
+                        <option value="" selected></option>
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                    <span class="fav-suffix">勝</span>
+                    <span class="fav-rate" data-pop-band="10plus"></span>
+                </div>
             </div>
         </div>
         <button class="calc-btn" onclick="calc()">計算</button>
+        <button id="voteBtn" class="calc-btn" type="button" style="display:none;">投票</button>
     </div>
 
-    <div id="result"></div>
-    <div id="copyBetsRow" class="button-row" style="display:none;"></div>
-    <div id="comboPager" class="combo-pager" style="display:none;"></div>
-    <div id="combos"></div>
+    <div class="result-combos">
+        <div id="result"></div>
+        <div id="comboPager" class="combo-pager" style="display:none;"></div>
+        <div id="combos"></div>
+    </div>
 
     <div id="shareModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="印共有">
         <div class="modal-card" onclick="event.stopPropagation()">
@@ -2135,6 +2273,42 @@
                 }
             })();
             return backgroundRuleProbabilitiesPromise;
+        }
+
+        let popularityBandWinRatesPromise = null;
+
+        function applyPopularityBandWinRates(payload) {
+            const bands = payload?.bands;
+            if (!bands || typeof bands !== "object") return;
+            document.querySelectorAll(".fav-rate[data-pop-band]").forEach(el => {
+                const key = el.dataset.popBand;
+                const probability = formatRuleProbability(bands[key]?.probability);
+                el.textContent = probability === "-" ? "" : probability;
+                const wins = Number(bands[key]?.wins);
+                const total = Number(payload?.totalRaces);
+                if (Number.isFinite(wins) && Number.isFinite(total) && total > 0) {
+                    el.title = `${wins.toLocaleString()} / ${total.toLocaleString()}R`;
+                } else {
+                    el.removeAttribute("title");
+                }
+            });
+        }
+
+        async function fetchPopularityBandWinRates() {
+            if (popularityBandWinRatesPromise) return popularityBandWinRatesPromise;
+            popularityBandWinRatesPromise = (async () => {
+                try {
+                    const u = new URL("popularity-band-win-rates", WIN5_API);
+                    const res = await fetch(u.toString(), { cache: "no-store" });
+                    const json = await res.json();
+                    if (json.ok) applyPopularityBandWinRates(json);
+                } catch (e) {
+                    console.warn("fetchPopularityBandWinRates:", e);
+                } finally {
+                    popularityBandWinRatesPromise = null;
+                }
+            })();
+            return popularityBandWinRatesPromise;
         }
 
         async function applySelectedBackgroundRules() {
@@ -3050,7 +3224,13 @@
                 bgRuleColors: { ...bgRuleColors },
                 sortKey: currentSortKey,
                 minFav: document.getElementById('minFav').value,
-                minPopularitySum: document.getElementById('minPopularitySum')?.value || "",
+                maxFav: document.getElementById('maxFav')?.value || document.getElementById('minFav').value,
+                minPopWins1to4: document.getElementById('minPopWins1to4')?.value ?? "",
+                maxPopWins1to4: document.getElementById('maxPopWins1to4')?.value ?? "",
+                minPopWins5to9: document.getElementById('minPopWins5to9')?.value ?? "",
+                maxPopWins5to9: document.getElementById('maxPopWins5to9')?.value ?? "",
+                minPopWins10plus: document.getElementById('minPopWins10plus')?.value ?? "",
+                maxPopWins10plus: document.getElementById('maxPopWins10plus')?.value ?? "",
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
                 raceCourses: window.raceCourses || ["", "", "", "", ""],
@@ -3133,17 +3313,28 @@
 
                 updateRaceHeaders(window.raceInfo || ["", "", "", "", ""]);
 
-                if (state.minFav) document.getElementById('minFav').value = state.minFav;
-                if (state.minPopularitySum !== undefined) {
-                    const minPopularitySelect = document.getElementById('minPopularitySum');
-                    const rawValue = Number(state.minPopularitySum);
-                    const value = Number.isFinite(rawValue) && rawValue >= 5 && rawValue <= 20
-                        ? String(Math.trunc(rawValue))
-                        : "5";
-                    if (minPopularitySelect) {
-                        minPopularitySelect.value = value;
-                    }
+                if (state.minFav) {
+                    document.getElementById('minFav').value = state.minFav;
+                    syncMaxFavOptions(state.maxFav !== undefined ? state.maxFav : state.minFav);
                 }
+                const restorePopWins = (id, raw) => {
+                    const select = document.getElementById(id);
+                    if (!select || raw === undefined) return;
+                    if (raw === "" || raw === null) {
+                        select.value = "";
+                        return;
+                    }
+                    const n = Number(raw);
+                    select.value = Number.isFinite(n) && n >= 0 && n <= TOTAL_RACES
+                        ? String(Math.trunc(n))
+                        : "";
+                };
+                restorePopWins('minPopWins1to4', state.minPopWins1to4);
+                restorePopWins('maxPopWins1to4', state.maxPopWins1to4 !== undefined ? state.maxPopWins1to4 : state.minPopWins1to4);
+                restorePopWins('minPopWins5to9', state.minPopWins5to9);
+                restorePopWins('maxPopWins5to9', state.maxPopWins5to9 !== undefined ? state.maxPopWins5to9 : state.minPopWins5to9);
+                restorePopWins('minPopWins10plus', state.minPopWins10plus);
+                restorePopWins('maxPopWins10plus', state.maxPopWins10plus !== undefined ? state.maxPopWins10plus : state.minPopWins10plus);
                 currentStatsModes = normalizeStatsModes(Array.isArray(state.statsModes) ? state.statsModes : []);
                 currentStatsMode = 'combo';
                 syncStatsToggleUI();
@@ -3513,24 +3704,53 @@
             const sales = window.win5Sales || null;
             let total = 0;
 
-            const minFav = Number(document.getElementById('minFav').value);
-            const minPopularitySumRaw = Number(document.getElementById('minPopularitySum')?.value || 0);
-            const minPopularitySum = Number.isFinite(minPopularitySumRaw) && minPopularitySumRaw > 0
-                ? minPopularitySumRaw
-                : 0;
-            const masks = getMasks(minFav);
+            const minFavRaw = Number(document.getElementById('minFav').value);
+            const maxFavRaw = Number(document.getElementById('maxFav')?.value || minFavRaw);
+            const minFav = Number.isFinite(minFavRaw) ? Math.trunc(minFavRaw) : 1;
+            const maxFav = Number.isFinite(maxFavRaw) ? Math.trunc(maxFavRaw) : minFav;
+            const favWinsLo = Math.max(1, Math.min(minFav, maxFav, TOTAL_RACES));
+            const favWinsHi = Math.max(1, Math.min(Math.max(minFav, maxFav), TOTAL_RACES));
+            const parseWinCount = (raw) => {
+                if (raw === undefined || raw === null || raw === "") return null;
+                const n = Number(raw);
+                return Number.isFinite(n) && n >= 0 && n <= TOTAL_RACES ? Math.trunc(n) : null;
+            };
+            const parsePopWinsRange = (minId, maxId) => {
+                const minV = parseWinCount(document.getElementById(minId)?.value);
+                const maxV = parseWinCount(document.getElementById(maxId)?.value);
+                if (minV == null && maxV == null) return null;
+                const lo = minV != null ? minV : maxV;
+                const hi = maxV != null ? maxV : minV;
+                return { min: Math.min(lo, hi), max: Math.max(lo, hi) };
+            };
+            const popWins1to4 = parsePopWinsRange('minPopWins1to4', 'maxPopWins1to4');
+            const popWins5to9 = parsePopWinsRange('minPopWins5to9', 'maxPopWins5to9');
+            const popWins10plus = parsePopWinsRange('minPopWins10plus', 'maxPopWins10plus');
+            const needsPopularityFilter = popWins1to4 != null
+                || popWins5to9 != null
+                || popWins10plus != null;
+            const masks = [];
+            for (let k = favWinsLo; k <= favWinsHi; k++) {
+                const part = getMasks(k);
+                for (let i = 0; i < part.length; i++) masks.push(part[i]);
+            }
             const blocks = [];
 
             const blockToHorses = block => block.map(mask => (Math.log2(mask >>> 0) | 0) + 1);
-            const getPopularitySum = horses => {
-                let sum = 0;
+            const getPopularityStats = horses => {
+                let wins1to4 = 0;
+                let wins5to9 = 0;
+                let wins10plus = 0;
                 for (let r = 0; r < TOTAL_RACES; r++) {
                     const ninki = popularityArray[r][horses[r]];
                     if (!Number.isFinite(ninki)) return null;
-                    sum += ninki;
+                    if (ninki <= 4) wins1to4++;
+                    else if (ninki <= 9) wins5to9++;
+                    else wins10plus++;
                 }
-                return sum;
+                return { wins1to4, wins5to9, wins10plus };
             };
+            const inWinRange = (value, range) => range == null || (value >= range.min && value <= range.max);
 
             for (let m = 0; m < masks.length; m++) {
                 const maskArr = masks[m];
@@ -3548,10 +3768,13 @@
 
                 for (let i = 0; i < res.blocks.length; i++) {
                     const block = res.blocks[i];
-                    const horses = minPopularitySum > 0 ? blockToHorses(block) : null;
-                    if (minPopularitySum > 0) {
-                        const popularitySum = getPopularitySum(horses);
-                        if (popularitySum == null || popularitySum < minPopularitySum) continue;
+                    if (needsPopularityFilter) {
+                        const horses = blockToHorses(block);
+                        const stats = getPopularityStats(horses);
+                        if (stats == null) continue;
+                        if (!inWinRange(stats.wins1to4, popWins1to4)) continue;
+                        if (!inWinRange(stats.wins5to9, popWins5to9)) continue;
+                        if (!inWinRange(stats.wins10plus, popWins10plus)) continue;
                     }
                     blocks.push(block);
                 }
@@ -3672,26 +3895,20 @@
         }
 
         function renderBetPageButtons() {
-            const row = document.getElementById('copyBetsRow');
-            if (!row) return;
-            row.replaceChildren();
+            const btn = document.getElementById('voteBtn');
+            if (!btn) return;
 
             const pages = window.__lastBetPages || [];
             if (!pages.length) {
-                row.style.display = 'none';
+                btn.style.display = 'none';
                 return;
             }
 
-            row.style.display = 'flex';
-            const btn = document.createElement('button');
-            btn.className = 'calc-btn';
-            btn.type = 'button';
-            btn.textContent = '投票';
-            btn.addEventListener('click', () => {
+            btn.style.display = '';
+            btn.onclick = () => {
                 openIpatTab();
                 copyBets(window.__currentComboPageIndex || 0);
-            });
-            row.appendChild(btn);
+            };
         }
 
         async function copyBets(pageIndex = 0) {
@@ -5508,19 +5725,14 @@
         }
 
         function fitAll() {
-            const tc = document.querySelector(".toggle-container");
-            const tr = document.querySelector(".toggle-row:not(.toggle-row-sp-2)");
             const container = document.getElementById("raceTables");
             const row = container && container.querySelector(".race-row");
             if (isMobileLayout()) {
                 if (row) row.style.transform = "none";
                 if (container) container.style.height = "";
-                if (tr) { tr.style.transform = "none"; }
-                if (tc) tc.style.height = "";
                 return;
             }
-            const s = fitWithScale(container, row);
-            applyScale(tc, tr, s);
+            fitWithScale(container, row);
         }
 
         let fitTimer = 0;
@@ -6261,6 +6473,41 @@
             }
         }
 
+        function syncMaxFavOptions(preferredMax) {
+            const minEl = document.getElementById('minFav');
+            const maxEl = document.getElementById('maxFav');
+            if (!minEl || !maxEl) return;
+
+            const minN = Number(minEl.value);
+            const lo = Number.isFinite(minN) && minN >= 1 && minN <= TOTAL_RACES
+                ? Math.trunc(minN)
+                : 1;
+            const prevMax = preferredMax !== undefined ? Number(preferredMax) : Number(maxEl.value);
+            maxEl.replaceChildren();
+            for (let n = lo; n <= TOTAL_RACES; n++) {
+                const opt = document.createElement('option');
+                opt.value = String(n);
+                opt.textContent = String(n);
+                maxEl.appendChild(opt);
+            }
+            const nextMax = Number.isFinite(prevMax) && prevMax >= lo && prevMax <= TOTAL_RACES
+                ? Math.trunc(prevMax)
+                : lo;
+            maxEl.value = String(nextMax);
+        }
+
+        function initFavRangeControls() {
+            const minEl = document.getElementById('minFav');
+            const maxEl = document.getElementById('maxFav');
+            if (!minEl || !maxEl) return;
+            minEl.addEventListener('change', () => {
+                syncMaxFavOptions();
+                saveState();
+            });
+            maxEl.addEventListener('change', () => saveState());
+            syncMaxFavOptions();
+        }
+
         createRaceTables();
         applyRaceFocus(isMobileLayout() ? "1" : "all");
         initMobileSwipe();
@@ -6268,6 +6515,8 @@
         updateStatsPopLabel();
         applyShareFromURL();
         loadWin5Tabs();
+        fetchPopularityBandWinRates();
+        initFavRangeControls();
         fitAll();
     </script>
 </body>
