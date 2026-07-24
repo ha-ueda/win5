@@ -772,11 +772,6 @@
             border-radius: 1em;
         }
 
-        .person-name.high-win-rate {
-            color: rgb(198, 40, 40);
-            font-weight: 700;
-        }
-
         .col-odds {
             width: 67px;
             font-feature-settings: "tnum" 1;
@@ -5913,7 +5908,7 @@
         });
 
         function isWinsAtMost(stats, maxWins) {
-            const m = /\((\d+)-\d+-\d+-\d+\)/.exec(stats || "");
+            const m = /\((\d+)-\d+-\d+-\d+(?:\s+[\d.]+%)?\)/.exec(stats || "");
             return !!m && Number(m[1]) <= maxWins;
         }
 
@@ -5923,14 +5918,21 @@
         }
 
         function parseStatsRecord(stats) {
-            const m = /\((\d+)-(\d+)-(\d+)-(\d+)\)/.exec(stats || "");
+            const m = /\((\d+)-(\d+)-(\d+)-(\d+)(?:\s+[\d.]+%)?\)/.exec(stats || "");
             if (!m) return null;
             const wins = Number(m[1]);
             const seconds = Number(m[2]);
             const thirds = Number(m[3]);
             const others = Number(m[4]);
             if (![wins, seconds, thirds, others].every(Number.isFinite)) return null;
-            return { wins, starts: wins + seconds + thirds + others };
+            return { wins, seconds, thirds, others, starts: wins + seconds + thirds + others };
+        }
+
+        function formatPersonStatsDisplay(stats) {
+            const parsed = parseStatsRecord(stats);
+            if (!parsed) return stats || "";
+            const rate = parsed.starts > 0 ? (parsed.wins / parsed.starts) * 100 : 0;
+            return `(${parsed.wins}-${parsed.seconds}-${parsed.thirds}-${parsed.others} ${rate.toFixed(1)}%)`;
         }
 
         function getRaceSurface(row) {
@@ -6299,18 +6301,11 @@
             return getPersonRuleColor("trainerPrevious", row?.dataset?.tid);
         }
 
-        function isStatsWinRateAtLeast(statsText, thresholdPercent) {
-            const stats = parseStatsRecord(statsText);
-            if (!stats || !stats.starts) return false;
-            return (stats.wins / stats.starts) * 100 >= thresholdPercent;
-        }
-
         function applyPersonDisplay() {
             document.querySelectorAll('.custom-select').forEach(sel => {
                 const nameEl = sel.querySelector('.person-name');
                 const statsEl = sel.querySelector('.person-stats');
                 if (!nameEl || !statsEl) return;
-                nameEl.classList.remove("high-win-rate");
                 if (sel.classList.contains("is-scratched")) {
                     nameEl.textContent = "";
                     statsEl.textContent = "";
@@ -6326,11 +6321,7 @@
                 }
                 const stats = currentPerson === 'trainer' ? (sel.dataset.tstats || "") : (sel.dataset.jstats || "");
                 nameEl.textContent = name;
-                statsEl.textContent = stats;
-                nameEl.classList.toggle(
-                    "high-win-rate",
-                    isStatsWinRateAtLeast(stats, 5)
-                );
+                statsEl.textContent = formatPersonStatsDisplay(stats);
             });
         }
 
