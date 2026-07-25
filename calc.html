@@ -1544,7 +1544,6 @@
                     <span class="fav-label">1〜4番人気</span>
                     <select id="minPopWins1to4">
                         <option value="" selected></option>
-                        <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -1554,7 +1553,6 @@
                     <span class="fav-range-sep">〜</span>
                     <select id="maxPopWins1to4">
                         <option value="" selected></option>
-                        <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -1568,7 +1566,6 @@
                     <span class="fav-label">5〜9番人気</span>
                     <select id="minPopWins5to9">
                         <option value="" selected></option>
-                        <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -1578,7 +1575,6 @@
                     <span class="fav-range-sep">〜</span>
                     <select id="maxPopWins5to9">
                         <option value="" selected></option>
-                        <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -1592,7 +1588,6 @@
                     <span class="fav-label">10番人気以下</span>
                     <select id="minPopWins10plus">
                         <option value="" selected></option>
-                        <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -1602,7 +1597,6 @@
                     <span class="fav-range-sep">〜</span>
                     <select id="maxPopWins10plus">
                         <option value="" selected></option>
-                        <option value="0">0</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -3352,21 +3346,24 @@
                 const restorePopWins = (id, raw) => {
                     const select = document.getElementById(id);
                     if (!select || raw === undefined) return;
-                    if (raw === "" || raw === null) {
+                    if (raw === "" || raw === null || raw === "0" || raw === 0) {
                         select.value = "";
                         return;
                     }
                     const n = Number(raw);
-                    select.value = Number.isFinite(n) && n >= 0 && n <= TOTAL_RACES
+                    select.value = Number.isFinite(n) && n >= 1 && n <= TOTAL_RACES
                         ? String(Math.trunc(n))
                         : "";
                 };
                 restorePopWins('minPopWins1to4', state.minPopWins1to4);
-                restorePopWins('maxPopWins1to4', state.maxPopWins1to4 !== undefined ? state.maxPopWins1to4 : state.minPopWins1to4);
+                restorePopWins('maxPopWins1to4', state.maxPopWins1to4);
                 restorePopWins('minPopWins5to9', state.minPopWins5to9);
-                restorePopWins('maxPopWins5to9', state.maxPopWins5to9 !== undefined ? state.maxPopWins5to9 : state.minPopWins5to9);
+                restorePopWins('maxPopWins5to9', state.maxPopWins5to9);
                 restorePopWins('minPopWins10plus', state.minPopWins10plus);
-                restorePopWins('maxPopWins10plus', state.maxPopWins10plus !== undefined ? state.maxPopWins10plus : state.minPopWins10plus);
+                restorePopWins('maxPopWins10plus', state.maxPopWins10plus);
+                syncPopWinsOptions('minPopWins1to4', 'maxPopWins1to4');
+                syncPopWinsOptions('minPopWins5to9', 'maxPopWins5to9');
+                syncPopWinsOptions('minPopWins10plus', 'maxPopWins10plus');
                 currentStatsModes = normalizeStatsModes(Array.isArray(state.statsModes) ? state.statsModes : []);
                 currentStatsMode = 'combo';
                 syncStatsToggleUI();
@@ -3745,14 +3742,14 @@
             const parseWinCount = (raw) => {
                 if (raw === undefined || raw === null || raw === "") return null;
                 const n = Number(raw);
-                return Number.isFinite(n) && n >= 0 && n <= TOTAL_RACES ? Math.trunc(n) : null;
+                return Number.isFinite(n) && n >= 1 && n <= TOTAL_RACES ? Math.trunc(n) : null;
             };
             const parsePopWinsRange = (minId, maxId) => {
                 const minV = parseWinCount(document.getElementById(minId)?.value);
                 const maxV = parseWinCount(document.getElementById(maxId)?.value);
                 if (minV == null && maxV == null) return null;
-                const lo = minV != null ? minV : maxV;
-                const hi = maxV != null ? maxV : minV;
+                const lo = minV != null ? minV : 0;
+                const hi = maxV != null ? maxV : TOTAL_RACES;
                 return { min: Math.min(lo, hi), max: Math.max(lo, hi) };
             };
             const popWins1to4 = parsePopWinsRange('minPopWins1to4', 'maxPopWins1to4');
@@ -6524,6 +6521,65 @@
             maxEl.value = String(nextMax);
         }
 
+        const POP_WINS_PAIRS = [
+            ['minPopWins1to4', 'maxPopWins1to4'],
+            ['minPopWins5to9', 'maxPopWins5to9'],
+            ['minPopWins10plus', 'maxPopWins10plus'],
+        ];
+
+        function syncPopWinsOptions(minId, maxId, changedSide = null) {
+            const minEl = document.getElementById(minId);
+            const maxEl = document.getElementById(maxId);
+            if (!minEl || !maxEl) return;
+
+            let minVal = minEl.value;
+            let maxVal = maxEl.value;
+            let minN = minVal !== "" ? Number(minVal) : null;
+            let maxN = maxVal !== "" ? Number(maxVal) : null;
+
+            if (minN != null && maxN != null && minN > maxN) {
+                if (changedSide === "min") maxVal = "";
+                else if (changedSide === "max") minVal = "";
+                else maxVal = "";
+                maxN = maxVal !== "" ? Number(maxVal) : null;
+                minN = minVal !== "" ? Number(minVal) : null;
+            }
+
+            const minHi = maxN != null && Number.isFinite(maxN) ? Math.trunc(maxN) : TOTAL_RACES;
+            const maxLo = minN != null && Number.isFinite(minN) ? Math.trunc(minN) : 1;
+
+            minEl.replaceChildren();
+            const minBlank = document.createElement("option");
+            minBlank.value = "";
+            minBlank.textContent = "";
+            minEl.appendChild(minBlank);
+            for (let n = 1; n <= minHi; n++) {
+                const opt = document.createElement("option");
+                opt.value = String(n);
+                opt.textContent = String(n);
+                minEl.appendChild(opt);
+            }
+
+            maxEl.replaceChildren();
+            const maxBlank = document.createElement("option");
+            maxBlank.value = "";
+            maxBlank.textContent = "";
+            maxEl.appendChild(maxBlank);
+            for (let n = maxLo; n <= TOTAL_RACES; n++) {
+                const opt = document.createElement("option");
+                opt.value = String(n);
+                opt.textContent = String(n);
+                maxEl.appendChild(opt);
+            }
+
+            minEl.value = minVal !== "" && Number(minVal) >= 1 && Number(minVal) <= minHi
+                ? String(Math.trunc(Number(minVal)))
+                : "";
+            maxEl.value = maxVal !== "" && Number(maxVal) >= maxLo && Number(maxVal) <= TOTAL_RACES
+                ? String(Math.trunc(Number(maxVal)))
+                : "";
+        }
+
         function initFavRangeControls() {
             const minEl = document.getElementById('minFav');
             const maxEl = document.getElementById('maxFav');
@@ -6536,6 +6592,23 @@
             syncMaxFavOptions();
         }
 
+        function initPopWinsRangeControls() {
+            for (const [minId, maxId] of POP_WINS_PAIRS) {
+                const minEl = document.getElementById(minId);
+                const maxEl = document.getElementById(maxId);
+                if (!minEl || !maxEl) continue;
+                minEl.addEventListener("change", () => {
+                    syncPopWinsOptions(minId, maxId, "min");
+                    saveState();
+                });
+                maxEl.addEventListener("change", () => {
+                    syncPopWinsOptions(minId, maxId, "max");
+                    saveState();
+                });
+                syncPopWinsOptions(minId, maxId);
+            }
+        }
+
         createRaceTables();
         applyRaceFocus(isMobileLayout() ? "1" : "all");
         initMobileSwipe();
@@ -6545,6 +6618,7 @@
         loadWin5Tabs();
         fetchPopularityBandWinRates();
         initFavRangeControls();
+        initPopWinsRangeControls();
         fitAll();
     </script>
 </body>
