@@ -1077,6 +1077,7 @@
 
         #minFav,
         #maxFav,
+        .popularity-rank-select,
         #minPopWins1to4,
         #maxPopWins1to4,
         #minPopWins5to9,
@@ -1106,6 +1107,7 @@
 
         #minFav option,
         #maxFav option,
+        .popularity-rank-select option,
         #minPopWins1to4 option,
         #maxPopWins1to4 option,
         #minPopWins5to9 option,
@@ -1117,6 +1119,7 @@
 
         #minFav::-ms-expand,
         #maxFav::-ms-expand,
+        .popularity-rank-select::-ms-expand,
         #minPopWins1to4::-ms-expand,
         #maxPopWins1to4::-ms-expand,
         #minPopWins5to9::-ms-expand,
@@ -1130,6 +1133,8 @@
         #minFav:focus-visible,
         #maxFav:focus,
         #maxFav:focus-visible,
+        .popularity-rank-select:focus,
+        .popularity-rank-select:focus-visible,
         #minPopWins1to4:focus,
         #minPopWins1to4:focus-visible,
         #maxPopWins1to4:focus,
@@ -1203,7 +1208,7 @@
 
         .fav-filter-line {
             display: grid;
-            grid-template-columns: 8em 50px auto 50px 2.5em minmax(3.2em, auto);
+            grid-template-columns: 12em 50px 2em 50px 2.5em 7em;
             align-items: center;
             justify-content: center;
             column-gap: 6px;
@@ -1216,6 +1221,24 @@
             font-size: 14px;
             letter-spacing: 0.02em;
             white-space: nowrap;
+        }
+
+        .fav-popularity-range {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .fav-popularity-range .popularity-rank-select {
+            width: 44px;
+            height: 38px;
+            padding: 0 4px;
+        }
+
+        .fav-popularity-range .fav-range-sep {
+            min-width: 1em;
         }
 
         .fav-range-sep {
@@ -1236,7 +1259,8 @@
             color: #666;
             line-height: 1.25;
             white-space: nowrap;
-            justify-self: end;
+            width: 7em;
+            justify-self: start;
         }
 
         .fav-rate:empty {
@@ -1541,7 +1565,16 @@
             <div class="fav-filter-arrow" aria-hidden="true">↓</div>
             <div class="fav-filter-group">
                 <div class="fav-filter-line">
-                    <span class="fav-label">1〜4番人気</span>
+                    <span class="fav-popularity-range">
+                        <select id="minPopularityBand1" class="popularity-rank-select" aria-label="人気範囲1の下限">
+                            <option value="" selected></option>
+                        </select>
+                        <span class="fav-range-sep">〜</span>
+                        <select id="maxPopularityBand1" class="popularity-rank-select" aria-label="人気範囲1の上限">
+                            <option value="" selected></option>
+                        </select>
+                        <span>番人気</span>
+                    </span>
                     <select id="minPopWins1to4">
                         <option value="" selected></option>
                         <option value="1">1</option>
@@ -1560,10 +1593,19 @@
                         <option value="5">5</option>
                     </select>
                     <span class="fav-suffix">勝</span>
-                    <span class="fav-rate" data-pop-band="1to4"></span>
+                    <span id="popularityRateBand1" class="fav-rate"></span>
                 </div>
                 <div class="fav-filter-line">
-                    <span class="fav-label">5〜9番人気</span>
+                    <span class="fav-popularity-range">
+                        <select id="minPopularityBand2" class="popularity-rank-select" aria-label="人気範囲2の下限">
+                            <option value="" selected></option>
+                        </select>
+                        <span class="fav-range-sep">〜</span>
+                        <select id="maxPopularityBand2" class="popularity-rank-select" aria-label="人気範囲2の上限">
+                            <option value="" selected></option>
+                        </select>
+                        <span>番人気</span>
+                    </span>
                     <select id="minPopWins5to9">
                         <option value="" selected></option>
                         <option value="1">1</option>
@@ -1582,10 +1624,19 @@
                         <option value="5">5</option>
                     </select>
                     <span class="fav-suffix">勝</span>
-                    <span class="fav-rate" data-pop-band="5to9"></span>
+                    <span id="popularityRateBand2" class="fav-rate"></span>
                 </div>
                 <div class="fav-filter-line">
-                    <span class="fav-label">10番人気以下</span>
+                    <span class="fav-popularity-range">
+                        <select id="minPopularityBand3" class="popularity-rank-select" aria-label="人気範囲3の下限">
+                            <option value="" selected></option>
+                        </select>
+                        <span class="fav-range-sep">〜</span>
+                        <select id="maxPopularityBand3" class="popularity-rank-select" aria-label="人気範囲3の上限">
+                            <option value="" selected></option>
+                        </select>
+                        <span>番人気</span>
+                    </span>
                     <select id="minPopWins10plus">
                         <option value="" selected></option>
                         <option value="1">1</option>
@@ -1604,7 +1655,7 @@
                         <option value="5">5</option>
                     </select>
                     <span class="fav-suffix">勝</span>
-                    <span class="fav-rate" data-pop-band="10plus"></span>
+                    <span id="popularityRateBand3" class="fav-rate"></span>
                 </div>
             </div>
         </div>
@@ -2301,23 +2352,82 @@
             return backgroundRuleProbabilitiesPromise;
         }
 
+        const POPULARITY_RANGE_ROWS = [
+            {
+                key: "band1",
+                minId: "minPopularityBand1",
+                maxId: "maxPopularityBand1",
+                minWinsId: "minPopWins1to4",
+                maxWinsId: "maxPopWins1to4",
+                rateId: "popularityRateBand1",
+            },
+            {
+                key: "band2",
+                minId: "minPopularityBand2",
+                maxId: "maxPopularityBand2",
+                minWinsId: "minPopWins5to9",
+                maxWinsId: "maxPopWins5to9",
+                rateId: "popularityRateBand2",
+            },
+            {
+                key: "band3",
+                minId: "minPopularityBand3",
+                maxId: "maxPopularityBand3",
+                minWinsId: "minPopWins10plus",
+                maxWinsId: "maxPopWins10plus",
+                rateId: "popularityRateBand3",
+            },
+        ];
+
         let popularityBandWinRatesPromise = null;
+        let popularityBandWinRatesPayload = null;
+
+        function getSelectedPopularityRange(row) {
+            const minValue = normalizePopularityRank(document.getElementById(row.minId)?.value);
+            const maxValue = normalizePopularityRank(document.getElementById(row.maxId)?.value);
+            if (minValue === "" && maxValue === "") return null;
+
+            const min = minValue === "" ? 1 : Number(minValue);
+            const max = maxValue === "" ? HORSE_MAX : Number(maxValue);
+            if (min > max) return null;
+            return { min, max };
+        }
+
+        function updatePopularityRangeWinRates() {
+            const payload = popularityBandWinRatesPayload;
+            const popularities = payload?.popularities;
+            const totalRaces = Number(payload?.totalRaces);
+
+            for (const row of POPULARITY_RANGE_ROWS) {
+                const rateEl = document.getElementById(row.rateId);
+                if (!rateEl) continue;
+                rateEl.textContent = "";
+                rateEl.removeAttribute("title");
+
+                const range = getSelectedPopularityRange(row);
+                if (!range || !popularities || typeof popularities !== "object") continue;
+
+                let wins = 0;
+                let hasAllRanks = true;
+                for (let ninki = range.min; ninki <= range.max; ninki++) {
+                    const rankWins = Number(popularities[String(ninki)]?.wins);
+                    if (!Number.isFinite(rankWins)) {
+                        hasAllRanks = false;
+                        break;
+                    }
+                    wins += rankWins;
+                }
+                if (!hasAllRanks || !Number.isFinite(totalRaces) || totalRaces <= 0) continue;
+
+                rateEl.textContent = formatRuleProbability((wins / totalRaces) * 100);
+                rateEl.title = `${wins.toLocaleString()} / ${totalRaces.toLocaleString()}R`;
+            }
+        }
 
         function applyPopularityBandWinRates(payload) {
-            const bands = payload?.bands;
-            if (!bands || typeof bands !== "object") return;
-            document.querySelectorAll(".fav-rate[data-pop-band]").forEach(el => {
-                const key = el.dataset.popBand;
-                const probability = formatRuleProbability(bands[key]?.probability);
-                el.textContent = probability === "-" ? "" : probability;
-                const wins = Number(bands[key]?.wins);
-                const total = Number(payload?.totalRaces);
-                if (Number.isFinite(wins) && Number.isFinite(total) && total > 0) {
-                    el.title = `${wins.toLocaleString()} / ${total.toLocaleString()}R`;
-                } else {
-                    el.removeAttribute("title");
-                }
-            });
+            if (!payload?.popularities || typeof payload.popularities !== "object") return;
+            popularityBandWinRatesPayload = payload;
+            updatePopularityRangeWinRates();
         }
 
         async function fetchPopularityBandWinRates() {
@@ -3257,6 +3367,13 @@
                 maxPopWins5to9: document.getElementById('maxPopWins5to9')?.value ?? "",
                 minPopWins10plus: document.getElementById('minPopWins10plus')?.value ?? "",
                 maxPopWins10plus: document.getElementById('maxPopWins10plus')?.value ?? "",
+                popularityRanges: Object.fromEntries(POPULARITY_RANGE_ROWS.map(row => [
+                    row.key,
+                    {
+                        min: document.getElementById(row.minId)?.value ?? "",
+                        max: document.getElementById(row.maxId)?.value ?? "",
+                    },
+                ])),
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
                 raceCourses: window.raceCourses || ["", "", "", "", ""],
@@ -3364,6 +3481,13 @@
                 syncPopWinsOptions('minPopWins1to4', 'maxPopWins1to4');
                 syncPopWinsOptions('minPopWins5to9', 'maxPopWins5to9');
                 syncPopWinsOptions('minPopWins10plus', 'maxPopWins10plus');
+                for (const row of POPULARITY_RANGE_ROWS) {
+                    const savedRange = state.popularityRanges?.[row.key];
+                    syncPopularityRangeOptions(row, null, {
+                        min: savedRange?.min ?? "",
+                        max: savedRange?.max ?? "",
+                    });
+                }
                 currentStatsModes = normalizeStatsModes(Array.isArray(state.statsModes) ? state.statsModes : []);
                 currentStatsMode = 'combo';
                 syncStatsToggleUI();
@@ -3752,12 +3876,14 @@
                 const hi = maxV != null ? maxV : TOTAL_RACES;
                 return { min: Math.min(lo, hi), max: Math.max(lo, hi) };
             };
-            const popWins1to4 = parsePopWinsRange('minPopWins1to4', 'maxPopWins1to4');
-            const popWins5to9 = parsePopWinsRange('minPopWins5to9', 'maxPopWins5to9');
-            const popWins10plus = parsePopWinsRange('minPopWins10plus', 'maxPopWins10plus');
-            const needsPopularityFilter = popWins1to4 != null
-                || popWins5to9 != null
-                || popWins10plus != null;
+            const popularityFilters = POPULARITY_RANGE_ROWS.flatMap(row => {
+                const popularityRange = getSelectedPopularityRange(row);
+                const winsRange = parsePopWinsRange(row.minWinsId, row.maxWinsId);
+                return popularityRange && winsRange
+                    ? [{ popularityRange, winsRange }]
+                    : [];
+            });
+            const needsPopularityFilter = popularityFilters.length > 0;
             const masks = [];
             for (let k = favWinsLo; k <= favWinsHi; k++) {
                 const part = getMasks(k);
@@ -3766,18 +3892,17 @@
             const blocks = [];
 
             const blockToHorses = block => block.map(mask => (Math.log2(mask >>> 0) | 0) + 1);
-            const getPopularityStats = horses => {
-                let wins1to4 = 0;
-                let wins5to9 = 0;
-                let wins10plus = 0;
+            const getPopularityCounts = horses => {
+                const counts = Array(popularityFilters.length).fill(0);
                 for (let r = 0; r < TOTAL_RACES; r++) {
                     const ninki = popularityArray[r][horses[r]];
                     if (!Number.isFinite(ninki)) return null;
-                    if (ninki <= 4) wins1to4++;
-                    else if (ninki <= 9) wins5to9++;
-                    else wins10plus++;
+                    for (let i = 0; i < popularityFilters.length; i++) {
+                        const range = popularityFilters[i].popularityRange;
+                        if (ninki >= range.min && ninki <= range.max) counts[i]++;
+                    }
                 }
-                return { wins1to4, wins5to9, wins10plus };
+                return counts;
             };
             const inWinRange = (value, range) => range == null || (value >= range.min && value <= range.max);
 
@@ -3799,11 +3924,9 @@
                     const block = res.blocks[i];
                     if (needsPopularityFilter) {
                         const horses = blockToHorses(block);
-                        const stats = getPopularityStats(horses);
-                        if (stats == null) continue;
-                        if (!inWinRange(stats.wins1to4, popWins1to4)) continue;
-                        if (!inWinRange(stats.wins5to9, popWins5to9)) continue;
-                        if (!inWinRange(stats.wins10plus, popWins10plus)) continue;
+                        const counts = getPopularityCounts(horses);
+                        if (counts == null) continue;
+                        if (counts.some((count, index) => !inWinRange(count, popularityFilters[index].winsRange))) continue;
                     }
                     blocks.push(block);
                 }
@@ -6521,6 +6644,71 @@
             maxEl.value = String(nextMax);
         }
 
+        function normalizePopularityRank(raw) {
+            if (raw === undefined || raw === null || raw === "") return "";
+            const n = Number(raw);
+            return Number.isInteger(n) && n >= 1 && n <= HORSE_MAX ? String(n) : "";
+        }
+
+        function syncPopularityRangeOptions(row, changedSide = null, preferred = null) {
+            const minEl = document.getElementById(row.minId);
+            const maxEl = document.getElementById(row.maxId);
+            if (!minEl || !maxEl) return;
+
+            let minVal = normalizePopularityRank(preferred ? preferred.min : minEl.value);
+            let maxVal = normalizePopularityRank(preferred ? preferred.max : maxEl.value);
+            if (minVal !== "" && maxVal !== "" && Number(minVal) > Number(maxVal)) {
+                if (changedSide === "min") {
+                    maxVal = minVal;
+                } else if (changedSide === "max") {
+                    minVal = maxVal;
+                } else {
+                    const lo = Math.min(Number(minVal), Number(maxVal));
+                    const hi = Math.max(Number(minVal), Number(maxVal));
+                    minVal = String(lo);
+                    maxVal = String(hi);
+                }
+            }
+
+            const minLimit = maxVal === "" ? HORSE_MAX : Number(maxVal);
+            const maxStart = minVal === "" ? 1 : Number(minVal);
+            const fillOptions = (select, start, end, selectedValue) => {
+                select.replaceChildren();
+                const blank = document.createElement("option");
+                blank.value = "";
+                blank.textContent = "";
+                select.appendChild(blank);
+                for (let n = start; n <= end; n++) {
+                    const option = document.createElement("option");
+                    option.value = String(n);
+                    option.textContent = String(n);
+                    select.appendChild(option);
+                }
+                select.value = selectedValue;
+            };
+
+            fillOptions(minEl, 1, minLimit, minVal);
+            fillOptions(maxEl, maxStart, HORSE_MAX, maxVal);
+            updatePopularityRangeWinRates();
+        }
+
+        function initPopularityRangeControls() {
+            for (const row of POPULARITY_RANGE_ROWS) {
+                const minEl = document.getElementById(row.minId);
+                const maxEl = document.getElementById(row.maxId);
+                if (!minEl || !maxEl) continue;
+                minEl.addEventListener("change", () => {
+                    syncPopularityRangeOptions(row, "min");
+                    saveState();
+                });
+                maxEl.addEventListener("change", () => {
+                    syncPopularityRangeOptions(row, "max");
+                    saveState();
+                });
+                syncPopularityRangeOptions(row);
+            }
+        }
+
         const POP_WINS_PAIRS = [
             ['minPopWins1to4', 'maxPopWins1to4'],
             ['minPopWins5to9', 'maxPopWins5to9'],
@@ -6618,6 +6806,7 @@
         loadWin5Tabs();
         fetchPopularityBandWinRates();
         initFavRangeControls();
+        initPopularityRangeControls();
         initPopWinsRangeControls();
         fitAll();
     </script>
