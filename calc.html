@@ -1208,7 +1208,7 @@
 
         .fav-filter-line {
             display: grid;
-            grid-template-columns: 12em 50px 2em 50px 2.5em 7em;
+            grid-template-columns: 12em auto 7em;
             align-items: center;
             justify-content: center;
             column-gap: 6px;
@@ -1221,6 +1221,7 @@
             font-size: 14px;
             letter-spacing: 0.02em;
             white-space: nowrap;
+            justify-self: center;
         }
 
         .fav-popularity-range {
@@ -1229,6 +1230,7 @@
             gap: 4px;
             color: #333;
             white-space: nowrap;
+            justify-self: center;
         }
 
         .fav-popularity-range .popularity-rank-select {
@@ -1248,6 +1250,18 @@
             user-select: none;
         }
 
+        .fav-win-range {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-width: 0;
+            justify-self: center;
+        }
+
+        .fav-win-range .fav-range-sep {
+            min-width: 1em;
+        }
+
         .fav-suffix {
             color: #555;
             font-size: 14px;
@@ -1260,7 +1274,7 @@
             line-height: 1.25;
             white-space: nowrap;
             width: 7em;
-            justify-self: start;
+            justify-self: center;
         }
 
         .fav-rate:empty {
@@ -1544,22 +1558,24 @@
             <div class="fav-filter-group">
                 <div class="fav-filter-line">
                     <span class="fav-label">本命馬</span>
-                    <select id="minFav">
-                        <option value="1" selected>1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                    </select>
-                    <span class="fav-range-sep">〜</span>
-                    <select id="maxFav">
-                        <option value="1" selected>1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                    </select>
-                    <span class="fav-suffix">勝</span>
+                    <span class="fav-win-range">
+                        <select id="minFav">
+                            <option value="1" selected>1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                        <span class="fav-range-sep">〜</span>
+                        <select id="maxFav">
+                            <option value="1" selected>1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                        <span class="fav-suffix">勝</span>
+                    </span>
                 </div>
             </div>
             <div class="fav-filter-arrow" aria-hidden="true">↓</div>
@@ -1575,24 +1591,26 @@
                         </select>
                         <span>番人気</span>
                     </span>
-                    <select id="minPopWins1to4">
-                        <option value="" selected></option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                    </select>
-                    <span class="fav-range-sep">〜</span>
-                    <select id="maxPopWins1to4">
-                        <option value="" selected></option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                    </select>
-                    <span class="fav-suffix">勝</span>
+                    <span class="fav-win-range">
+                        <select id="minPopWins1to4">
+                            <option value="" selected></option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                        <span class="fav-range-sep">〜</span>
+                        <select id="maxPopWins1to4">
+                            <option value="" selected></option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                        <span class="fav-suffix">勝</span>
+                    </span>
                     <span id="popularityRateBand1" class="fav-rate"></span>
                 </div>
                 <div class="fav-filter-line">
@@ -1606,24 +1624,26 @@
                         </select>
                         <span>番人気</span>
                     </span>
-                    <select id="minPopWins5to9">
-                        <option value="" selected></option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                    </select>
-                    <span class="fav-range-sep">〜</span>
-                    <select id="maxPopWins5to9">
-                        <option value="" selected></option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                    </select>
-                    <span class="fav-suffix">勝</span>
+                    <span class="fav-win-range">
+                        <select id="minPopWins5to9">
+                            <option value="" selected></option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                        <span class="fav-range-sep">〜</span>
+                        <select id="maxPopWins5to9">
+                            <option value="" selected></option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                        <span class="fav-suffix">勝</span>
+                    </span>
                     <span id="popularityRateBand2" class="fav-rate"></span>
                 </div>
                 <div class="fav-filter-line">
@@ -1637,24 +1657,26 @@
                         </select>
                         <span>番人気</span>
                     </span>
-                    <select id="minPopWins10plus">
-                        <option value="" selected></option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                    </select>
-                    <span class="fav-range-sep">〜</span>
-                    <select id="maxPopWins10plus">
-                        <option value="" selected></option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                    </select>
-                    <span class="fav-suffix">勝</span>
+                    <span class="fav-win-range">
+                        <select id="minPopWins10plus">
+                            <option value="" selected></option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                        <span class="fav-range-sep">〜</span>
+                        <select id="maxPopWins10plus">
+                            <option value="" selected></option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                        <span class="fav-suffix">勝</span>
+                    </span>
                     <span id="popularityRateBand3" class="fav-rate"></span>
                 </div>
             </div>
