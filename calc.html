@@ -4571,15 +4571,36 @@
             clearAllHorseNames();
         }
 
-        async function fetchSelectedWin5Data() {
-            const idx = document.getElementById("win5TabSelect").value;
+        let win5DataFetchInFlight = null;
 
+        async function fetchSelectedWin5Data() {
+            if (win5DataFetchInFlight) return win5DataFetchInFlight;
+
+            const idx = document.getElementById("win5TabSelect").value;
             const u = new URL(WIN5_API);
             u.searchParams.set("tab", idx);
             u.searchParams.set("_", String(Date.now()));
 
-            const res = await fetch(u.toString(), { cache: "no-store" });
-            return res.json();
+            win5DataFetchInFlight = (async () => {
+                const res = await fetch(u.toString(), { cache: "no-store" });
+                const text = await res.text();
+                let json;
+                try {
+                    json = JSON.parse(text);
+                } catch (_) {
+                    return { ok: false, error: `HTTP ${res.status}` };
+                }
+                if (!res.ok) {
+                    return { ok: false, error: json?.error || `HTTP ${res.status}` };
+                }
+                return json;
+            })();
+
+            try {
+                return await win5DataFetchInFlight;
+            } finally {
+                win5DataFetchInFlight = null;
+            }
         }
 
         async function loadWin5Data() {
