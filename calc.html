@@ -4573,27 +4573,102 @@
 
         let win5DataFetchInFlight = null;
 
-        async function fetchSelectedWin5Data() {
+        async function mapWin5Requests(items, limit, mapper) {
+            const values = Array.isArray(items) ? items : [];
+            const results = new Array(values.length);
+            let nextIndex = 0;
+            const workerCount = Math.min(Math.max(Number(limit) || 1, 1), values.length);
+
+            async function run() {
+                while (true) {
+                    const index = nextIndex++;
+                    if (index >= values.length) return;
+                    results[index] = await mapper(values[index], index);
+                }
+            }
+
+            await Promise.all(Array.from({ length: workerCount }, () => run()));
+            return results;
+        }
+
+        async function fetchWin5Json(url) {
+            const res = await fetch(url, { cache: "no-store" });
+            const text = await res.text();
+            let json;
+            try {
+                json = JSON.parse(text);
+            } catch (_) {
+                return { ok: false, error: `HTTP ${res.status}` };
+            }
+            if (!res.ok) return { ok: false, error: json?.error || `HTTP ${res.status}` };
+            return json;
+        }
+
+        async function fetchSelectedWin5Data({ mode = "all" } = {}) {
             if (win5DataFetchInFlight) return win5DataFetchInFlight;
 
             const idx = document.getElementById("win5TabSelect").value;
-            const u = new URL(WIN5_API);
-            u.searchParams.set("tab", idx);
-            u.searchParams.set("_", String(Date.now()));
 
             win5DataFetchInFlight = (async () => {
-                const res = await fetch(u.toString(), { cache: "no-store" });
-                const text = await res.text();
-                let json;
-                try {
-                    json = JSON.parse(text);
-                } catch (_) {
-                    return { ok: false, error: `HTTP ${res.status}` };
+                const manifestUrl = new URL("win5-manifest", WIN5_API);
+                manifestUrl.searchParams.set("tab", idx);
+                manifestUrl.searchParams.set("_", String(Date.now()));
+                const manifest = await fetchWin5Json(manifestUrl.toString());
+                if (!manifest.ok) return manifest;
+
+                const raceMeta = Array.isArray(manifest.races) ? manifest.races : [];
+                const raceErrors = [];
+                const races = await mapWin5Requests(raceMeta, 2, async (meta, raceIndex) => {
+                    const emptyRace = {
+                        url: meta?.url || "",
+                        startTime: "",
+                        courseInfo: "",
+                        horses: [],
+                        jockeys: [],
+                        trainers: [],
+                        jockeyIds: [],
+                        trainerIds: [],
+                        umabans: [],
+                        wakuClasses: [],
+                        statuses: [],
+                        odds: [],
+                        ninki: [],
+                    };
+                    try {
+                        const raceUrl = new URL("win5-race", WIN5_API);
+                        raceUrl.searchParams.set("race_id", meta?.raceId || "");
+                        raceUrl.searchParams.set("source", manifest.source || "upcoming");
+                        raceUrl.searchParams.set("mode", mode === "data" ? "data" : (mode === "odds" ? "odds" : "all"));
+                        raceUrl.searchParams.set("_", String(Date.now()));
+                        const raceJson = await fetchWin5Json(raceUrl.toString());
+                        if (!raceJson.ok || !raceJson.race) {
+                            raceErrors.push({ race: raceIndex + 1, url: meta?.url || "", error: raceJson.error || "race data unavailable" });
+                            return emptyRace;
+                        }
+                        return { ...emptyRace, ...raceJson.race };
+                    } catch (e) {
+                        raceErrors.push({ race: raceIndex + 1, url: meta?.url || "", error: String(e) });
+                        return emptyRace;
+                    }
+                });
+
+                if (!raceMeta.length || raceErrors.length === raceMeta.length) {
+                    return { ok: false, error: "WIN5 race data unavailable", raceErrors };
                 }
-                if (!res.ok) {
-                    return { ok: false, error: json?.error || `HTTP ${res.status}` };
-                }
-                return json;
+
+                return {
+                    ok: true,
+                    source: manifest.source || "",
+                    sourceDate: manifest.sourceDate || "",
+                    activeTab: manifest.activeTab ?? 0,
+                    tabs: manifest.tabs || [],
+                    raceInfo: manifest.raceInfo || [],
+                    raceTimes: races.map(r => r?.startTime || ""),
+                    raceCourses: races.map(r => r?.courseInfo || ""),
+                    races,
+                    sales: manifest.sales || null,
+                    raceErrors,
+                };
             })();
 
             try {
@@ -4605,7 +4680,7 @@
 
         async function loadWin5Data() {
             try {
-                const json = await fetchSelectedWin5Data();
+                const json = await fetchSelectedWin5Data({ mode: "all" });
                 if (!json.ok) {
                     showToast("取得に失敗しました", { type: "error" });
                     return;
@@ -4677,7 +4752,7 @@
                     return;
                 }
 
-                const json = await fetchSelectedWin5Data();
+                const json = await fetchSelectedWin5Data({ mode: "odds" });
                 if (!json.ok) {
                     showToast("オッズ取得に失敗しました", { type: "error" });
                     return;
