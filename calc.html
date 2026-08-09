@@ -1817,7 +1817,6 @@
 
         const TOTAL_RACES = 5;
         const HORSE_MAX = 18;
-        const UMACA_MAX_ROWS_PER_PAGE = 50;
         const MARKS = ["", "✓", "◎"];
         const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱'];
         const STORAGE_KEY = 'win5_state_v9';
@@ -3956,16 +3955,16 @@
 
             const count = blocks.length;
             const displayBlocks = fullyMergeBlocksStableBit(blocks);
-            const displayPages = splitBetBlocksForVoting(displayBlocks);
 
             total = count;
 
             window.__lastDisplayBlocks = [];
-            window.__lastBetPages = displayPages;
-            window.__comboPageRowCounts = displayPages.map(pageBlocks => pageBlocks.length);
+            // Display all rows in one continuous list. vote.js performs the
+            // 50-row batching only when the UMACA input is actually executed.
+            window.__lastBetPages = displayBlocks.length ? [displayBlocks] : [];
             window.__payoutCtx = { supportRates, sales };
             renderBetPageButtons();
-            renderComboPage(0);
+        renderComboPage();
 
             document.getElementById('result').innerHTML =
                 `買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 組`;
@@ -4000,21 +3999,12 @@
             return lines.join("\n");
         }
 
-        function splitBetBlocksForVoting(blocks) {
-            const pages = [];
-            for (let i = 0; i < blocks.length; i += UMACA_MAX_ROWS_PER_PAGE) {
-                pages.push(blocks.slice(i, i + UMACA_MAX_ROWS_PER_PAGE));
-            }
-            return pages;
-        }
-
-        function renderComboPage(pageIndex = 0) {
+        function renderComboPage() {
             const combosEl = document.getElementById('combos');
             const pager = document.getElementById('comboPager');
             if (!combosEl) return;
 
             const pages = window.__lastBetPages || [];
-            const rowCounts = window.__comboPageRowCounts || [];
             const ctx = window.__payoutCtx;
             if (!pages.length || !ctx) {
                 window.__lastDisplayBlocks = [];
@@ -4026,10 +4016,9 @@
                 return;
             }
 
-            const safeIndex = Math.max(0, Math.min(pageIndex, pages.length - 1));
-            const displayBlocks = pages[safeIndex] || [];
+            const displayBlocks = pages[0] || [];
             window.__lastDisplayBlocks = displayBlocks;
-            window.__currentComboPageIndex = safeIndex;
+            window.__currentComboPageIndex = 0;
 
             const comboList = ['<div class="combo-grid">'];
             for (let i = 0; i < displayBlocks.length; i++) {
@@ -4042,30 +4031,10 @@
             combosEl.replaceChildren(container);
             attachComboEvents();
 
-            if (!pager) return;
-            pager.replaceChildren();
-            if (pages.length <= 1) {
+            if (pager) {
+                pager.replaceChildren();
                 pager.style.display = 'none';
-                return;
             }
-
-            pager.style.display = 'flex';
-            const start = safeIndex * UMACA_MAX_ROWS_PER_PAGE + 1;
-            const end = start + (rowCounts[safeIndex] || 0) - 1;
-            const label = document.createElement('span');
-            label.className = 'combo-page-label';
-            label.textContent = `${start}-${end}行 / ${pages.length}ページ`;
-            pager.appendChild(label);
-
-            pages.forEach((_, index) => {
-                const btn = document.createElement('button');
-                btn.className = 'combo-page-btn';
-                btn.type = 'button';
-                btn.textContent = String(index + 1);
-                btn.classList.toggle('active', index === safeIndex);
-                btn.addEventListener('click', () => renderComboPage(index));
-                pager.appendChild(btn);
-            });
         }
 
         function renderBetPageButtons() {
@@ -4078,23 +4047,32 @@
                 return;
             }
 
+            const totalRows = pages.reduce((sum, page) => sum + page.length, 0);
             btn.style.display = '';
+            btn.textContent = '投票';
+            btn.title = `${totalRows}点を投票`;
             btn.onclick = () => {
                 openIpatTab();
-                copyBets(window.__currentComboPageIndex || 0);
+                copyBets();
             };
         }
 
-        async function copyBets(pageIndex = 0) {
+        async function copyBets(pageIndex = null) {
             const pages = window.__lastBetPages || [];
-            const blocks = pages[pageIndex] || window.__lastDisplayBlocks;
+            const blocks = pageIndex == null
+                ? pages.flat()
+                : (pages[pageIndex] || window.__lastDisplayBlocks);
             if (!blocks || !blocks.length) return;
 
             const text = buildBetsCopyTextFromBlocks(blocks);
             if (!text) return;
 
             const ok = await copyToClipboard(text);
-            if (!ok) showToast("コピーに失敗しました", { type: "error" });
+            if (!ok) {
+                showToast("買い目のコピーに失敗しました", { type: "error" });
+                return;
+            }
+            showToast("コピーしました");
         }
 
         function openIpatTab() {
