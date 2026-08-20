@@ -1816,6 +1816,7 @@
         const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱'];
         const STORAGE_KEY = 'win5_state_v9';
         const STORAGE_KEY_OLD = 'win5_state_v8';
+        const BG_RULE_SELECTION_VERSION = 5;
         const WIN5_API = "https://win5.cooopew.workers.dev/";
         const SHARE_COLOR_TABLE_V1 = [
             "#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d",
@@ -1837,34 +1838,54 @@
         }).join(", ")})`;
         const RULE_BG_COLOR = BG_RULE_COLOR_PALETTE[0];
         const BG_PROBABILITY_TARGET = 3;
-        let jockeyWins1ProbabilityTable = {
-            "芝": [
-                { starts: 10, probability: 10.37 },
-                { starts: 20, probability: 4.56 },
-                { starts: 30, probability: 2.90 },
-                { starts: 40, probability: 0.83 },
-                { starts: 50, probability: 0.00 },
-                { starts: 60, probability: 0.00 }
-            ],
-            "ダ": [
-                { starts: 10, probability: 9.91 },
-                { starts: 20, probability: 3.02 },
-                { starts: 30, probability: 0.00 },
-                { starts: 40, probability: 0.00 }
-            ]
+        let jockeyWinsProbabilityTables = {
+            1: {
+                "芝": [
+                    { starts: 10, probability: 10.37 },
+                    { starts: 20, probability: 4.56 },
+                    { starts: 30, probability: 2.90 },
+                    { starts: 40, probability: 0.83 },
+                    { starts: 50, probability: 0.00 },
+                    { starts: 60, probability: 0.00 }
+                ],
+                "ダ": [
+                    { starts: 10, probability: 9.91 },
+                    { starts: 20, probability: 3.02 },
+                    { starts: 30, probability: 0.00 },
+                    { starts: 40, probability: 0.00 }
+                ]
+            },
+            2: {
+                "芝": [{ starts: 42, probability: 2.34 }],
+                "ダ": [{ starts: 26, probability: 2.82 }]
+            },
+            3: {
+                "芝": [{ starts: 53, probability: 2.34 }],
+                "ダ": [{ starts: 30, probability: 2.42 }]
+            }
         };
-        let trainerWins1ProbabilityTable = {
-            "芝": [
-                { starts: 10, probability: 26.56 },
-                { starts: 20, probability: 3.73 },
-                { starts: 30, probability: 0.41 },
-                { starts: 40, probability: 0.00 }
-            ],
-            "ダ": [
-                { starts: 10, probability: 12.50 },
-                { starts: 20, probability: 0.43 },
-                { starts: 30, probability: 0.00 }
-            ]
+        let trainerWinsProbabilityTables = {
+            1: {
+                "芝": [
+                    { starts: 10, probability: 26.56 },
+                    { starts: 20, probability: 3.73 },
+                    { starts: 30, probability: 0.41 },
+                    { starts: 40, probability: 0.00 }
+                ],
+                "ダ": [
+                    { starts: 10, probability: 12.50 },
+                    { starts: 20, probability: 0.43 },
+                    { starts: 30, probability: 0.00 }
+                ]
+            },
+            2: {
+                "芝": [{ starts: 29, probability: 2.73 }],
+                "ダ": [{ starts: 20, probability: 2.02 }]
+            },
+            3: {
+                "芝": [{ starts: 38, probability: 2.73 }],
+                "ダ": [{ starts: 20, probability: 2.42 }]
+            }
         };
         const BACKGROUND_RULES = [
             {
@@ -1887,11 +1908,39 @@
                 match: row => hasAnyMark(row) && isJockeyWins1Prob3Band(row)
             },
             {
+                key: "jockeyWins2Prob3",
+                label: "1年間で2勝以下の騎手",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[1],
+                match: row => hasAnyMark(row) && isWinsProb3Band(row, "jockey", 2)
+            },
+            {
+                key: "jockeyWins3Prob3",
+                label: "1年間で3勝以下の騎手",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[1],
+                match: row => hasAnyMark(row) && isWinsProb3Band(row, "jockey", 3)
+            },
+            {
                 key: "trainerWins1Prob3",
                 label: "1年間で1勝以下の調教師",
                 probabilityLabel: "-",
                 color: BG_RULE_COLOR_PALETTE[2],
                 match: row => hasAnyMark(row) && isWins1Prob3Band(row, "trainer")
+            },
+            {
+                key: "trainerWins2Prob3",
+                label: "1年間で2勝以下の調教師",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[2],
+                match: row => hasAnyMark(row) && isWinsProb3Band(row, "trainer", 2)
+            },
+            {
+                key: "trainerWins3Prob3",
+                label: "1年間で3勝以下の調教師",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[2],
+                match: row => hasAnyMark(row) && isWinsProb3Band(row, "trainer", 3)
             },
             {
                 key: "jockeyPreviousWin5Win",
@@ -1936,11 +1985,13 @@
                 match: row => hasAnyMark(row)
                     && isTrainerWithoutDailyMultiWin5Years(row)
                     && getSelectedTrainerRaceCount(row) >= 2
-            }
+            },
         ];
 
         let backgroundMode = false;
-        let selectedBgRuleKeys = new Set(["redOdds"]);
+        let selectedBgRuleKeys = new Set(
+            BACKGROUND_RULES.filter(isEnabledBackgroundRule).map(rule => rule.key)
+        );
         let bgRuleColors = Object.fromEntries(BACKGROUND_RULES.map(rule => [rule.key, rule.color]));
         ensureUniqueBgRuleColors();
         let jockeyPreviousWin5WinIds = null;
@@ -2262,14 +2313,17 @@
         }
 
         async function ensureBackgroundRuleStats(activeRules) {
-            const needsJockeyProb3 = activeRules.some(rule => rule.key === "jockeyWins1Prob3");
-            const needsTrainerProb3 = activeRules.some(rule => rule.key === "trainerWins1Prob3");
-            const needsJockeySurfaceStats = activeRules.some(rule =>
-                rule.key === "jockeyWins1Prob3"
-            );
-            const needsTrainerSurfaceStats = activeRules.some(rule =>
-                rule.key === "trainerWins1Prob3"
-            );
+            const jockeyWinsMaxes = new Set();
+            const trainerWinsMaxes = new Set();
+            activeRules.forEach(rule => {
+                const match = /^(jockey|trainer)Wins([123])Prob3$/.exec(rule.key || "");
+                if (!match) return;
+                const winsMax = Number(match[2]);
+                if (match[1] === "jockey") jockeyWinsMaxes.add(winsMax);
+                else trainerWinsMaxes.add(winsMax);
+            });
+            const needsJockeySurfaceStats = jockeyWinsMaxes.size > 0;
+            const needsTrainerSurfaceStats = trainerWinsMaxes.size > 0;
             const needsJockeyPreviousWin5Win = activeRules.some(rule => rule.key === "jockeyPreviousWin5Win");
             const needsTrainerPreviousWin5Win = activeRules.some(rule => rule.key === "trainerPreviousWin5Win");
             const needsJockeyNoDailyMultiWin5 = activeRules.some(rule => rule.key === "jockeyNoDailyMultiWin5");
@@ -2284,11 +2338,16 @@
                     save: false
                 }));
             }
-            if (needsJockeyProb3 && needsTrainerProb3) {
-                jobs.push(fetchWins1ProbabilityThresholds("all"));
-            } else if (needsJockeyProb3) {
-                jobs.push(fetchWins1ProbabilityThresholds("jockey"));
-            }
+            const winsMaxes = new Set([...jockeyWinsMaxes, ...trainerWinsMaxes]);
+            winsMaxes.forEach(winsMax => {
+                if (jockeyWinsMaxes.has(winsMax) && trainerWinsMaxes.has(winsMax)) {
+                    jobs.push(fetchWinsProbabilityThresholds("all", winsMax));
+                } else if (jockeyWinsMaxes.has(winsMax)) {
+                    jobs.push(fetchWinsProbabilityThresholds("jockey", winsMax));
+                } else {
+                    jobs.push(fetchWinsProbabilityThresholds("trainer", winsMax));
+                }
+            });
             if (needsTrainerSurfaceStats) {
                 jobs.push(fetchAndApplyJockeyStats("trainer", {
                     updateDisplay: false,
@@ -2297,7 +2356,6 @@
                     datasetKey: "tstatsSurface1",
                     save: false
                 }));
-                if (needsTrainerProb3 && !needsJockeyProb3) jobs.push(fetchWins1ProbabilityThresholds("trainer"));
             }
             if (needsJockeyPreviousWin5Win) jobs.push(fetchJockeyPreviousWin5WinIds());
             if (needsTrainerPreviousWin5Win) jobs.push(fetchTrainerPreviousWin5WinIds());
@@ -2324,14 +2382,20 @@
             if (!rules || typeof rules !== "object") return;
             const byKey = new Map(BACKGROUND_RULES.map(rule => [rule.key, rule]));
 
-            const jockeyWins = byKey.get("jockeyWins1Prob3");
-            if (jockeyWins) {
-                jockeyWins.probabilityLabel = `芝${formatSurfaceProbability(rules.jockeyWins1Prob3?.surfaces?.["芝"])} / ダ${formatSurfaceProbability(rules.jockeyWins1Prob3?.surfaces?.["ダ"])}`;
-            }
-            const trainerWins = byKey.get("trainerWins1Prob3");
-            if (trainerWins) {
-                trainerWins.probabilityLabel = `芝${formatSurfaceProbability(rules.trainerWins1Prob3?.surfaces?.["芝"])} / ダ${formatSurfaceProbability(rules.trainerWins1Prob3?.surfaces?.["ダ"])}`;
-            }
+            [
+                ["jockeyWins1Prob3", "jockey"],
+                ["jockeyWins2Prob3", "jockey"],
+                ["jockeyWins3Prob3", "jockey"],
+                ["trainerWins1Prob3", "trainer"],
+                ["trainerWins2Prob3", "trainer"],
+                ["trainerWins3Prob3", "trainer"],
+            ].forEach(([key]) => {
+                const rule = byKey.get(key);
+                if (!rule) return;
+                const data = rules[key];
+                if (!data || typeof data !== "object") return;
+                rule.probabilityLabel = `芝${formatSurfaceProbability(data?.surfaces?.["芝"])} / ダ${formatSurfaceProbability(data?.surfaces?.["ダ"])}`;
+            });
             [
                 "jockeyPreviousWin5Win",
                 "trainerPreviousWin5Win",
@@ -2518,7 +2582,7 @@
                 const swatch = item.querySelector(".bg-rule-swatch");
                 if (swatch) {
                     if (rule.swatchBackground) swatch.style.background = rule.swatchBackground;
-                    else setNumberedColorSwatch(swatch, rule.swatchColor || getBgRuleColor(rule));
+                    else setNumberedColorSwatch(swatch, getBgRuleColor(rule));
                     if (rule.colorEditable !== false) {
                         swatch.addEventListener("click", (e) => openBgRulePalette(rule, swatch, e));
                     } else {
@@ -3372,6 +3436,7 @@
                 statsModes: [...currentStatsModes],
                 statsYears: currentStatsYears,
                 person: currentPerson,
+                bgRuleSelectionVersion: BG_RULE_SELECTION_VERSION,
                 bgRuleKeys: [...selectedBgRuleKeys],
                 bgRuleColors: { ...bgRuleColors },
                 sortKey: currentSortKey,
@@ -3517,16 +3582,21 @@
                 }
                 if (Array.isArray(state.bgRuleKeys)) {
                     const valid = new Set(BACKGROUND_RULES.filter(isEnabledBackgroundRule).map(rule => rule.key));
-                    selectedBgRuleKeys = new Set(state.bgRuleKeys
-                        .flatMap(key => {
-                            if (key === "rank3") return ["redOdds"];
-                            if (key === "wins1") return ["jockeyWins1Prob3", "trainerWins1Prob3"];
-                            if (key === "jockeyLastWeekWin") return ["jockeyPreviousWin5Win"];
-                            return [key];
-                        })
-                        .filter(key => valid.has(key)));
+                    if (state.bgRuleSelectionVersion === BG_RULE_SELECTION_VERSION) {
+                        selectedBgRuleKeys = new Set(state.bgRuleKeys
+                            .flatMap(key => {
+                                if (key === "rank3") return ["redOdds"];
+                                if (key === "wins1") return ["jockeyWins1Prob3", "trainerWins1Prob3"];
+                                if (key === "jockeyLastWeekWin") return ["jockeyPreviousWin5Win"];
+                                return [key];
+                            })
+                            .filter(key => valid.has(key)));
+                    } else {
+                        selectedBgRuleKeys = new Set(valid);
+                    }
                 }
-                if (state.bgRuleColors && typeof state.bgRuleColors === "object") {
+                if (state.bgRuleSelectionVersion === BG_RULE_SELECTION_VERSION
+                    && state.bgRuleColors && typeof state.bgRuleColors === "object") {
                     if (BG_RULE_COLOR_PALETTE.includes(state.bgRuleColors.wins1)) {
                         bgRuleColors.jockeyWins1 = state.bgRuleColors.wins1;
                         bgRuleColors.trainerWins1 = state.bgRuleColors.wins1;
@@ -6142,24 +6212,31 @@
             return best;
         }
 
-        function getWins1ProbabilityTable(person) {
-            return person === "trainer" ? trainerWins1ProbabilityTable : jockeyWins1ProbabilityTable;
+        function getWinsProbabilityTable(person, winsMax = 1) {
+            const tables = person === "trainer" ? trainerWinsProbabilityTables : jockeyWinsProbabilityTables;
+            return tables[winsMax] || {};
         }
 
-        function setWins1ProbabilityTable(person, table) {
-            if (person === "trainer") {
-                trainerWins1ProbabilityTable = { ...trainerWins1ProbabilityTable, ...table };
-            } else {
-                jockeyWins1ProbabilityTable = { ...jockeyWins1ProbabilityTable, ...table };
-            }
+        function setWinsProbabilityTable(person, winsMax, table) {
+            const tables = person === "trainer" ? trainerWinsProbabilityTables : jockeyWinsProbabilityTables;
+            const current = tables[winsMax] || {};
+            tables[winsMax] = { ...current, ...table };
         }
 
-        function getWins1ProbabilityThreshold(surface, person) {
-            return getProbabilityThresholdStarts(getWins1ProbabilityTable(person)[surface], BG_PROBABILITY_TARGET);
+        function getWinsProbabilityThreshold(surface, person, winsMax = 1) {
+            return getProbabilityThresholdStarts(getWinsProbabilityTable(person, winsMax)[surface], BG_PROBABILITY_TARGET);
         }
 
-        function applyProbabilityThresholdPayload(person, thresholds) {
+        function updateWinsProbabilityRuleLabel(person, winsMax, thresholds) {
+            const key = `${person}Wins${winsMax}Prob3`;
+            const rule = BACKGROUND_RULES.find(item => item.key === key);
+            if (!rule) return;
+            rule.probabilityLabel = `芝${formatSurfaceProbability(thresholds?.["芝"]?.best)} / ダ${formatSurfaceProbability(thresholds?.["ダ"]?.best)}`;
+        }
+
+        function applyProbabilityThresholdPayload(person, winsMax, thresholds) {
             if (!thresholds) return;
+            updateWinsProbabilityRuleLabel(person, winsMax, thresholds);
             const nextTable = {};
             for (const surface of ["芝", "ダ"]) {
                 const rows = thresholds[surface]?.rows;
@@ -6171,16 +6248,20 @@
                 }
             }
             if (nextTable["芝"] || nextTable["ダ"]) {
-                setWins1ProbabilityTable(person, nextTable);
+                setWinsProbabilityTable(person, winsMax, nextTable);
             }
         }
 
-        async function fetchWins1ProbabilityThresholds(person = "jockey") {
+        async function fetchWinsProbabilityThresholds(person = "jockey", winsMax = 1) {
             const normalizedPerson = person === "all" ? "all" : (person === "trainer" ? "trainer" : "jockey");
+            const parsedWinsMax = Number(winsMax);
+            const normalizedWinsMax = Number.isFinite(parsedWinsMax)
+                ? Math.max(0, Math.min(99, Math.trunc(parsedWinsMax)))
+                : 1;
             try {
                 const u = new URL("probability-thresholds", WIN5_API);
                 u.searchParams.set("person", normalizedPerson);
-                u.searchParams.set("winsMax", "1");
+                u.searchParams.set("winsMax", String(normalizedWinsMax));
                 u.searchParams.set("target", String(BG_PROBABILITY_TARGET));
                 u.searchParams.set("step", "1");
                 const res = await fetch(u.toString(), { cache: "no-store" });
@@ -6188,14 +6269,14 @@
                 if (!json.ok || !json.thresholds) return;
 
                 if (normalizedPerson === "all") {
-                    applyProbabilityThresholdPayload("jockey", json.thresholds.jockey);
-                    applyProbabilityThresholdPayload("trainer", json.thresholds.trainer);
+                    applyProbabilityThresholdPayload("jockey", normalizedWinsMax, json.thresholds.jockey);
+                    applyProbabilityThresholdPayload("trainer", normalizedWinsMax, json.thresholds.trainer);
                     return;
                 }
 
-                applyProbabilityThresholdPayload(normalizedPerson, json.thresholds);
+                applyProbabilityThresholdPayload(normalizedPerson, normalizedWinsMax, json.thresholds);
             } catch (e) {
-                console.warn("fetchWins1ProbabilityThresholds:", e);
+                console.warn("fetchWinsProbabilityThresholds:", e);
             }
         }
 
@@ -6288,15 +6369,19 @@
         }
 
         function isJockeyWins1Prob3Band(row) {
-            return isWins1Prob3Band(row, "jockey");
+            return isWinsProb3Band(row, "jockey", 1);
         }
 
         function isWins1Prob3Band(row, person = "jockey") {
+            return isWinsProb3Band(row, person, 1);
+        }
+
+        function isWinsProb3Band(row, person = "jockey", winsMax = 1) {
             const statsKey = person === "trainer" ? "tstatsSurface1" : "jstatsSurface1";
             const stats = parseStatsRecord(row?.dataset?.[statsKey]);
-            if (!stats || stats.wins > 1) return false;
+            if (!stats || stats.wins > winsMax) return false;
             const surface = getRaceSurface(row);
-            const threshold = getWins1ProbabilityThreshold(surface, person);
+            const threshold = getWinsProbabilityThreshold(surface, person, winsMax);
             return !!threshold && stats.starts >= threshold.starts;
         }
 
