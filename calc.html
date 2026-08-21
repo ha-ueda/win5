@@ -1718,6 +1718,41 @@
             menu.style.display = (menu.style.display === "block") ? "none" : "block";
         }
 
+        let bodyScrollLockCount = 0;
+        let bodyScrollLockState = null;
+
+        function lockBodyScroll() {
+            const body = document.body;
+            if (!body) return;
+            if (bodyScrollLockCount > 0) {
+                bodyScrollLockCount++;
+                return;
+            }
+
+            const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+            bodyScrollLockState = {
+                overflow: body.style.overflow,
+                paddingRight: body.style.paddingRight,
+            };
+            if (scrollbarWidth > 0) {
+                const currentPadding = parseFloat(getComputedStyle(body).paddingRight) || 0;
+                body.style.paddingRight = `${currentPadding + scrollbarWidth}px`;
+            }
+            body.style.overflow = "hidden";
+            bodyScrollLockCount = 1;
+        }
+
+        function unlockBodyScroll() {
+            const body = document.body;
+            if (!body || bodyScrollLockCount === 0) return;
+            bodyScrollLockCount--;
+            if (bodyScrollLockCount > 0) return;
+
+            body.style.overflow = bodyScrollLockState?.overflow || "";
+            body.style.paddingRight = bodyScrollLockState?.paddingRight || "";
+            bodyScrollLockState = null;
+        }
+
         document.addEventListener("click", function (e) {
             const menu = document.getElementById("globalMenu");
             const btn = document.querySelector(".menu-button");
@@ -2439,15 +2474,15 @@
             fetchBackgroundRuleProbabilities();
             const modal = document.getElementById("bgRuleModal");
             if (!modal) return;
+            lockBodyScroll();
             modal.style.display = "flex";
-            document.body.style.overflow = "hidden";
         }
 
         function closeBgRuleModal() {
             const modal = document.getElementById("bgRuleModal");
             if (!modal) return;
             modal.style.display = "none";
-            document.body.style.overflow = "";
+            unlockBodyScroll();
         }
 
         document.getElementById("bgRuleBtn")?.addEventListener("click", openBgRuleModal);
@@ -4649,15 +4684,15 @@
             const select = document.getElementById("markProfileSelect");
             if (select && !select.value) select.value = "上田";
             syncMarkProfileSaveButton();
+            lockBodyScroll();
             modal.style.display = "flex";
-            document.body.style.overflow = "hidden";
             modal.onclick = () => closeMarkProfileModal();
         }
 
         function closeMarkProfileModal() {
             const modal = document.getElementById("markProfileModal");
             if (modal) modal.style.display = "none";
-            document.body.style.overflow = "";
+            unlockBodyScroll();
         }
 
         function normalizeClientMarkProfileEntry(name, value) {
@@ -5032,13 +5067,13 @@
         }
 
         function openStatsModal() {
+            lockBodyScroll();
             statsModal.style.display = "flex";
-            document.body.style.overflow = "hidden";
         }
 
         function closeStatsModal() {
             statsModal.style.display = "none";
-            document.body.style.overflow = "";
+            unlockBodyScroll();
             closeStatsInfo();
         }
 
