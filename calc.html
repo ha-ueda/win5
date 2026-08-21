@@ -95,6 +95,8 @@
         button.calc-btn {
             padding: 0 clamp(12px, 2.4vw, 18px);
             font-size: 14px;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
             min-height: 44px;
             width: var(--calc-btn-width);
             background: #3150BB;
@@ -1230,6 +1232,18 @@
             padding: 0 clamp(14px, 2.4vw, 22px);
         }
 
+        .fav-calc-actions {
+            display: flex;
+            align-items: stretch;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .fav-calc-actions .calc-btn {
+            flex: 1 1 0;
+            width: auto;
+        }
+
         .menu-container {
             position: relative;
             margin-bottom: 20px;
@@ -1589,8 +1603,10 @@
                 </div>
             </div>
         </div>
-        <button class="calc-btn" onclick="calc()">計算</button>
-        <button id="voteBtn" class="calc-btn" type="button" style="display:none;">投票</button>
+        <div class="fav-calc-actions">
+            <button class="calc-btn" onclick="calc()">計算</button>
+            <button id="voteBtn" class="calc-btn" type="button">投票</button>
+        </div>
     </div>
 
     <div class="result-combos">
@@ -3908,7 +3924,9 @@
 
             const pages = window.__lastBetPages || [];
             if (!pages.length) {
-                btn.style.display = 'none';
+                btn.style.display = '';
+                btn.title = '';
+                btn.onclick = null;
                 return;
             }
 
