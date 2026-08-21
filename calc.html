@@ -252,10 +252,19 @@
         }
 
         .race-sub {
+            display: flex;
+            align-items: center;
+            gap: 4px;
             margin-top: 4px;
             font-size: 12px;
             color: #666;
+            line-height: 1.5;
             white-space: nowrap;
+        }
+
+        .race-sub-part {
+            display: inline-flex;
+            align-items: center;
         }
 
         .race-sub .surf-dirt {
@@ -265,6 +274,33 @@
         .race-sub .surf-turf {
             color: rgb(102, 187, 106);
         }
+
+        .race-sub .Icon_GradeType {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+            background: #757575;
+            min-width: 2.2em;
+            height: 1.4em;
+            margin: 0;
+            border-radius: 1em;
+            padding: 0 0.35em;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .race-sub .Icon_GradeType1 { background: #3251bc; }
+        .race-sub .Icon_GradeType2 { background: #c53131; }
+        .race-sub .Icon_GradeType3 { background: #58af4a; }
+        .race-sub .Icon_GradeType4 { background: #de8a26; }
+        .race-sub .Icon_GradeType14 { background: #666; }
+        .race-sub .Icon_GradeType15 { background: #757575; }
 
         .race-clear {
             border: none;
@@ -3327,6 +3363,8 @@
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
                 raceCourses: window.raceCourses || ["", "", "", "", ""],
+                raceClasses: window.raceClasses || ["", "", "", "", ""],
+                raceWeightTypes: window.raceWeightTypes || ["", "", "", "", ""],
                 win5RaceIds: window.win5RaceIds || ["", "", "", "", ""],
                 win5Source: window.win5Source || "",
                 win5SourceDate: window.win5SourceDate || "",
@@ -3402,6 +3440,8 @@
                 if (state.raceInfo) window.raceInfo = state.raceInfo;
                 if (state.raceTimes) window.raceTimes = state.raceTimes;
                 if (state.raceCourses) window.raceCourses = state.raceCourses;
+                if (state.raceClasses) window.raceClasses = state.raceClasses;
+                if (state.raceWeightTypes) window.raceWeightTypes = state.raceWeightTypes;
                 if (Array.isArray(state.win5RaceIds)) {
                     window.win5RaceIds = state.win5RaceIds.slice(0, TOTAL_RACES);
                     while (window.win5RaceIds.length < TOTAL_RACES) window.win5RaceIds.push("");
@@ -3623,6 +3663,8 @@
             window.raceInfo = ["", "", "", "", ""];
             window.raceTimes = ["", "", "", "", ""];
             window.raceCourses = ["", "", "", "", ""];
+            window.raceClasses = ["", "", "", "", ""];
+            window.raceWeightTypes = ["", "", "", "", ""];
             window.win5RaceIds = ["", "", "", "", ""];
             window.win5Source = "";
             window.win5SourceDate = "";
@@ -4233,9 +4275,31 @@
             return escapeHtml(c);
         }
 
+        function raceGradeIconTypeClass(raceClass) {
+            switch (String(raceClass || "").trim()) {
+                case "GI": return "Icon_GradeType1";
+                case "GII": return "Icon_GradeType2";
+                case "GIII": return "Icon_GradeType3";
+                case "重賞": return "Icon_GradeType4";
+                case "OP": return "Icon_GradeType14";
+                case "L": return "Icon_GradeType15";
+                default: return "";
+            }
+        }
+
+        function colorizeRaceClass(raceClass) {
+            const c = String(raceClass ?? "").trim();
+            if (!c) return "";
+            const typeClass = raceGradeIconTypeClass(c);
+            if (!typeClass) return escapeHtml(c);
+            return `<span class="Icon_GradeType ${typeClass} Icon_GradePos01">${escapeHtml(c)}</span>`;
+        }
+
         function updateRaceHeaders(raceInfo) {
             const raceTimes = window.raceTimes || [];
             const raceCourses = window.raceCourses || [];
+            const raceClasses = window.raceClasses || [];
+            const raceWeightTypes = window.raceWeightTypes || [];
 
             for (let i = 0; i < 5; i++) {
                 const title = document.getElementById(`raceTitle${i + 1}`);
@@ -4243,16 +4307,21 @@
 
                 const time = (raceTimes[i] || "").trim();
                 const course = (raceCourses[i] || "").trim();
+                const raceClass = (raceClasses[i] || "").trim();
+                const weightType = (raceWeightTypes[i] || "").trim();
                 const info = (raceInfo && raceInfo[i]) ? String(raceInfo[i]).trim() : "";
 
                 const label = info ? info : `WIN${i + 1}`;
                 if (title) title.textContent = label;
 
                 if (sub) {
-                    if (time && course) sub.innerHTML = `${escapeHtml(time)} ${colorizeCourse(course)}`;
-                    else if (time) sub.textContent = `${time}`;
-                    else if (course) sub.innerHTML = colorizeCourse(course);
-                    else sub.textContent = "";
+                    const parts = [];
+                    const part = (html) => `<span class="race-sub-part">${html}</span>`;
+                    if (time) parts.push(part(escapeHtml(time)));
+                    if (course) parts.push(part(colorizeCourse(course)));
+                    if (raceClass) parts.push(part(colorizeRaceClass(raceClass)));
+                    if (weightType) parts.push(part(escapeHtml(weightType)));
+                    sub.innerHTML = parts.join("");
                 }
             }
         }
@@ -4261,6 +4330,8 @@
             window.raceInfo = json.raceInfo || [];
             window.raceTimes = json.raceTimes || ((json.races || []).map(r => (r && r.startTime) ? String(r.startTime) : ""));
             window.raceCourses = json.raceCourses || ((json.races || []).map(r => (r && r.courseInfo) ? String(r.courseInfo) : ""));
+            window.raceClasses = json.raceClasses || ((json.races || []).map(r => (r && r.raceClass) ? String(r.raceClass) : ""));
+            window.raceWeightTypes = json.raceWeightTypes || ((json.races || []).map(r => (r && r.weightType) ? String(r.weightType) : ""));
             window.win5Sales = json.sales || null;
             window.win5Source = json.source || "";
             const nextSourceDate = json.sourceDate || "";
@@ -4488,6 +4559,8 @@
                         url: meta?.url || "",
                         startTime: "",
                         courseInfo: "",
+                        raceClass: "",
+                        weightType: "",
                         horses: [],
                         jockeys: [],
                         trainers: [],
@@ -4534,6 +4607,8 @@
                     raceInfo: manifest.raceInfo || [],
                     raceTimes: races.map(r => r?.startTime || ""),
                     raceCourses: races.map(r => r?.courseInfo || ""),
+                    raceClasses: races.map(r => r?.raceClass || ""),
+                    raceWeightTypes: races.map(r => r?.weightType || ""),
                     races,
                     sales: manifest.sales || null,
                     raceErrors,
