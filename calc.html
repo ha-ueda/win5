@@ -1912,43 +1912,67 @@
                 key: "jockeyWins1Prob3",
                 label: "1年間で1勝以下の騎手",
                 probabilityLabel: "-",
-                color: BG_RULE_COLOR_PALETTE[1],
-                match: row => isBackgroundRuleTarget(row) && isJockeyWins1Prob3Band(row)
+                getColor: row => getJockeyWinsColor(row),
+                swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
+                colorEditable: false,
+                match: row => isBackgroundRuleTarget(row)
+                    && isJockeyWins1Prob3Band(row)
+                    && getSelectedJockeyWinsRaceCount(row) >= 2
             },
             {
                 key: "jockeyWins2Prob3",
                 label: "1年間で2勝以下の騎手",
                 probabilityLabel: "-",
-                color: BG_RULE_COLOR_PALETTE[1],
-                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "jockey", 2)
+                getColor: row => getJockeyWinsColor(row),
+                swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
+                colorEditable: false,
+                match: row => isBackgroundRuleTarget(row)
+                    && isWinsProb3Band(row, "jockey", 2)
+                    && getSelectedJockeyWinsRaceCount(row) >= 2
             },
             {
                 key: "jockeyWins3Prob3",
                 label: "1年間で3勝以下の騎手",
                 probabilityLabel: "-",
-                color: BG_RULE_COLOR_PALETTE[1],
-                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "jockey", 3)
+                getColor: row => getJockeyWinsColor(row),
+                swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
+                colorEditable: false,
+                match: row => isBackgroundRuleTarget(row)
+                    && isWinsProb3Band(row, "jockey", 3)
+                    && getSelectedJockeyWinsRaceCount(row) >= 2
             },
             {
                 key: "trainerWins1Prob3",
                 label: "1年間で1勝以下の調教師",
                 probabilityLabel: "-",
-                color: BG_RULE_COLOR_PALETTE[2],
-                match: row => isBackgroundRuleTarget(row) && isWins1Prob3Band(row, "trainer")
+                getColor: row => getTrainerWinsColor(row),
+                swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
+                colorEditable: false,
+                match: row => isBackgroundRuleTarget(row)
+                    && isWins1Prob3Band(row, "trainer")
+                    && getSelectedTrainerWinsRaceCount(row) >= 2
             },
             {
                 key: "trainerWins2Prob3",
                 label: "1年間で2勝以下の調教師",
                 probabilityLabel: "-",
-                color: BG_RULE_COLOR_PALETTE[2],
-                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "trainer", 2)
+                getColor: row => getTrainerWinsColor(row),
+                swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
+                colorEditable: false,
+                match: row => isBackgroundRuleTarget(row)
+                    && isWinsProb3Band(row, "trainer", 2)
+                    && getSelectedTrainerWinsRaceCount(row) >= 2
             },
             {
                 key: "trainerWins3Prob3",
                 label: "1年間で3勝以下の調教師",
                 probabilityLabel: "-",
-                color: BG_RULE_COLOR_PALETTE[2],
-                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "trainer", 3)
+                getColor: row => getTrainerWinsColor(row),
+                swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
+                colorEditable: false,
+                match: row => isBackgroundRuleTarget(row)
+                    && isWinsProb3Band(row, "trainer", 3)
+                    && getSelectedTrainerWinsRaceCount(row) >= 2
             },
             {
                 key: "jockeyPreviousWin5Win",
@@ -2215,12 +2239,13 @@
         }
 
         // Fixed-color rules that share a palette color are treated as one
-        // condition group when checking whether a condition appears in at
-        // least two races.  Auto-colored rules remain independent because
-        // their color is resolved per person/row rather than configured in
-        // the palette.
+        // condition group.  The three jockey/trainer wins rules also share
+        // a group so a person's matching thresholds can be combined while
+        // their display color is still resolved per person.
         function getBgRuleGroupKey(rule) {
             if (isFixedColorRule(rule)) return `color:${getBgRuleColor(rule)}`;
+            if (/^jockeyWins[123]Prob3$/.test(rule?.key || "")) return "person:jockeyWins";
+            if (/^trainerWins[123]Prob3$/.test(rule?.key || "")) return "person:trainerWins";
             return `rule:${rule.key}`;
         }
 
@@ -5447,6 +5472,36 @@
             return !!threshold && stats.starts >= threshold.starts;
         }
 
+        function isAnyWinsProb3Band(row, person = "jockey") {
+            return [1, 2, 3].some(winsMax => {
+                const key = `${person}Wins${winsMax}Prob3`;
+                return selectedBgRuleKeys.has(key) && isWinsProb3Band(row, person, winsMax);
+            });
+        }
+
+        function getSelectedWinsRaceCount(row, person = "jockey") {
+            const idKey = person === "trainer" ? "tid" : "jid";
+            const id = String(row?.dataset?.[idKey] || "").trim();
+            if (!id) return 0;
+            const races = new Set();
+            document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
+                if (!isBackgroundRuleTarget(sel)) return;
+                if (String(sel.dataset?.[idKey] || "").trim() !== id) return;
+                if (!isAnyWinsProb3Band(sel, person)) return;
+                const race = String(sel.dataset?.race || "").trim();
+                if (race) races.add(race);
+            });
+            return races.size;
+        }
+
+        function getSelectedJockeyWinsRaceCount(row) {
+            return getSelectedWinsRaceCount(row, "jockey");
+        }
+
+        function getSelectedTrainerWinsRaceCount(row) {
+            return getSelectedWinsRaceCount(row, "trainer");
+        }
+
         function isJockeyWithoutDailyMultiWin5Years(row) {
             const jid = String(row?.dataset?.jid || "").trim();
             if (!jid || !jockeyDailyMultiWinIds5Years) return false;
@@ -5600,6 +5655,12 @@
                         if (tid && isTrainerPreviousWin5Winner(sel) && getSelectedTrainerPreviousWin5WinnerRaceCount(sel) >= 2) {
                             items.push(`trainerPrevious:${tid}`);
                         }
+                        if (jid && isAnyWinsProb3Band(sel, "jockey") && getSelectedJockeyWinsRaceCount(sel) >= 2) {
+                            items.push(`jockeyWins:${jid}`);
+                        }
+                        if (tid && isAnyWinsProb3Band(sel, "trainer") && getSelectedTrainerWinsRaceCount(sel) >= 2) {
+                            items.push(`trainerWins:${tid}`);
+                        }
                         return items;
                     })
             )].sort();
@@ -5630,6 +5691,14 @@
 
         function getTrainerPreviousWin5Color(row) {
             return getPersonRuleColor("trainerPrevious", row?.dataset?.tid);
+        }
+
+        function getJockeyWinsColor(row) {
+            return getPersonRuleColor("jockeyWins", row?.dataset?.jid);
+        }
+
+        function getTrainerWinsColor(row) {
+            return getPersonRuleColor("trainerWins", row?.dataset?.tid);
         }
 
         function applyPersonDisplay() {
