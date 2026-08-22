@@ -2214,6 +2214,36 @@
             return bgRuleColors[rule.key] || rule.color || RULE_BG_COLOR;
         }
 
+        // Fixed-color rules that share a palette color are treated as one
+        // condition group when checking whether a condition appears in at
+        // least two races.  Auto-colored rules remain independent because
+        // their color is resolved per person/row rather than configured in
+        // the palette.
+        function getBgRuleGroupKey(rule) {
+            if (isFixedColorRule(rule)) return `color:${getBgRuleColor(rule)}`;
+            return `rule:${rule.key}`;
+        }
+
+        function buildBackgroundRuleRaceGroups(activeRules, rows) {
+            const groups = new Map();
+            activeRules.forEach(rule => {
+                groups.set(getBgRuleGroupKey(rule), new Set());
+            });
+            rows.forEach(row => {
+                const race = String(row.dataset.race || "").trim();
+                if (!race) return;
+                activeRules.forEach(rule => {
+                    if (!rule.match(row)) return;
+                    groups.get(getBgRuleGroupKey(rule))?.add(race);
+                });
+            });
+            return groups;
+        }
+
+        function isBackgroundRuleGroupMultiRace(rule, groups) {
+            return (groups.get(getBgRuleGroupKey(rule))?.size || 0) >= 2;
+        }
+
         function getPaletteContentWidth(itemCount, maxColumns = 8) {
             const size = 36;
             const gap = 10;
@@ -2448,20 +2478,13 @@
             if (activeRules.length > 0) {
                 const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)'));
                 refreshBackgroundRuleTargetMode(rows);
-                const ruleRaceCounts = new Map(activeRules.map(rule => [rule.key, new Set()]));
-                rows.forEach(row => {
-                    const race = String(row.dataset.race || "").trim();
-                    if (!race) return;
-                    activeRules.forEach(rule => {
-                        if (rule.match(row)) ruleRaceCounts.get(rule.key)?.add(race);
-                    });
-                });
+                const ruleRaceGroups = buildBackgroundRuleRaceGroups(activeRules, rows);
 
                 rows.forEach(row => {
                     const box = row.querySelector(".selected");
                     if (!box) return;
                     const matchedRules = activeRules
-                        .filter(rule => (ruleRaceCounts.get(rule.key)?.size || 0) >= 2)
+                        .filter(rule => isBackgroundRuleGroupMultiRace(rule, ruleRaceGroups))
                         .filter(rule => rule.match(row));
                     const matchedColors = matchedRules.map(rule => getBgRuleColor(rule, row));
                     if (!matchedColors.length) return;
@@ -2818,16 +2841,9 @@
             if (!activeRules.length) return [];
             const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)'));
             refreshBackgroundRuleTargetMode(rows);
-            const ruleRaceCounts = new Map(activeRules.map(rule => [rule.key, new Set()]));
-            rows.forEach(row => {
-                const race = String(row.dataset.race || "").trim();
-                if (!race) return;
-                activeRules.forEach(rule => {
-                    if (rule.match(row)) ruleRaceCounts.get(rule.key)?.add(race);
-                });
-            });
+            const ruleRaceGroups = buildBackgroundRuleRaceGroups(activeRules, rows);
             return activeRules
-                .filter(rule => (ruleRaceCounts.get(rule.key)?.size || 0) >= 2)
+                .filter(rule => isBackgroundRuleGroupMultiRace(rule, ruleRaceGroups))
                 .filter(rule => rule.match(rowEl));
         }
 
@@ -2847,22 +2863,15 @@
                     label: getBgRuleDetailLabel(rule),
                     probability: rule.probabilityLabel || "",
                     color: getBgRuleColor(rule)
-                }));
+            }));
 
             const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)'));
             refreshBackgroundRuleTargetMode(rows);
-            const ruleRaceCounts = new Map(activeRules.map(rule => [rule.key, new Set()]));
-            rows.forEach(row => {
-                const race = String(row.dataset.race || "").trim();
-                if (!race) return;
-                activeRules.forEach(rule => {
-                    if (rule.match(row)) ruleRaceCounts.get(rule.key)?.add(race);
-                });
-            });
+            const ruleRaceGroups = buildBackgroundRuleRaceGroups(activeRules, rows);
 
             activeRules
                 .filter(rule => !isFixedColorRule(rule))
-                .filter(rule => (ruleRaceCounts.get(rule.key)?.size || 0) >= 2)
+                .filter(rule => isBackgroundRuleGroupMultiRace(rule, ruleRaceGroups))
                 .forEach(rule => {
                     rows
                         .filter(row => rule.match(row))
