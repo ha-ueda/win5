@@ -1846,13 +1846,55 @@
         }).join(", ")})`;
         const RULE_BG_COLOR = BG_RULE_COLOR_PALETTE[0];
         const BG_PROBABILITY_TARGET = 3;
-        // Kept as empty compatibility containers for legacy state/API data;
-        // the retired one-year wins conditions are no longer background rules.
-        const BACKGROUND_WINS_RULE_CONFIG = Object.freeze({});
-        function getBackgroundWinsRuleConfig() { return null; }
-        function getBackgroundWinsRuleConfigByKey() { return null; }
-        let jockeyWinsProbabilityTables = {};
-        let trainerWinsProbabilityTables = {};
+        let jockeyWinsProbabilityTables = {
+            1: {
+                "芝": [
+                    { starts: 10, probability: 10.37 },
+                    { starts: 20, probability: 4.56 },
+                    { starts: 30, probability: 2.90 },
+                    { starts: 40, probability: 0.83 },
+                    { starts: 50, probability: 0.00 },
+                    { starts: 60, probability: 0.00 }
+                ],
+                "ダ": [
+                    { starts: 10, probability: 9.91 },
+                    { starts: 20, probability: 3.02 },
+                    { starts: 30, probability: 0.00 },
+                    { starts: 40, probability: 0.00 }
+                ]
+            },
+            2: {
+                "芝": [{ starts: 42, probability: 2.34 }],
+                "ダ": [{ starts: 26, probability: 2.82 }]
+            },
+            3: {
+                "芝": [{ starts: 53, probability: 2.34 }],
+                "ダ": [{ starts: 30, probability: 2.42 }]
+            }
+        };
+        let trainerWinsProbabilityTables = {
+            1: {
+                "芝": [
+                    { starts: 10, probability: 26.56 },
+                    { starts: 20, probability: 3.73 },
+                    { starts: 30, probability: 0.41 },
+                    { starts: 40, probability: 0.00 }
+                ],
+                "ダ": [
+                    { starts: 10, probability: 12.50 },
+                    { starts: 20, probability: 0.43 },
+                    { starts: 30, probability: 0.00 }
+                ]
+            },
+            2: {
+                "芝": [{ starts: 29, probability: 2.73 }],
+                "ダ": [{ starts: 20, probability: 2.02 }]
+            },
+            3: {
+                "芝": [{ starts: 38, probability: 2.73 }],
+                "ダ": [{ starts: 20, probability: 2.42 }]
+            }
+        };
         const BACKGROUND_RULES = [
             {
                 key: "redOdds",
@@ -1865,6 +1907,48 @@
                     const odds = parseNum(row.dataset.odds);
                     return odds !== null && odds > 0 && odds < 10;
                 }
+            },
+            {
+                key: "jockeyWins1Prob3",
+                label: "1年間で1勝以下の騎手",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[1],
+                match: row => isBackgroundRuleTarget(row) && isJockeyWins1Prob3Band(row)
+            },
+            {
+                key: "jockeyWins2Prob3",
+                label: "1年間で2勝以下の騎手",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[1],
+                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "jockey", 2)
+            },
+            {
+                key: "jockeyWins3Prob3",
+                label: "1年間で3勝以下の騎手",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[1],
+                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "jockey", 3)
+            },
+            {
+                key: "trainerWins1Prob3",
+                label: "1年間で1勝以下の調教師",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[2],
+                match: row => isBackgroundRuleTarget(row) && isWins1Prob3Band(row, "trainer")
+            },
+            {
+                key: "trainerWins2Prob3",
+                label: "1年間で2勝以下の調教師",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[2],
+                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "trainer", 2)
+            },
+            {
+                key: "trainerWins3Prob3",
+                label: "1年間で3勝以下の調教師",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[2],
+                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "trainer", 3)
             },
             {
                 key: "jockeyPreviousWin5Win",
@@ -1911,10 +1995,6 @@
                     && getSelectedTrainerRaceCount(row) >= 2
             },
         ];
-        const REMOVED_BACKGROUND_RULE_LABELS = new Set([
-            "1年間で1勝以下の騎手",
-            "1年間で1勝以下の調教師",
-        ]);
 
         let backgroundMode = false;
         let backgroundRuleTargetAll = true;
@@ -1933,11 +2013,6 @@
         let trainerDailyMultiWinIds5Years = null;
         let trainerDailyMultiWinIds5YearsPromise = null;
         let backgroundRuleProbabilitiesPromise = null;
-        let backgroundRuleProbabilityRetryTimer = null;
-        let backgroundRuleProbabilityRetryCount = 0;
-        const probabilityThresholdRetryStates = new Map();
-        const PROBABILITY_CACHE_RETRY_INTERVAL_MS = 5000;
-        const PROBABILITY_CACHE_MAX_RETRIES = 12;
         const statsFetchCache = new Map();
         const modeBtn = document.getElementById("modeToggle");
 
@@ -2117,10 +2192,7 @@
 
 
         function isFixedColorRule(rule) {
-            return rule && !rule.deprecated && (
-                rule.fixedColor === true
-                || (rule.colorEditable !== false && typeof rule.getColor !== "function")
-            );
+            return rule && !rule.deprecated && rule.colorEditable !== false && typeof rule.getColor !== "function";
         }
 
         function isEnabledBackgroundRule(rule) {
@@ -2129,16 +2201,6 @@
 
         function ensureUniqueBgRuleColors() {
             BACKGROUND_RULES.filter(isFixedColorRule).forEach(rule => {
-                if (rule.fixedColor === true) {
-                    // Group rules use one color for every qualifying member,
-                    // while still allowing the user to choose that group
-                    // color from the palette.
-                    const saved = bgRuleColors[rule.key];
-                    bgRuleColors[rule.key] = BG_RULE_COLOR_PALETTE.includes(saved)
-                        ? saved
-                        : rule.color;
-                    return;
-                }
                 const saved = bgRuleColors[rule.key];
                 let color = BG_RULE_COLOR_PALETTE.includes(saved) ? saved : rule.color;
                 if (!BG_RULE_COLOR_PALETTE.includes(color)) color = rule.color;
@@ -2150,34 +2212,6 @@
             if (row && typeof rule.getColor === "function") return rule.getColor(row);
             ensureUniqueBgRuleColors();
             return bgRuleColors[rule.key] || rule.color || RULE_BG_COLOR;
-        }
-
-        // Rules with a fixed palette color are treated as one condition group.
-        // In particular, each wins rule is one group across all qualifying
-        // jockeys or trainers, regardless of the individual IDs.
-        function getBgRuleGroupKey(rule) {
-            if (isFixedColorRule(rule)) return `color:${getBgRuleColor(rule)}`;
-            return `rule:${rule.key}`;
-        }
-
-        function buildBackgroundRuleRaceGroups(activeRules, rows) {
-            const groups = new Map();
-            activeRules.forEach(rule => {
-                groups.set(getBgRuleGroupKey(rule), new Set());
-            });
-            rows.forEach(row => {
-                const race = String(row.dataset.race || "").trim();
-                if (!race) return;
-                activeRules.forEach(rule => {
-                    if (!rule.match(row)) return;
-                    groups.get(getBgRuleGroupKey(rule))?.add(race);
-                });
-            });
-            return groups;
-        }
-
-        function isBackgroundRuleGroupMultiRace(rule, groups) {
-            return (groups.get(getBgRuleGroupKey(rule))?.size || 0) >= 2;
         }
 
         function getPaletteContentWidth(itemCount, maxColumns = 8) {
@@ -2291,10 +2325,11 @@
             const jockeyWinsMaxes = new Set();
             const trainerWinsMaxes = new Set();
             activeRules.forEach(rule => {
-                const config = getBackgroundWinsRuleConfigByKey(rule.key);
-                if (!config) return;
-                if (config === BACKGROUND_WINS_RULE_CONFIG.jockey) jockeyWinsMaxes.add(config.winsMax);
-                else if (config === BACKGROUND_WINS_RULE_CONFIG.trainer) trainerWinsMaxes.add(config.winsMax);
+                const match = /^(jockey|trainer)Wins([123])Prob3$/.exec(rule.key || "");
+                if (!match) return;
+                const winsMax = Number(match[2]);
+                if (match[1] === "jockey") jockeyWinsMaxes.add(winsMax);
+                else trainerWinsMaxes.add(winsMax);
             });
             const needsJockeySurfaceStats = jockeyWinsMaxes.size > 0;
             const needsTrainerSurfaceStats = trainerWinsMaxes.size > 0;
@@ -2306,20 +2341,16 @@
             if (needsJockeySurfaceStats) {
                 jobs.push(fetchAndApplyJockeyStats("jockey", {
                     updateDisplay: false,
-                    years: String(BACKGROUND_WINS_RULE_CONFIG.jockey.years),
+                    years: "1",
                     modes: [],
-                    datasetKey: BACKGROUND_WINS_RULE_CONFIG.jockey.statsDatasetKey,
+                    datasetKey: "jstatsSurface1",
                     save: false
                 }));
             }
             const winsMaxes = new Set([...jockeyWinsMaxes, ...trainerWinsMaxes]);
             winsMaxes.forEach(winsMax => {
                 if (jockeyWinsMaxes.has(winsMax) && trainerWinsMaxes.has(winsMax)) {
-                    // Keep the two rolling-window calculations in separate
-                    // Worker requests.  A combined request can exceed the
-                    // Free Workers CPU limit when the KV cache is cold.
-                    jobs.push(fetchWinsProbabilityThresholds("jockey", winsMax));
-                    jobs.push(fetchWinsProbabilityThresholds("trainer", winsMax));
+                    jobs.push(fetchWinsProbabilityThresholds("all", winsMax));
                 } else if (jockeyWinsMaxes.has(winsMax)) {
                     jobs.push(fetchWinsProbabilityThresholds("jockey", winsMax));
                 } else {
@@ -2329,9 +2360,9 @@
             if (needsTrainerSurfaceStats) {
                 jobs.push(fetchAndApplyJockeyStats("trainer", {
                     updateDisplay: false,
-                    years: String(BACKGROUND_WINS_RULE_CONFIG.trainer.years),
+                    years: "1",
                     modes: [],
-                    datasetKey: BACKGROUND_WINS_RULE_CONFIG.trainer.statsDatasetKey,
+                    datasetKey: "tstatsSurface1",
                     save: false
                 }));
             }
@@ -2361,6 +2392,20 @@
             const byKey = new Map(BACKGROUND_RULES.map(rule => [rule.key, rule]));
 
             [
+                ["jockeyWins1Prob3", "jockey"],
+                ["jockeyWins2Prob3", "jockey"],
+                ["jockeyWins3Prob3", "jockey"],
+                ["trainerWins1Prob3", "trainer"],
+                ["trainerWins2Prob3", "trainer"],
+                ["trainerWins3Prob3", "trainer"],
+            ].forEach(([key]) => {
+                const rule = byKey.get(key);
+                if (!rule) return;
+                const data = rules[key];
+                if (!data || typeof data !== "object") return;
+                rule.probabilityLabel = `芝${formatSurfaceProbability(data?.surfaces?.["芝"])} / ダ${formatSurfaceProbability(data?.surfaces?.["ダ"])}`;
+            });
+            [
                 "jockeyPreviousWin5Win",
                 "trainerPreviousWin5Win",
                 "jockeyNoDailyMultiWin5",
@@ -2376,15 +2421,6 @@
             }
         }
 
-        function scheduleBackgroundRuleProbabilityRetry() {
-            if (backgroundRuleProbabilityRetryTimer || backgroundRuleProbabilityRetryCount >= PROBABILITY_CACHE_MAX_RETRIES) return;
-            backgroundRuleProbabilityRetryCount++;
-            backgroundRuleProbabilityRetryTimer = setTimeout(() => {
-                backgroundRuleProbabilityRetryTimer = null;
-                fetchBackgroundRuleProbabilities();
-            }, PROBABILITY_CACHE_RETRY_INTERVAL_MS);
-        }
-
         async function fetchBackgroundRuleProbabilities() {
             if (backgroundRuleProbabilitiesPromise) return backgroundRuleProbabilitiesPromise;
             backgroundRuleProbabilitiesPromise = (async () => {
@@ -2395,15 +2431,6 @@
                     if (json.ok) {
                         applyBackgroundRuleProbabilityPayload(json);
                         renderBgRuleList();
-                    }
-                    if (json.calculationPending || json.stale) {
-                        scheduleBackgroundRuleProbabilityRetry();
-                    } else if (json.ok) {
-                        backgroundRuleProbabilityRetryCount = 0;
-                        if (backgroundRuleProbabilityRetryTimer) {
-                            clearTimeout(backgroundRuleProbabilityRetryTimer);
-                            backgroundRuleProbabilityRetryTimer = null;
-                        }
                     }
                 } catch (e) {
                     console.warn("fetchBackgroundRuleProbabilities:", e);
@@ -2421,13 +2448,20 @@
             if (activeRules.length > 0) {
                 const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)'));
                 refreshBackgroundRuleTargetMode(rows);
-                const ruleRaceGroups = buildBackgroundRuleRaceGroups(activeRules, rows);
+                const ruleRaceCounts = new Map(activeRules.map(rule => [rule.key, new Set()]));
+                rows.forEach(row => {
+                    const race = String(row.dataset.race || "").trim();
+                    if (!race) return;
+                    activeRules.forEach(rule => {
+                        if (rule.match(row)) ruleRaceCounts.get(rule.key)?.add(race);
+                    });
+                });
 
                 rows.forEach(row => {
                     const box = row.querySelector(".selected");
                     if (!box) return;
                     const matchedRules = activeRules
-                        .filter(rule => isBackgroundRuleGroupMultiRace(rule, ruleRaceGroups))
+                        .filter(rule => (ruleRaceCounts.get(rule.key)?.size || 0) >= 2)
                         .filter(rule => rule.match(row));
                     const matchedColors = matchedRules.map(rule => getBgRuleColor(rule, row));
                     if (!matchedColors.length) return;
@@ -2758,7 +2792,6 @@
             return rows.filter(item => {
                 const label = String(item?.label || "").trim();
                 const rule = labelToRule.get(label);
-                if (!rule && REMOVED_BACKGROUND_RULE_LABELS.has(label)) return false;
                 return !rule || (isEnabledBackgroundRule(rule) && selectedBgRuleKeys.has(rule.key));
             });
         }
@@ -2785,9 +2818,16 @@
             if (!activeRules.length) return [];
             const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)'));
             refreshBackgroundRuleTargetMode(rows);
-            const ruleRaceGroups = buildBackgroundRuleRaceGroups(activeRules, rows);
+            const ruleRaceCounts = new Map(activeRules.map(rule => [rule.key, new Set()]));
+            rows.forEach(row => {
+                const race = String(row.dataset.race || "").trim();
+                if (!race) return;
+                activeRules.forEach(rule => {
+                    if (rule.match(row)) ruleRaceCounts.get(rule.key)?.add(race);
+                });
+            });
             return activeRules
-                .filter(rule => isBackgroundRuleGroupMultiRace(rule, ruleRaceGroups))
+                .filter(rule => (ruleRaceCounts.get(rule.key)?.size || 0) >= 2)
                 .filter(rule => rule.match(rowEl));
         }
 
@@ -2807,15 +2847,22 @@
                     label: getBgRuleDetailLabel(rule),
                     probability: rule.probabilityLabel || "",
                     color: getBgRuleColor(rule)
-            }));
+                }));
 
             const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)'));
             refreshBackgroundRuleTargetMode(rows);
-            const ruleRaceGroups = buildBackgroundRuleRaceGroups(activeRules, rows);
+            const ruleRaceCounts = new Map(activeRules.map(rule => [rule.key, new Set()]));
+            rows.forEach(row => {
+                const race = String(row.dataset.race || "").trim();
+                if (!race) return;
+                activeRules.forEach(rule => {
+                    if (rule.match(row)) ruleRaceCounts.get(rule.key)?.add(race);
+                });
+            });
 
             activeRules
                 .filter(rule => !isFixedColorRule(rule))
-                .filter(rule => isBackgroundRuleGroupMultiRace(rule, ruleRaceGroups))
+                .filter(rule => (ruleRaceCounts.get(rule.key)?.size || 0) >= 2)
                 .forEach(rule => {
                     rows
                         .filter(row => rule.match(row))
@@ -3436,6 +3483,7 @@
                         selectedBgRuleKeys = new Set(state.bgRuleKeys
                             .flatMap(key => {
                                 if (key === "rank3") return ["redOdds"];
+                                if (key === "wins1") return ["jockeyWins1Prob3", "trainerWins1Prob3"];
                                 if (key === "jockeyLastWeekWin") return ["jockeyPreviousWin5Win"];
                                 return [key];
                             })
@@ -3446,6 +3494,10 @@
                 }
                 if (state.bgRuleSelectionVersion === BG_RULE_SELECTION_VERSION
                     && state.bgRuleColors && typeof state.bgRuleColors === "object") {
+                    if (BG_RULE_COLOR_PALETTE.includes(state.bgRuleColors.wins1)) {
+                        bgRuleColors.jockeyWins1 = state.bgRuleColors.wins1;
+                        bgRuleColors.trainerWins1 = state.bgRuleColors.wins1;
+                    }
                     for (const rule of BACKGROUND_RULES) {
                         const saved = state.bgRuleColors[rule.key];
                         if (BG_RULE_COLOR_PALETTE.includes(saved)) bgRuleColors[rule.key] = saved;
@@ -3473,29 +3525,13 @@
                         const b = (val.bg || "none").toString();
 
                         if (box) {
-                            const source = (val.bgSource || "").toString();
-                            const manualBg = (val.manualBg || ((source === "manual" || source === "mixed") ? b : "") || "").toString();
-                            const ruleBg = (val.ruleBg || (source === "rule" ? b : "") || "").toString();
-                            let detailsText = (val.bgRuleDetails || "").toString();
-                            let hasRemovedRuleDetails = false;
-                            try {
-                                const details = JSON.parse(detailsText);
-                                hasRemovedRuleDetails = Array.isArray(details)
-                                    && details.some(item => REMOVED_BACKGROUND_RULE_LABELS.has(String(item?.label || "").trim()));
-                                const filteredDetails = filterBgRuleDetailsToSelectedRules(details);
-                                detailsText = filteredDetails.length ? JSON.stringify(filteredDetails) : "";
-                            } catch {
-                                // Keep malformed legacy details out of the UI.
-                                detailsText = "";
-                            }
                             box.textContent = m;
-                            box.dataset.bg = hasRemovedRuleDetails ? (manualBg || "none") : b;
-                            box.dataset.bgSource = hasRemovedRuleDetails
-                                ? (manualBg ? "manual" : "")
-                                : source;
-                            box.dataset.manualBg = manualBg;
-                            box.dataset.ruleBg = hasRemovedRuleDetails ? "" : ruleBg;
-                            box.dataset.bgRuleDetails = detailsText;
+                            box.dataset.bg = b;
+                            box.dataset.bgSource = (val.bgSource || "").toString();
+                            const source = (val.bgSource || "").toString();
+                            box.dataset.manualBg = (val.manualBg || ((source === "manual" || source === "mixed") ? b : "") || "").toString();
+                            box.dataset.ruleBg = (val.ruleBg || (source === "rule" ? b : "") || "").toString();
+                            box.dataset.bgRuleDetails = (val.bgRuleDetails || "").toString();
                         }
 
                         applyMarkBackground(sel, !!m);
@@ -5218,32 +5254,20 @@
             let best = null;
             for (const item of table) {
                 const starts = Number(item?.starts);
-                const selectionProbability = Number(item?.selectionProbability ?? item?.probability);
-                if (!Number.isFinite(starts) || !Number.isFinite(selectionProbability)) continue;
-                // Worker が最新データから選んだ best を優先します。
-                // 3%以下の組み合わせがない場合も、Workerのフォール
-                // バック選択を1走へ戻さず、そのまま適用します。
-                if (selectionProbability > targetProbability && !item?.force) continue;
-                const diff = targetProbability - selectionProbability;
-                if (!best || diff < best.diff || (diff === best.diff && starts > best.starts)) {
-                    best = {
-                        starts,
-                        probability: Number(item?.probability),
-                        selectionProbability,
-                        diff,
-                    };
+                const probability = Number(item?.probability);
+                if (!Number.isFinite(starts) || !Number.isFinite(probability)) continue;
+                if (probability > targetProbability) continue;
+                const diff = targetProbability - probability;
+                if (!best || diff < best.diff || (diff === best.diff && starts < best.starts)) {
+                    best = { starts, probability, diff };
                 }
             }
             return best;
         }
 
-        function getWinsProbabilityTable(person, winsMax = null) {
+        function getWinsProbabilityTable(person, winsMax = 1) {
             const tables = person === "trainer" ? trainerWinsProbabilityTables : jockeyWinsProbabilityTables;
-            const config = getBackgroundWinsRuleConfig(person);
-            const resolvedWinsMax = winsMax === null || winsMax === undefined
-                ? (config?.winsMax ?? 3)
-                : winsMax;
-            return tables[resolvedWinsMax] || {};
+            return tables[winsMax] || {};
         }
 
         function setWinsProbabilityTable(person, winsMax, table) {
@@ -5252,38 +5276,15 @@
             tables[winsMax] = { ...current, ...table };
         }
 
-        function getWinsProbabilityThreshold(surface, person, winsMax = null) {
+        function getWinsProbabilityThreshold(surface, person, winsMax = 1) {
             return getProbabilityThresholdStarts(getWinsProbabilityTable(person, winsMax)[surface], BG_PROBABILITY_TARGET);
         }
 
         function updateWinsProbabilityRuleLabel(person, winsMax, thresholds) {
-            const key = getBackgroundWinsRuleConfig(person)?.key || `${person}Wins${winsMax}Prob3`;
+            const key = `${person}Wins${winsMax}Prob3`;
             const rule = BACKGROUND_RULES.find(item => item.key === key);
             if (!rule) return;
             rule.probabilityLabel = `芝${formatSurfaceProbability(thresholds?.["芝"]?.best)} / ダ${formatSurfaceProbability(thresholds?.["ダ"]?.best)}`;
-        }
-
-        function scheduleProbabilityThresholdRetry(person, winsMax) {
-            const key = `${person}:${winsMax}`;
-            let state = probabilityThresholdRetryStates.get(key);
-            if (!state) {
-                state = { count: 0, timer: null };
-                probabilityThresholdRetryStates.set(key, state);
-            }
-            if (state.timer || state.count >= PROBABILITY_CACHE_MAX_RETRIES) return;
-            state.count++;
-            state.timer = setTimeout(() => {
-                state.timer = null;
-                fetchWinsProbabilityThresholds(person, winsMax);
-            }, PROBABILITY_CACHE_RETRY_INTERVAL_MS);
-        }
-
-        function clearProbabilityThresholdRetry(person, winsMax) {
-            const key = `${person}:${winsMax}`;
-            const state = probabilityThresholdRetryStates.get(key);
-            if (!state) return;
-            if (state.timer) clearTimeout(state.timer);
-            probabilityThresholdRetryStates.delete(key);
         }
 
         function applyProbabilityThresholdPayload(person, winsMax, thresholds) {
@@ -5291,24 +5292,11 @@
             updateWinsProbabilityRuleLabel(person, winsMax, thresholds);
             const nextTable = {};
             for (const surface of ["芝", "ダ"]) {
-                // Worker の best は、芝・ダートをまたいだ同一条件グループ
-                // の2勝イベントで確定した値。rows 全体から再選択すると、
-                // 芝だけの確率を見て1走まで下がるため、best を優先する。
-                const best = thresholds[surface]?.best;
-                if (Number.isFinite(Number(best?.starts)) && Number.isFinite(Number(best?.probability))) {
-                    nextTable[surface] = [{
-                        starts: Number(best.starts),
-                        probability: Number(best.probability),
-                        force: true
-                    }];
-                    continue;
-                }
                 const rows = thresholds[surface]?.rows;
                 if (Array.isArray(rows) && rows.length) {
                     nextTable[surface] = rows.map(row => ({
                         starts: Number(row.starts),
-                        probability: Number(row.probability),
-                        selectionProbability: Number(row.selectionProbability ?? row.probability)
+                        probability: Number(row.probability)
                     })).filter(row => Number.isFinite(row.starts) && Number.isFinite(row.probability));
                 }
             }
@@ -5317,38 +5305,29 @@
             }
         }
 
-        async function fetchWinsProbabilityThresholds(person = "jockey", winsMax = null) {
+        async function fetchWinsProbabilityThresholds(person = "jockey", winsMax = 1) {
             const normalizedPerson = person === "all" ? "all" : (person === "trainer" ? "trainer" : "jockey");
-            if (normalizedPerson === "all") {
-                await Promise.all(Object.entries(BACKGROUND_WINS_RULE_CONFIG).map(([configuredPerson, config]) => (
-                    fetchWinsProbabilityThresholds(configuredPerson, config.winsMax)
-                )));
-                return;
-            }
-            const configured = getBackgroundWinsRuleConfig(normalizedPerson);
-            const parsedWinsMax = winsMax === null || winsMax === "" ? NaN : Number(winsMax);
+            const parsedWinsMax = Number(winsMax);
             const normalizedWinsMax = Number.isFinite(parsedWinsMax)
                 ? Math.max(0, Math.min(99, Math.trunc(parsedWinsMax)))
-                : (configured?.winsMax ?? 3);
+                : 1;
             try {
                 const u = new URL("probability-thresholds", WIN5_API);
                 u.searchParams.set("person", normalizedPerson);
                 u.searchParams.set("winsMax", String(normalizedWinsMax));
-                if (configured && normalizedWinsMax === configured.winsMax) {
-                    u.searchParams.set("years", String(configured.years));
-                }
                 u.searchParams.set("target", String(BG_PROBABILITY_TARGET));
                 u.searchParams.set("step", "1");
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
-                if (!json.ok || !json.thresholds) {
-                    if (json.calculationPending) scheduleProbabilityThresholdRetry(normalizedPerson, normalizedWinsMax);
+                if (!json.ok || !json.thresholds) return;
+
+                if (normalizedPerson === "all") {
+                    applyProbabilityThresholdPayload("jockey", normalizedWinsMax, json.thresholds.jockey);
+                    applyProbabilityThresholdPayload("trainer", normalizedWinsMax, json.thresholds.trainer);
                     return;
                 }
 
                 applyProbabilityThresholdPayload(normalizedPerson, normalizedWinsMax, json.thresholds);
-                if (json.stale) scheduleProbabilityThresholdRetry(normalizedPerson, normalizedWinsMax);
-                else clearProbabilityThresholdRetry(normalizedPerson, normalizedWinsMax);
             } catch (e) {
                 console.warn("fetchWinsProbabilityThresholds:", e);
             }
@@ -5442,45 +5421,21 @@
             return trainerPreviousWin5WinIdsPromise;
         }
 
-        function isWinsProb3Band(row, person = "jockey", winsMax = null) {
-            const config = getBackgroundWinsRuleConfig(person);
-            const resolvedWinsMax = winsMax === null || winsMax === undefined
-                ? (config?.winsMax ?? 3)
-                : winsMax;
-            const statsKey = config && resolvedWinsMax === config.winsMax
-                ? config.statsDatasetKey
-                : (person === "trainer" ? "tstatsSurface1" : "jstatsSurface1");
+        function isJockeyWins1Prob3Band(row) {
+            return isWinsProb3Band(row, "jockey", 1);
+        }
+
+        function isWins1Prob3Band(row, person = "jockey") {
+            return isWinsProb3Band(row, person, 1);
+        }
+
+        function isWinsProb3Band(row, person = "jockey", winsMax = 1) {
+            const statsKey = person === "trainer" ? "tstatsSurface1" : "jstatsSurface1";
             const stats = parseStatsRecord(row?.dataset?.[statsKey]);
-            if (!stats || stats.wins > resolvedWinsMax) return false;
+            if (!stats || stats.wins > winsMax) return false;
             const surface = getRaceSurface(row);
-            const threshold = getWinsProbabilityThreshold(surface, person, resolvedWinsMax);
+            const threshold = getWinsProbabilityThreshold(surface, person, winsMax);
             return !!threshold && stats.starts >= threshold.starts;
-        }
-
-        function isAnyWinsProb3Band(row, person = "jockey") {
-            const config = getBackgroundWinsRuleConfig(person);
-            const key = config?.key || `${person}Wins3Prob3`;
-            const winsMax = config?.winsMax ?? 3;
-            return selectedBgRuleKeys.has(key) && isWinsProb3Band(row, person, winsMax);
-        }
-
-        function getSelectedWinsRaceCount(row, person = "jockey") {
-            const races = new Set();
-            document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
-                if (!isBackgroundRuleTarget(sel)) return;
-                if (!isAnyWinsProb3Band(sel, person)) return;
-                const race = String(sel.dataset?.race || "").trim();
-                if (race) races.add(race);
-            });
-            return races.size;
-        }
-
-        function getSelectedJockeyWinsRaceCount(row) {
-            return getSelectedWinsRaceCount(row, "jockey");
-        }
-
-        function getSelectedTrainerWinsRaceCount(row) {
-            return getSelectedWinsRaceCount(row, "trainer");
         }
 
         function isJockeyWithoutDailyMultiWin5Years(row) {
