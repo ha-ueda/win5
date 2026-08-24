@@ -5342,8 +5342,7 @@
         function formatPersonStatsDisplay(stats) {
             const parsed = parseStatsRecord(stats);
             if (!parsed) return stats || "";
-            const rate = parsed.starts > 0 ? (parsed.wins / parsed.starts) * 100 : 0;
-            return `(${parsed.wins}-${parsed.seconds}-${parsed.thirds}-${parsed.others} ${rate.toFixed(1)}%)`;
+            return `(${parsed.wins}-${parsed.seconds}-${parsed.thirds}-${parsed.others})`;
         }
 
         function getRaceSurface(row) {
