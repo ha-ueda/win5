@@ -1390,8 +1390,8 @@
         .mark-profile-select-wrap {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            margin-top: 4px;
+            gap: 12px;
+            margin-top: 0;
         }
 
         .mark-profile-select-wrap label {
@@ -1425,11 +1425,19 @@
             border-color: #d4d7dc;
         }
 
+        .mark-profile-updated-at {
+            min-height: 1.2em;
+            color: #666;
+            font-size: 12px;
+            line-height: 1.4;
+            text-align: left;
+        }
+
         .mark-profile-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-top: 4px;
+            margin-top: 0;
         }
 
         .mark-profile-actions button {
@@ -1662,11 +1670,12 @@
             </div>
 
             <div class="mark-profile-select-wrap">
-                <select id="markProfileSelect" class="mark-profile-select" onchange="syncMarkProfileSaveButton()">
+                <select id="markProfileSelect" class="mark-profile-select" onchange="syncMarkProfileSaveButton(); syncMarkProfileUpdatedAt();">
                     <option value="上田">上田</option>
                     <option value="千葉">千葉</option>
                     <option value="combined">合成</option>
                 </select>
+                <div id="markProfileUpdatedAt" class="mark-profile-updated-at" aria-live="polite"></div>
             </div>
 
             <div class="mark-profile-actions">
@@ -1824,7 +1833,7 @@
         const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱'];
         const STORAGE_KEY = 'win5_state_v9';
         const STORAGE_KEY_OLD = 'win5_state_v8';
-        const BG_RULE_SELECTION_VERSION = 5;
+        const BG_RULE_SELECTION_VERSION = 6;
         const WIN5_API = "https://win5.cooopew.workers.dev/";
         const BG_COLOR_TABLE_V1 = [
             "#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d",
@@ -1864,12 +1873,8 @@
                 ]
             },
             2: {
-                "芝": [{ starts: 42, probability: 2.34 }],
-                "ダ": [{ starts: 26, probability: 2.82 }]
-            },
-            3: {
-                "芝": [{ starts: 53, probability: 2.34 }],
-                "ダ": [{ starts: 30, probability: 2.42 }]
+                "芝": [{ starts: 12, probability: 2.88 }],
+                "ダ": [{ starts: 10, probability: 2.88 }]
             }
         };
         let trainerWinsProbabilityTables = {
@@ -1886,13 +1891,9 @@
                     { starts: 30, probability: 0.00 }
                 ]
             },
-            2: {
-                "芝": [{ starts: 29, probability: 2.73 }],
-                "ダ": [{ starts: 20, probability: 2.02 }]
-            },
-            3: {
-                "芝": [{ starts: 38, probability: 2.73 }],
-                "ダ": [{ starts: 20, probability: 2.42 }]
+            5: {
+                "芝": [{ starts: 14, probability: 2.88 }],
+                "ダ": [{ starts: 10, probability: 2.88 }]
             }
         };
         const BACKGROUND_RULES = [
@@ -1916,20 +1917,6 @@
                 match: row => isBackgroundRuleTarget(row) && isJockeyWins1Prob3Band(row)
             },
             {
-                key: "jockeyWins2Prob3",
-                label: "1年間で2勝以下の騎手",
-                probabilityLabel: "-",
-                color: BG_RULE_COLOR_PALETTE[1],
-                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "jockey", 2)
-            },
-            {
-                key: "jockeyWins3Prob3",
-                label: "1年間で3勝以下の騎手",
-                probabilityLabel: "-",
-                color: BG_RULE_COLOR_PALETTE[1],
-                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "jockey", 3)
-            },
-            {
                 key: "trainerWins1Prob3",
                 label: "1年間で1勝以下の調教師",
                 probabilityLabel: "-",
@@ -1937,18 +1924,26 @@
                 match: row => isBackgroundRuleTarget(row) && isWins1Prob3Band(row, "trainer")
             },
             {
-                key: "trainerWins2Prob3",
-                label: "1年間で2勝以下の調教師",
+                key: "jockeyWins2Prob3",
+                label: "1年間で2勝以下の騎手",
                 probabilityLabel: "-",
-                color: BG_RULE_COLOR_PALETTE[2],
-                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "trainer", 2)
+                getColor: row => getJockeyWins2Color(row),
+                swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
+                colorEditable: false,
+                match: row => isBackgroundRuleTarget(row)
+                    && isWinsProb3Band(row, "jockey", 2)
+                    && getSelectedJockeyWins2RaceCount(row) >= 2
             },
             {
-                key: "trainerWins3Prob3",
-                label: "1年間で3勝以下の調教師",
+                key: "trainerWins5Prob3",
+                label: "1年間で5勝以下の調教師",
                 probabilityLabel: "-",
-                color: BG_RULE_COLOR_PALETTE[2],
-                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "trainer", 3)
+                getColor: row => getTrainerWins5Color(row),
+                swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
+                colorEditable: false,
+                match: row => isBackgroundRuleTarget(row)
+                    && isWinsProb3Band(row, "trainer", 5)
+                    && getSelectedTrainerWins5RaceCount(row) >= 2
             },
             {
                 key: "jockeyPreviousWin5Win",
@@ -2325,7 +2320,7 @@
             const jockeyWinsMaxes = new Set();
             const trainerWinsMaxes = new Set();
             activeRules.forEach(rule => {
-                const match = /^(jockey|trainer)Wins([123])Prob3$/.exec(rule.key || "");
+                const match = /^(jockey|trainer)Wins(\d+)Prob3$/.exec(rule.key || "");
                 if (!match) return;
                 const winsMax = Number(match[2]);
                 if (match[1] === "jockey") jockeyWinsMaxes.add(winsMax);
@@ -2394,10 +2389,8 @@
             [
                 ["jockeyWins1Prob3", "jockey"],
                 ["jockeyWins2Prob3", "jockey"],
-                ["jockeyWins3Prob3", "jockey"],
                 ["trainerWins1Prob3", "trainer"],
-                ["trainerWins2Prob3", "trainer"],
-                ["trainerWins3Prob3", "trainer"],
+                ["trainerWins5Prob3", "trainer"],
             ].forEach(([key]) => {
                 const rule = byKey.get(key);
                 if (!rule) return;
@@ -4772,6 +4765,7 @@
 
         let markProfilesCache = null;
         let markProfilesFetchPromise = null;
+        let markProfileUpdatedAtRequestId = 0;
         const MARK_PROFILE_NAMES = ["上田", "千葉"];
         const PROFILE_MARK_VALUES = new Set(MARKS);
 
@@ -4783,12 +4777,51 @@
             saveButton.disabled = select?.value === "combined" || !hasMarks;
         }
 
+        function formatMarkProfileUpdatedAt(value) {
+            const date = new Date(String(value || "").trim());
+            if (!Number.isFinite(date.getTime())) return "";
+            return date.toLocaleString("ja-JP", {
+                timeZone: "Asia/Tokyo",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+            });
+        }
+
+        async function syncMarkProfileUpdatedAt() {
+            const select = document.getElementById("markProfileSelect");
+            const display = document.getElementById("markProfileUpdatedAt");
+            if (!select || !display) return;
+
+            const selected = select.value || "上田";
+            const requestId = ++markProfileUpdatedAtRequestId;
+            display.textContent = "更新日を取得中…";
+            try {
+                const profiles = await fetchMarkProfiles();
+                if (requestId !== markProfileUpdatedAtRequestId) return;
+                if (selected === "combined") {
+                    const ueda = formatMarkProfileUpdatedAt(profiles.profiles?.上田?.updatedAt);
+                    const chiba = formatMarkProfileUpdatedAt(profiles.profiles?.千葉?.updatedAt);
+                    display.textContent = `上田：${ueda || "未保存"}　千葉：${chiba || "未保存"}`;
+                    return;
+                }
+                const updatedAt = formatMarkProfileUpdatedAt(profiles.profiles?.[selected]?.updatedAt);
+                display.textContent = `更新日：${updatedAt || "未保存"}`;
+            } catch (e) {
+                if (requestId === markProfileUpdatedAtRequestId) display.textContent = "更新日を取得できません";
+            }
+        }
+
         function openMarkProfileModal() {
             const modal = document.getElementById("markProfileModal");
             if (!modal) return;
             const select = document.getElementById("markProfileSelect");
             if (select && !select.value) select.value = "上田";
             syncMarkProfileSaveButton();
+            syncMarkProfileUpdatedAt();
             lockBodyScroll();
             modal.style.display = "flex";
             modal.onclick = () => closeMarkProfileModal();
@@ -4950,6 +4983,7 @@
                 if (!response.ok || !json?.ok) throw new Error(json?.error || `HTTP ${response.status}`);
                 markProfilesCache = normalizeClientMarkProfiles(json);
                 showToast("保存しました");
+                syncMarkProfileUpdatedAt();
             } catch (e) {
                 console.error("saveMarkProfile:", e);
                 showToast("保存に失敗しました", { type: "error" });
@@ -5502,6 +5536,29 @@
             return races.size;
         }
 
+        function getSelectedPersonWinsRaceCount(row, person, winsMax) {
+            const idKey = person === "trainer" ? "tid" : "jid";
+            const id = String(row?.dataset?.[idKey] || "").trim();
+            if (!id) return 0;
+            const races = new Set();
+            document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
+                if (!isBackgroundRuleTarget(sel)) return;
+                if (String(sel.dataset?.[idKey] || "").trim() !== id) return;
+                if (!isWinsProb3Band(sel, person, winsMax)) return;
+                const race = String(sel.dataset.race || "").trim();
+                if (race) races.add(race);
+            });
+            return races.size;
+        }
+
+        function getSelectedJockeyWins2RaceCount(row) {
+            return getSelectedPersonWinsRaceCount(row, "jockey", 2);
+        }
+
+        function getSelectedTrainerWins5RaceCount(row) {
+            return getSelectedPersonWinsRaceCount(row, "trainer", 5);
+        }
+
         function getSelectedTrainerPreviousWin5WinnerRaceCount(row) {
             const tid = String(row?.dataset?.tid || "").trim();
             if (!tid || !trainerPreviousWin5WinIds?.has(tid)) return 0;
@@ -5591,6 +5648,12 @@
                         if (tid && isTrainerPreviousWin5Winner(sel) && getSelectedTrainerPreviousWin5WinnerRaceCount(sel) >= 2) {
                             items.push(`trainerPrevious:${tid}`);
                         }
+                        if (jid && isWinsProb3Band(sel, "jockey", 2) && getSelectedJockeyWins2RaceCount(sel) >= 2) {
+                            items.push(`jockeyWins2:${jid}`);
+                        }
+                        if (tid && isWinsProb3Band(sel, "trainer", 5) && getSelectedTrainerWins5RaceCount(sel) >= 2) {
+                            items.push(`trainerWins5:${tid}`);
+                        }
                         return items;
                     })
             )].sort();
@@ -5613,6 +5676,14 @@
 
         function getTrainerColor(row) {
             return getPersonRuleColor("trainerNoDaily", row?.dataset?.tid);
+        }
+
+        function getJockeyWins2Color(row) {
+            return getPersonRuleColor("jockeyWins2", row?.dataset?.jid);
+        }
+
+        function getTrainerWins5Color(row) {
+            return getPersonRuleColor("trainerWins5", row?.dataset?.tid);
         }
 
         function getJockeyPreviousWin5Color(row) {
