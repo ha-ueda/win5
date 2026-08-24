@@ -50,6 +50,15 @@
             flex: 1 1 0;
         }
 
+        /* Prevent the browser's focus ring from leaving a blue frame on the
+           top action area after a button/select is tapped. */
+        .top-bar-right :focus,
+        .top-bar-right :focus-visible,
+        .toggle-container :focus,
+        .toggle-container :focus-visible {
+            outline: none;
+        }
+
         .top-bar-right #win5TabSelect,
         .top-bar-right .calc-btn {
             font-size: 14px;
