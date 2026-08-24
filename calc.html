@@ -1828,7 +1828,7 @@
 
         const TOTAL_RACES = 5;
         const HORSE_MAX = 18;
-        const MARKS = ["", "✓", "◎", "無"];
+        const MARKS = ["", "無", "✓", "◎"];
         const isHimoMark = (mark) => mark === "✓" || mark === "無";
         const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱'];
         const STORAGE_KEY = 'win5_state_v9';
@@ -1842,10 +1842,15 @@
             "#43aa8b", "#4d96ff", "#845ec2", "#f3722c", "#ef476f", "#06d6a0",
             "#118ab2", "#c77dff", "#f8961e", "#84dcc6", "#f28482", "#b8f2e6",
             "#f6bd60", "#8ecae6", "#ffb703", "#a7c957", "#e5989b", "#80ed99",
-            "#cdb4db", "#f94144", "#577590"
+            "#cdb4db", "#f94144", "#577590",
+            "#ff6f61", "#6baed6", "#7fc97f", "#fddc6c",
+            "#beaed4", "#fdc086", "#7fcdbb", "#f768a1",
+            "#ffb4a2", "#90be6d", "#f9c74f", "#277da1",
+            "#f9844a", "#4d908e", "#e76f51", "#264653"
         ];
-        const BG_COLORS = BG_COLOR_TABLE_V1.slice(0, 39);
-        const BG_RULE_COLOR_PALETTE = BG_COLORS;
+        const BG_COLORS = BG_COLOR_TABLE_V1.slice(0, 55);
+        const MANUAL_BG_PALETTE_COLORS = BG_COLORS.slice(0, 7);
+        const BG_RULE_COLOR_PALETTE = MANUAL_BG_PALETTE_COLORS;
         const PERSON_RULE_COLOR_POOL = BG_COLORS;
         const AUTO_RULE_SWATCH_COLORS = BG_COLORS.slice(0, 5);
         const AUTO_RULE_SWATCH_BACKGROUND = `linear-gradient(90deg, ${AUTO_RULE_SWATCH_COLORS.map((color, index) => {
@@ -2168,8 +2173,8 @@
 
         function keepManualBackgroundColorsOnly(box) {
             if (!box) return;
-            const manualColors = getManualBgColors(box).filter(color => BG_COLORS.includes(color));
-            box.dataset.manualBg = serializeBg(manualColors);
+            // 個別背景は標準パレット外の条件背景色も保持する。
+            box.dataset.manualBg = serializeBg(getManualBgColors(box));
         }
 
         function clearAppliedRuleBackgrounds() {
@@ -3013,11 +3018,62 @@
             else box.classList.remove("is-marked");
         }
 
+        function getConditionBackgroundPaletteEntries() {
+            const entries = new Map();
+            document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(row => {
+                const box = row.querySelector(".selected");
+                const ruleColors = getRuleBgColors(box);
+                if (!ruleColors.length) return;
+
+                let details = [];
+                try {
+                    details = parseBgRuleDetails(row);
+                } catch {
+                    details = [];
+                }
+                ruleColors.forEach(color => {
+                    const normalizedColor = normalizeBgColors([color])[0];
+                    if (!normalizedColor) return;
+                    let entry = entries.get(normalizedColor);
+                    if (!entry) {
+                        entry = { color: normalizedColor, labels: new Set() };
+                        entries.set(normalizedColor, entry);
+                    }
+                    const labels = details
+                        .filter(detail => String(detail?.color || "").trim() === normalizedColor)
+                        .map(detail => String(detail?.label || "").trim())
+                        .filter(Boolean);
+                    if (labels.length) labels.forEach(label => entry.labels.add(label));
+                    else entry.labels.add("条件背景");
+                });
+            });
+            return [...entries.values()].map(entry => ({
+                color: entry.color,
+                label: `条件背景: ${[...entry.labels].join(" / ")}`
+            }));
+        }
+
         function openPalette(rowEl, e) {
             const box = rowEl.querySelector(".selected");
             if (!box) return;
 
-            const paletteColors = BG_COLORS;
+            const standardPaletteColors = MANUAL_BG_PALETTE_COLORS;
+            const conditionEntries = getConditionBackgroundPaletteEntries()
+                .filter(entry => !standardPaletteColors.includes(entry.color));
+            const conditionOptions = conditionEntries.map((entry, index) => ({
+                color: entry.color,
+                badge: String(standardPaletteColors.length + index + 1),
+                label: entry.label
+            }));
+            const paletteOptions = [
+                ...standardPaletteColors.map((color, index) => ({
+                    color,
+                    badge: String(index + 1),
+                    label: `パレット${index + 1}`
+                })),
+                ...conditionOptions
+            ];
+            const paletteColors = paletteOptions.map(option => option.color);
             const selectedColors = new Set([
                 ...getManualBgColors(box),
                 ...getRuleBgColors(box)
@@ -3029,7 +3085,13 @@
                     !clearAllRuleColors && (!paletteColors.includes(color) || selectedColors.has(color))
                 );
                 const nextRuleColorSet = new Set(nextRuleColors);
-                const nextManualColors = selectedList.filter(color => !nextRuleColorSet.has(color));
+                const preservedManualColors = clearAllRuleColors
+                    ? []
+                    : getManualBgColors(box).filter(color => !paletteColors.includes(color));
+                const nextManualColors = [
+                    ...preservedManualColors,
+                    ...selectedList.filter(color => !nextRuleColorSet.has(color) && !preservedManualColors.includes(color))
+                ];
                 box.dataset.manualBg = serializeBg(nextManualColors);
                 box.dataset.ruleBg = serializeBg(nextRuleColors);
                 filterBgRuleDetailsByColors(box, nextRuleColors);
@@ -3051,8 +3113,7 @@
             palette.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)";
             palette.style.maxWidth = Math.min(window.innerWidth - 20, 400) + "px";
 
-            const colors = paletteColors;
-            palette.style.width = getPaletteContentWidth(colors.length + 1) + "px";
+            palette.style.width = getPaletteContentWidth(paletteOptions.length + 1) + "px";
             const colorButtons = [];
             const updateColorButton = (btn, color) => {
                 const active = selectedColors.has(color);
@@ -3060,9 +3121,10 @@
                 btn.style.boxShadow = active ? "0 0 0 4px #3251BC" : "none";
             };
 
-            colors.forEach((c, index) => {
+            const appendColorButton = option => {
+                const c = option.color;
                 const btn = document.createElement("div");
-                btn.textContent = String(index + 1);
+                btn.textContent = option.badge || "";
                 btn.style.width = "36px";
                 btn.style.height = "36px";
                 btn.style.flex = "0 0 36px";
@@ -3075,7 +3137,8 @@
                 btn.style.border = "1px solid #777";
                 btn.style.borderRadius = "8px";
                 btn.style.cursor = "pointer";
-                btn.style.fontSize = "13px";
+                btn.style.fontSize = option.badge.length > 1 ? "11px" : "13px";
+                btn.title = option.label || c;
                 btn.addEventListener("click", () => {
                     if (selectedColors.has(c)) selectedColors.delete(c);
                     else selectedColors.add(c);
@@ -3085,7 +3148,13 @@
                 updateColorButton(btn, c);
                 colorButtons.push(btn);
                 palette.appendChild(btn);
-            });
+            };
+
+            paletteOptions
+                .filter(option => standardPaletteColors.includes(option.color))
+                .forEach(appendColorButton);
+
+            conditionOptions.forEach(appendColorButton);
 
             const noneBtn = document.createElement("div");
             noneBtn.style.width = "36px";
@@ -3096,9 +3165,10 @@
             noneBtn.style.border = "1px solid #777";
             noneBtn.style.borderRadius = "8px";
             noneBtn.style.cursor = "pointer";
+            noneBtn.title = "空";
             noneBtn.addEventListener("click", () => {
                 selectedColors.clear();
-                colorButtons.forEach((btn, i) => updateColorButton(btn, colors[i]));
+                colorButtons.forEach(btn => btn.style.boxShadow = "none");
                 applySelectedColors({ clearAllRuleColors: true });
             });
             palette.appendChild(noneBtn);
