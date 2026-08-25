@@ -1730,6 +1730,7 @@
             </div>
             <div class="stats-modal-row">
                 <div id="yearsToggle" class="sort-switch">
+                    <span class="sort-option" data-key="current">今年</span>
                     <span class="sort-option" data-key="1">1年</span>
                     <span class="sort-option active" data-key="3">3年</span>
                     <span class="sort-option" data-key="5">5年</span>
@@ -5256,6 +5257,12 @@
         const STATS_LABEL = {
             win5: 'WIN5', venue: '競馬場', distance: '距離',
         };
+        const STATS_YEARS_LABEL = {
+            current: '今年',
+            "1": '1年',
+            "3": '3年',
+            "5": '5年',
+        };
         const PERSON_LABEL = { jockey: '騎手', trainer: '調教師' };
 
         function normalizeStatsModes(modes) {
@@ -5280,7 +5287,7 @@
             const parts = [
                 PERSON_LABEL[currentPerson] || '騎手',
                 ...modeLabels,
-                `${currentStatsYears}年`,
+                STATS_YEARS_LABEL[currentStatsYears] || `${currentStatsYears}年`,
             ];
             statsPopLabel.textContent = parts.join('・');
         }
