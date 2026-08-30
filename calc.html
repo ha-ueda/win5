@@ -296,7 +296,9 @@
             color: #fff;
             font-size: 10px;
             font-weight: 400;
-            line-height: 14px;
+            /* Keep the glyph line box smaller than the fixed badge so
+               Safari/iOS can center the fallback Hiragino font correctly. */
+            line-height: 1;
             text-align: center;
             background: #757575;
             min-width: 28px;
