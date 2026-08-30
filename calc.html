@@ -9,7 +9,6 @@
         :root {
             --calc-btn-width: clamp(110px, 18vw, 150px);
             --page-content-max: 640px;
-            --grade-icon-offset-y: 0px;
         }
 
         body {
@@ -288,40 +287,6 @@
         .race-sub .surf-turf {
             color: rgb(102, 187, 106);
         }
-
-        .race-sub .Icon_GradeType {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-sizing: border-box;
-            color: #fff;
-            font-size: 10px;
-            font-weight: 400;
-            line-height: 1;
-            text-align: center;
-            background: #757575;
-            min-width: 28px;
-            height: 14px;
-            margin: 0;
-            border-radius: 10px;
-            padding: 0 5px;
-            white-space: nowrap;
-            vertical-align: middle;
-            /* Align the badge itself with the surrounding race-sub text. */
-            position: relative;
-            top: var(--grade-icon-offset-y);
-        }
-
-        .race-sub .Icon_GradeTypeLabel {
-            display: inline-block;
-            line-height: 1;
-        }
-
-        .race-sub .Icon_GradeType1 { background: rgb(50, 81, 188); }
-        .race-sub .Icon_GradeType2 { background: rgb(197, 49, 49); }
-        .race-sub .Icon_GradeType3 { background: rgb(88, 175, 74); }
-        .race-sub .Icon_GradeType14 { background: rgb(117, 117, 117); }
-        .race-sub .Icon_GradeType15 { background: rgb(117, 117, 117); }
 
         .race-clear {
             border: none;
@@ -4355,33 +4320,13 @@
             return escapeHtml(c);
         }
 
-        function raceGradeIconTypeClass(raceClass) {
-            switch (String(raceClass || "").trim()) {
-                case "GI":
-                case "G1": return "Icon_GradeType1";
-                case "GII":
-                case "G2": return "Icon_GradeType2";
-                case "GIII":
-                case "G3": return "Icon_GradeType3";
-                case "OP": return "Icon_GradeType14";
-                case "L": return "Icon_GradeType15";
-                case "1勝":
-                case "2勝":
-                case "3勝": return "Icon_GradeType15";
-                default: return "";
-            }
-        }
-
         function colorizeRaceClass(raceClass) {
             const raw = String(raceClass ?? "").trim();
             const c = raw === "GI" ? "G1"
                 : raw === "GII" ? "G2"
                 : raw === "GIII" ? "G3"
                 : raw;
-            if (!c) return "";
-            const typeClass = raceGradeIconTypeClass(raw);
-            if (!typeClass) return escapeHtml(c);
-            return `<span class="Icon_GradeType ${typeClass} Icon_GradePos01"><span class="Icon_GradeTypeLabel">${escapeHtml(c)}</span></span>`;
+            return escapeHtml(c);
         }
 
         function updateRaceHeaders(raceInfo) {
