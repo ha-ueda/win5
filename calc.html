@@ -5,6 +5,15 @@
     <meta charset="UTF-8">
     <title>WIN5 買い目計算</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>
+        // Safari on macOS can also satisfy the usual WebKit feature query,
+        // so identify iOS explicitly (including iPad desktop-mode UAs).
+        (() => {
+            const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent)
+                || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+            if (isIos) document.documentElement.classList.add("is-ios");
+        })();
+    </script>
     <style>
         :root {
             --calc-btn-width: clamp(110px, 18vw, 150px);
@@ -296,8 +305,6 @@
             color: #fff;
             font-size: 10px;
             font-weight: 400;
-            /* Keep the glyph line box smaller than the fixed badge so
-               Safari/iOS can center the fallback Hiragino font correctly. */
             line-height: 1;
             text-align: center;
             background: #757575;
@@ -313,10 +320,23 @@
         .race-sub .Icon_GradeTypeLabel {
             display: inline-block;
             line-height: 1;
-            /* iOS fallback fonts place the glyph ink slightly below the
-               flex line center; correct the optical position only. */
             transform: translateY(-0.5px);
             -webkit-transform: translateY(-0.5px);
+        }
+
+        /* iOS fallback fonts need a separate line box to keep the glyph
+           visually centered.  Leave the desktop geometry unchanged. */
+        html.is-ios .race-sub .Icon_GradeType {
+            display: inline-grid;
+            place-items: center;
+            line-height: 0;
+        }
+
+        html.is-ios .race-sub .Icon_GradeTypeLabel {
+            display: block;
+            line-height: 10px;
+            transform: translateY(-1px);
+            -webkit-transform: translateY(-1px);
         }
 
         .race-sub .Icon_GradeType1 { background: rgb(50, 81, 188); }
