@@ -9,6 +9,7 @@
         :root {
             --calc-btn-width: clamp(110px, 18vw, 150px);
             --page-content-max: 640px;
+            --grade-icon-offset-y: 0px;
         }
 
         body {
@@ -308,7 +309,7 @@
             vertical-align: middle;
             /* Align the badge itself with the surrounding race-sub text. */
             position: relative;
-            top: -1px;
+            top: var(--grade-icon-offset-y);
         }
 
         .race-sub .Icon_GradeTypeLabel {
