@@ -4591,18 +4591,11 @@
         async function mapWin5Requests(items, limit, mapper) {
             const values = Array.isArray(items) ? items : [];
             const results = new Array(values.length);
-            let nextIndex = 0;
-            const workerCount = Math.min(Math.max(Number(limit) || 1, 1), values.length);
-
-            async function run() {
-                while (true) {
-                    const index = nextIndex++;
-                    if (index >= values.length) return;
-                    results[index] = await mapper(values[index], index);
-                }
+            // NetKeiba側への同時アクセスを避け、5レースを順番に取得する。
+            // limit引数は既存呼び出しとの互換性のため残す。
+            for (let index = 0; index < values.length; index++) {
+                results[index] = await mapper(values[index], index);
             }
-
-            await Promise.all(Array.from({ length: workerCount }, () => run()));
             return results;
         }
 
@@ -4656,6 +4649,7 @@
                         const raceUrl = new URL("win5-race", WIN5_API);
                         raceUrl.searchParams.set("race_id", meta?.raceId || "");
                         raceUrl.searchParams.set("source", manifest.source || "upcoming");
+                        raceUrl.searchParams.set("sourceDate", manifest.sourceDate || "");
                         raceUrl.searchParams.set("mode", mode === "data" ? "data" : (mode === "odds" ? "odds" : "all"));
                         raceUrl.searchParams.set("_", String(Date.now()));
                         const raceJson = await fetchWin5Json(raceUrl.toString());
