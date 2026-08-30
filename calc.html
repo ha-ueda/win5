@@ -310,6 +310,15 @@
             vertical-align: middle;
         }
 
+        .race-sub .Icon_GradeTypeLabel {
+            display: inline-block;
+            line-height: 1;
+            /* iOS fallback fonts place the glyph ink slightly below the
+               flex line center; correct the optical position only. */
+            transform: translateY(-0.5px);
+            -webkit-transform: translateY(-0.5px);
+        }
+
         .race-sub .Icon_GradeType1 { background: rgb(50, 81, 188); }
         .race-sub .Icon_GradeType2 { background: rgb(197, 49, 49); }
         .race-sub .Icon_GradeType3 { background: rgb(88, 175, 74); }
@@ -4374,7 +4383,7 @@
             if (!c) return "";
             const typeClass = raceGradeIconTypeClass(raw);
             if (!typeClass) return escapeHtml(c);
-            return `<span class="Icon_GradeType ${typeClass} Icon_GradePos01">${escapeHtml(c)}</span>`;
+            return `<span class="Icon_GradeType ${typeClass} Icon_GradePos01"><span class="Icon_GradeTypeLabel">${escapeHtml(c)}</span></span>`;
         }
 
         function updateRaceHeaders(raceInfo) {
