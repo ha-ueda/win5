@@ -1509,6 +1509,45 @@
             }
 
         }
+
+        /* On small screens, show one race card at a time and let the user
+           move between cards with a horizontal swipe. */
+        @media (max-width: 640px) {
+            #raceTables {
+                overflow-x: auto;
+                overflow-y: hidden;
+                scroll-snap-type: x mandatory;
+                scroll-behavior: smooth;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                overscroll-behavior-x: contain;
+            }
+
+            #raceTables::-webkit-scrollbar {
+                display: none;
+                width: 0;
+                height: 0;
+            }
+
+            #raceTables .race-row {
+                flex-direction: row;
+                align-items: flex-start;
+                gap: 0;
+                width: 100%;
+                min-width: 100%;
+                flex-wrap: nowrap;
+                transform: none !important;
+            }
+
+            #raceTables .race-card {
+                flex: 0 0 100%;
+                width: 100%;
+                max-width: 100%;
+                min-width: 0;
+                scroll-snap-align: start;
+                scroll-snap-stop: always;
+            }
+        }
     </style>
 </head>
 
