@@ -4614,6 +4614,7 @@
         }
 
         let win5DataFetchInFlight = null;
+        let win5StatsApplyToken = 0;
 
         async function fetchWin5Json(url) {
             const res = await fetch(url, { cache: "no-store" });
@@ -4663,7 +4664,10 @@
                 }
 
                 applyWin5Data(json);
-                await fetchAndApplyJockeyStats();
+                const statsApplyToken = ++win5StatsApplyToken;
+                // レースデータの表示を成績取得で待たせず、成績は後から反映する。
+                fetchAndApplyJockeyStats(currentPerson, { requestToken: statsApplyToken })
+                    .catch(e => console.warn("fetchAndApplyJockeyStats:", e));
 
                 const missing = collectMissingLoadedData();
                 if (missing.length) {
@@ -5807,7 +5811,7 @@
             return keysPerRace;
         }
 
-        async function fetchAndApplyJockeyStats(personOverride = currentPerson, { updateDisplay = true, years = currentStatsYears, modes = currentStatsModes, datasetKey = null, save = true } = {}) {
+        async function fetchAndApplyJockeyStats(personOverride = currentPerson, { updateDisplay = true, years = currentStatsYears, modes = currentStatsModes, datasetKey = null, save = true, requestToken = null } = {}) {
             const raceInfo = window.raceInfo || [];
             const raceCourses = window.raceCourses || [];
             const statsModes = normalizeStatsModes(modes);
@@ -5842,8 +5846,10 @@
                     if (json.ok && json.stats) statsFetchCache.set(cacheKey, json);
                 }
                 if (!json.ok || !json.stats) return;
+                if (requestToken !== null && requestToken !== win5StatsApplyToken) return;
 
                 for (let r = 0; r < TOTAL_RACES; r++) {
+                    if (requestToken !== null && requestToken !== win5StatsApplyToken) return;
                     const key = keysPerRace[r];
                     if (!key) continue;
                     const statsMap = json.stats[key];
