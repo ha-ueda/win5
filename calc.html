@@ -1882,6 +1882,53 @@
         }).join(", ")})`;
         const RULE_BG_COLOR = BG_RULE_COLOR_PALETTE[0];
         const BG_PROBABILITY_TARGET = 3;
+
+        // JRA結果ページでは外国人騎手などのIDリンクが省略される
+        // 場合があるため、成績APIの名前フォールバックキーと同じ形式で
+        // 行の人物を照合する。
+        function normalizePersonStatsName(value) {
+            return String(value || "")
+                .normalize("NFKC")
+                .replace(/\s+/g, "")
+                .trim();
+        }
+
+        function personStatsNameKey(person, name) {
+            const normalized = normalizePersonStatsName(name);
+            return normalized ? `name:${person}:${normalized}` : "";
+        }
+
+        function rowPersonLookupKeys(row, person) {
+            const idKey = person === "trainer" ? "tid" : "jid";
+            const nameKey = person === "trainer" ? "trainer" : "jockey";
+            const keys = new Set();
+            const id = String(row?.dataset?.[idKey] || "").trim();
+            const name = String(row?.dataset?.[nameKey] || "").trim();
+            if (id) keys.add(id);
+            const fallback = personStatsNameKey(person, name);
+            if (fallback) keys.add(fallback);
+            return [...keys];
+        }
+
+        function rowMatchesPersonSet(row, personSet, person) {
+            if (!personSet) return false;
+            return rowPersonLookupKeys(row, person).some(key => personSet.has(key));
+        }
+
+        function rowsSharePerson(first, second, person) {
+            const firstKeys = new Set(rowPersonLookupKeys(first, person));
+            return rowPersonLookupKeys(second, person).some(key => firstKeys.has(key));
+        }
+
+        function rowPersonColorKey(row, person) {
+            const nameKey = personStatsNameKey(
+                person,
+                person === "trainer" ? row?.dataset?.trainer : row?.dataset?.jockey,
+            );
+            return nameKey || String(
+                row?.dataset?.[person === "trainer" ? "tid" : "jid"] || "",
+            ).trim();
+        }
         let jockeyWinsProbabilityTables = {
             1: {
                 "芝": [
@@ -4363,20 +4410,9 @@
             return escapeHtml(c);
         }
 
-        function colorizeRaceClass(raceClass) {
-            const raw = String(raceClass ?? "").trim();
-            const c = raw === "GI" ? "G1"
-                : raw === "GII" ? "G2"
-                : raw === "GIII" ? "G3"
-                : raw;
-            return escapeHtml(c);
-        }
-
         function updateRaceHeaders(raceInfo) {
             const raceTimes = window.raceTimes || [];
             const raceCourses = window.raceCourses || [];
-            const raceClasses = window.raceClasses || [];
-            const raceWeightTypes = window.raceWeightTypes || [];
 
             for (let i = 0; i < 5; i++) {
                 const title = document.getElementById(`raceTitle${i + 1}`);
@@ -4384,8 +4420,6 @@
 
                 const time = (raceTimes[i] || "").trim();
                 const course = (raceCourses[i] || "").trim();
-                const raceClass = (raceClasses[i] || "").trim();
-                const weightType = (raceWeightTypes[i] || "").trim();
                 const info = (raceInfo && raceInfo[i]) ? String(raceInfo[i]).trim() : "";
 
                 const label = info ? info : `WIN${i + 1}`;
@@ -4396,8 +4430,6 @@
                     const part = (html) => `<span class="race-sub-part">${html}</span>`;
                     if (time) parts.push(part(escapeHtml(time)));
                     if (course) parts.push(part(colorizeCourse(course)));
-                    if (raceClass) parts.push(part(colorizeRaceClass(raceClass)));
-                    if (weightType) parts.push(part(escapeHtml(weightType)));
                     sub.innerHTML = parts.join("");
                 }
             }
@@ -4539,8 +4571,6 @@
                 name: "馬名",
                 jockey: "騎手",
                 trainer: "調教師",
-                jid: "騎手ID",
-                tid: "調教師ID",
             };
             const byRace = new Map();
 
@@ -4585,17 +4615,6 @@
 
         let win5DataFetchInFlight = null;
 
-        async function mapWin5Requests(items, limit, mapper) {
-            const values = Array.isArray(items) ? items : [];
-            const results = new Array(values.length);
-            // NetKeiba側への同時アクセスを避け、5レースを順番に取得する。
-            // limit引数は既存呼び出しとの互換性のため残す。
-            for (let index = 0; index < values.length; index++) {
-                results[index] = await mapper(values[index], index);
-            }
-            return results;
-        }
-
         async function fetchWin5Json(url) {
             const res = await fetch(url, { cache: "no-store" });
             const text = await res.text();
@@ -4615,75 +4634,11 @@
             const idx = document.getElementById("win5TabSelect").value;
 
             win5DataFetchInFlight = (async () => {
-                const manifestUrl = new URL("win5-manifest", WIN5_API);
-                manifestUrl.searchParams.set("tab", idx);
-                manifestUrl.searchParams.set("_", String(Date.now()));
-                const manifest = await fetchWin5Json(manifestUrl.toString());
-                if (!manifest.ok) return manifest;
-
-                const raceMeta = Array.isArray(manifest.races) ? manifest.races : [];
-                const raceErrors = [];
-                const races = await mapWin5Requests(raceMeta, 2, async (meta, raceIndex) => {
-                    const emptyRace = {
-                        raceId: meta?.raceId || "",
-                        url: meta?.url || "",
-                        startTime: "",
-                        courseInfo: "",
-                        raceClass: "",
-                        weightType: "",
-                        horses: [],
-                        jockeys: [],
-                        trainers: [],
-                        jockeyIds: [],
-                        trainerIds: [],
-                        umabans: [],
-                        wakuClasses: [],
-                        statuses: [],
-                        odds: [],
-                        ninki: [],
-                    };
-                    try {
-                        const raceUrl = new URL("win5-race", WIN5_API);
-                        raceUrl.searchParams.set("race_id", meta?.raceId || "");
-                        raceUrl.searchParams.set("source", manifest.source || "upcoming");
-                        raceUrl.searchParams.set("sourceDate", manifest.sourceDate || "");
-                        raceUrl.searchParams.set("mode", mode === "data" ? "data" : (mode === "odds" ? "odds" : "all"));
-                        raceUrl.searchParams.set("_", String(Date.now()));
-                        const raceJson = await fetchWin5Json(raceUrl.toString());
-                        if (!raceJson.ok || !raceJson.race) {
-                            raceErrors.push({ race: raceIndex + 1, url: meta?.url || "", error: raceJson.error || "race data unavailable" });
-                            return emptyRace;
-                        }
-                        return {
-                            ...emptyRace,
-                            ...raceJson.race,
-                            raceId: raceJson.raceId || raceJson.race?.raceId || meta?.raceId || "",
-                        };
-                    } catch (e) {
-                        raceErrors.push({ race: raceIndex + 1, url: meta?.url || "", error: String(e) });
-                        return emptyRace;
-                    }
-                });
-
-                if (!raceMeta.length || raceErrors.length === raceMeta.length) {
-                    return { ok: false, error: "WIN5 race data unavailable", raceErrors };
-                }
-
-                return {
-                    ok: true,
-                    source: manifest.source || "",
-                    sourceDate: manifest.sourceDate || "",
-                    activeTab: manifest.activeTab ?? 0,
-                    tabs: manifest.tabs || [],
-                    raceInfo: manifest.raceInfo || [],
-                    raceTimes: races.map(r => r?.startTime || ""),
-                    raceCourses: races.map(r => r?.courseInfo || ""),
-                    raceClasses: races.map(r => r?.raceClass || ""),
-                    raceWeightTypes: races.map(r => r?.weightType || ""),
-                    races,
-                    sales: manifest.sales || null,
-                    raceErrors,
-                };
+                const dataUrl = new URL("win5-data", WIN5_API);
+                dataUrl.searchParams.set("tab", idx);
+                dataUrl.searchParams.set("mode", mode === "data" ? "data" : (mode === "odds" ? "odds" : "all"));
+                dataUrl.searchParams.set("_", String(Date.now()));
+                return fetchWin5Json(dataUrl.toString());
             })();
 
             try {
@@ -5545,36 +5500,31 @@
         }
 
         function isJockeyWithoutDailyMultiWin5Years(row) {
-            const jid = String(row?.dataset?.jid || "").trim();
-            if (!jid || !jockeyDailyMultiWinIds5Years) return false;
-            return !jockeyDailyMultiWinIds5Years.has(jid);
+            if (!jockeyDailyMultiWinIds5Years || !rowPersonLookupKeys(row, "jockey").length) return false;
+            return !rowMatchesPersonSet(row, jockeyDailyMultiWinIds5Years, "jockey");
         }
 
         function isTrainerWithoutDailyMultiWin5Years(row) {
-            const tid = String(row?.dataset?.tid || "").trim();
-            if (!tid || !trainerDailyMultiWinIds5Years) return false;
-            return !trainerDailyMultiWinIds5Years.has(tid);
+            if (!trainerDailyMultiWinIds5Years || !rowPersonLookupKeys(row, "trainer").length) return false;
+            return !rowMatchesPersonSet(row, trainerDailyMultiWinIds5Years, "trainer");
         }
 
         function isJockeyPreviousWin5Winner(row) {
-            const jid = String(row?.dataset?.jid || "").trim();
-            if (!jid || !jockeyPreviousWin5WinIds) return false;
-            return jockeyPreviousWin5WinIds.has(jid);
+            if (!jockeyPreviousWin5WinIds) return false;
+            return rowMatchesPersonSet(row, jockeyPreviousWin5WinIds, "jockey");
         }
 
         function isTrainerPreviousWin5Winner(row) {
-            const tid = String(row?.dataset?.tid || "").trim();
-            if (!tid || !trainerPreviousWin5WinIds) return false;
-            return trainerPreviousWin5WinIds.has(tid);
+            if (!trainerPreviousWin5WinIds) return false;
+            return rowMatchesPersonSet(row, trainerPreviousWin5WinIds, "trainer");
         }
 
         function getSelectedJockeyRaceCount(row) {
-            const jid = String(row?.dataset?.jid || "").trim();
-            if (!jid) return 0;
+            if (!rowPersonLookupKeys(row, "jockey").length) return 0;
             const races = new Set();
             document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
                 if (!isBackgroundRuleTarget(sel)) return;
-                if (String(sel.dataset.jid || "").trim() !== jid) return;
+                if (!rowsSharePerson(row, sel, "jockey")) return;
                 const race = String(sel.dataset.race || "").trim();
                 if (race) races.add(race);
             });
@@ -5582,12 +5532,11 @@
         }
 
         function getSelectedJockeyPreviousWin5WinnerRaceCount(row) {
-            const jid = String(row?.dataset?.jid || "").trim();
-            if (!jid || !jockeyPreviousWin5WinIds?.has(jid)) return 0;
+            if (!isJockeyPreviousWin5Winner(row)) return 0;
             const races = new Set();
             document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
                 if (!isBackgroundRuleTarget(sel)) return;
-                if (String(sel.dataset.jid || "").trim() !== jid) return;
+                if (!rowsSharePerson(row, sel, "jockey")) return;
                 if (!isJockeyPreviousWin5Winner(sel)) return;
                 const race = String(sel.dataset.race || "").trim();
                 if (race) races.add(race);
@@ -5596,12 +5545,11 @@
         }
 
         function getSelectedTrainerRaceCount(row) {
-            const tid = String(row?.dataset?.tid || "").trim();
-            if (!tid) return 0;
+            if (!rowPersonLookupKeys(row, "trainer").length) return 0;
             const races = new Set();
             document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
                 if (!isBackgroundRuleTarget(sel)) return;
-                if (String(sel.dataset.tid || "").trim() !== tid) return;
+                if (!rowsSharePerson(row, sel, "trainer")) return;
                 const race = String(sel.dataset.race || "").trim();
                 if (race) races.add(race);
             });
@@ -5609,13 +5557,11 @@
         }
 
         function getSelectedPersonWinsRaceCount(row, person, winsMax) {
-            const idKey = person === "trainer" ? "tid" : "jid";
-            const id = String(row?.dataset?.[idKey] || "").trim();
-            if (!id) return 0;
+            if (!rowPersonLookupKeys(row, person).length) return 0;
             const races = new Set();
             document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
                 if (!isBackgroundRuleTarget(sel)) return;
-                if (String(sel.dataset?.[idKey] || "").trim() !== id) return;
+                if (!rowsSharePerson(row, sel, person)) return;
                 if (!isWinsProb3Band(sel, person, winsMax)) return;
                 const race = String(sel.dataset.race || "").trim();
                 if (race) races.add(race);
@@ -5632,12 +5578,11 @@
         }
 
         function getSelectedTrainerPreviousWin5WinnerRaceCount(row) {
-            const tid = String(row?.dataset?.tid || "").trim();
-            if (!tid || !trainerPreviousWin5WinIds?.has(tid)) return 0;
+            if (!isTrainerPreviousWin5Winner(row)) return 0;
             const races = new Set();
             document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
                 if (!isBackgroundRuleTarget(sel)) return;
-                if (String(sel.dataset.tid || "").trim() !== tid) return;
+                if (!rowsSharePerson(row, sel, "trainer")) return;
                 if (!isTrainerPreviousWin5Winner(sel)) return;
                 const race = String(sel.dataset.race || "").trim();
                 if (race) races.add(race);
@@ -5706,8 +5651,8 @@
                     .flatMap(sel => {
                         if (!isBackgroundRuleTarget(sel)) return [];
                         const items = [];
-                        const jid = String(sel.dataset.jid || "").trim();
-                        const tid = String(sel.dataset.tid || "").trim();
+                        const jid = rowPersonColorKey(sel, "jockey");
+                        const tid = rowPersonColorKey(sel, "trainer");
                         if (jid && isJockeyWithoutDailyMultiWin5Years(sel) && getSelectedJockeyRaceCount(sel) >= 2) {
                             items.push(`jockeyNoDaily:${jid}`);
                         }
@@ -5743,27 +5688,27 @@
         }
 
         function getJockeyColor(row) {
-            return getPersonRuleColor("jockeyNoDaily", row?.dataset?.jid);
+            return getPersonRuleColor("jockeyNoDaily", rowPersonColorKey(row, "jockey"));
         }
 
         function getTrainerColor(row) {
-            return getPersonRuleColor("trainerNoDaily", row?.dataset?.tid);
+            return getPersonRuleColor("trainerNoDaily", rowPersonColorKey(row, "trainer"));
         }
 
         function getJockeyWins2Color(row) {
-            return getPersonRuleColor("jockeyWins2", row?.dataset?.jid);
+            return getPersonRuleColor("jockeyWins2", rowPersonColorKey(row, "jockey"));
         }
 
         function getTrainerWins5Color(row) {
-            return getPersonRuleColor("trainerWins5", row?.dataset?.tid);
+            return getPersonRuleColor("trainerWins5", rowPersonColorKey(row, "trainer"));
         }
 
         function getJockeyPreviousWin5Color(row) {
-            return getPersonRuleColor("jockeyPrevious", row?.dataset?.jid);
+            return getPersonRuleColor("jockeyPrevious", rowPersonColorKey(row, "jockey"));
         }
 
         function getTrainerPreviousWin5Color(row) {
-            return getPersonRuleColor("trainerPrevious", row?.dataset?.tid);
+            return getPersonRuleColor("trainerPrevious", rowPersonColorKey(row, "trainer"));
         }
 
         function applyPersonDisplay() {
@@ -5908,11 +5853,13 @@
                         if (sel.classList.contains("is-empty")) return;
                         if (sel.classList.contains("is-scratched")) return;
                         const id = (sel.dataset[personAtFetch === 'trainer' ? 'tid' : 'jid'] || "").trim();
-                        if (!id) {
+                        const personName = (sel.dataset[personAtFetch === 'trainer' ? 'trainer' : 'jockey'] || "").trim();
+                        const nameKey = personStatsNameKey(personAtFetch, personName);
+                        if (!id && !nameKey) {
                             sel.dataset[targetDatasetKey] = "";
                             return;
                         }
-                        const s = statsMap[id] || [0,0,0,0];
+                        const s = (id && statsMap[id]) || (nameKey && statsMap[nameKey]) || [0,0,0,0];
                         sel.dataset[targetDatasetKey] = `(${s[0]}-${s[1]}-${s[2]}-${s[3]})`;
                     });
                 }
