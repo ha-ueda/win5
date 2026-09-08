@@ -3498,6 +3498,8 @@
                 raceInfo: window.raceInfo || ["", "", "", "", ""],
                 raceTimes: window.raceTimes || ["", "", "", "", ""],
                 raceCourses: window.raceCourses || ["", "", "", "", ""],
+                raceClasses: window.raceClasses || ["", "", "", "", ""],
+                raceWeightTypes: window.raceWeightTypes || ["", "", "", "", ""],
                 win5RaceIds: window.win5RaceIds || ["", "", "", "", ""],
                 win5Source: window.win5Source || "",
                 win5SourceDate: window.win5SourceDate || "",
@@ -3573,6 +3575,8 @@
                 if (state.raceInfo) window.raceInfo = state.raceInfo;
                 if (state.raceTimes) window.raceTimes = state.raceTimes;
                 if (state.raceCourses) window.raceCourses = state.raceCourses;
+                if (state.raceClasses) window.raceClasses = state.raceClasses;
+                if (state.raceWeightTypes) window.raceWeightTypes = state.raceWeightTypes;
                 if (Array.isArray(state.win5RaceIds)) {
                     window.win5RaceIds = state.win5RaceIds.slice(0, TOTAL_RACES);
                     while (window.win5RaceIds.length < TOTAL_RACES) window.win5RaceIds.push("");
@@ -3794,6 +3798,8 @@
             window.raceInfo = ["", "", "", "", ""];
             window.raceTimes = ["", "", "", "", ""];
             window.raceCourses = ["", "", "", "", ""];
+            window.raceClasses = ["", "", "", "", ""];
+            window.raceWeightTypes = ["", "", "", "", ""];
             window.win5RaceIds = ["", "", "", "", ""];
             window.win5Source = "";
             window.win5SourceDate = "";
@@ -4404,9 +4410,19 @@
             return escapeHtml(c);
         }
 
+        function formatRaceClass(value) {
+            return String(value ?? "")
+                .trim()
+                .replace(/GIII/g, "G3")
+                .replace(/GII/g, "G2")
+                .replace(/GI/g, "G1");
+        }
+
         function updateRaceHeaders(raceInfo) {
             const raceTimes = window.raceTimes || [];
             const raceCourses = window.raceCourses || [];
+            const raceClasses = window.raceClasses || [];
+            const raceWeightTypes = window.raceWeightTypes || [];
 
             for (let i = 0; i < 5; i++) {
                 const title = document.getElementById(`raceTitle${i + 1}`);
@@ -4414,6 +4430,8 @@
 
                 const time = (raceTimes[i] || "").trim();
                 const course = (raceCourses[i] || "").trim();
+                const raceClass = formatRaceClass(raceClasses[i]);
+                const weightType = (raceWeightTypes[i] || "").trim();
                 const info = (raceInfo && raceInfo[i]) ? String(raceInfo[i]).trim() : "";
 
                 const label = info ? info : `WIN${i + 1}`;
@@ -4424,6 +4442,8 @@
                     const part = (html) => `<span class="race-sub-part">${html}</span>`;
                     if (time) parts.push(part(escapeHtml(time)));
                     if (course) parts.push(part(colorizeCourse(course)));
+                    if (raceClass) parts.push(part(escapeHtml(raceClass)));
+                    if (weightType) parts.push(part(escapeHtml(weightType)));
                     sub.innerHTML = parts.join("");
                 }
             }
@@ -4433,6 +4453,8 @@
             window.raceInfo = json.raceInfo || [];
             window.raceTimes = json.raceTimes || ((json.races || []).map(r => (r && r.startTime) ? String(r.startTime) : ""));
             window.raceCourses = json.raceCourses || ((json.races || []).map(r => (r && r.courseInfo) ? String(r.courseInfo) : ""));
+            window.raceClasses = json.raceClasses || ((json.races || []).map(r => (r && r.raceClass) ? String(r.raceClass) : ""));
+            window.raceWeightTypes = json.raceWeightTypes || ((json.races || []).map(r => (r && r.weightType) ? String(r.weightType) : ""));
             window.win5Sales = json.sales || null;
             window.win5Source = json.source || "";
             const nextSourceDate = json.sourceDate || "";
