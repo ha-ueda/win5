@@ -808,6 +808,12 @@
             border-radius: 1em;
         }
 
+        .person-name.is-leading {
+            text-decoration: underline;
+            text-decoration-thickness: 1px;
+            text-underline-offset: 2px;
+        }
+
         .col-odds {
             width: 67px;
             font-feature-settings: "tnum" 1;
@@ -1896,6 +1902,58 @@
         function personStatsNameKey(person, name) {
             const normalized = normalizePersonStatsName(name);
             return normalized ? `name:${person}:${normalized}` : "";
+        }
+
+        function normalizeLeadingPersonName(value) {
+            return normalizePersonStatsName(value).replace(/[＊*]+$/, "");
+        }
+
+        function leadingPersonMatches(row, person) {
+            const idKey = person === 'trainer' ? 'tid' : 'jid';
+            const nameKey = person === 'trainer' ? 'trainer' : 'jockey';
+            const id = String(row?.dataset?.[idKey] || '').trim();
+            const name = normalizeLeadingPersonName(row?.dataset?.[nameKey] || '');
+            const ids = person === 'trainer' ? leadingPeople.trainerIds : leadingPeople.jockeyIds;
+            const names = person === 'trainer' ? leadingPeople.trainerNames : leadingPeople.jockeyNames;
+            return (id && ids.has(id)) || (name && names.has(name));
+        }
+
+        function leadingPersonSets(rows) {
+            const ids = new Set();
+            const names = new Set();
+            for (const row of Array.isArray(rows) ? rows : []) {
+                const id = String(row?.id || '').trim();
+                const name = normalizeLeadingPersonName(row?.name || '');
+                if (id) ids.add(id);
+                if (name) names.add(name);
+            }
+            return { ids, names };
+        }
+
+        async function fetchLeadingPeople() {
+            if (leadingPeopleFetchPromise) return leadingPeopleFetchPromise;
+            leadingPeopleFetchPromise = (async () => {
+                try {
+                    const u = new URL('leading', WIN5_API);
+                    const res = await fetch(u.toString(), { cache: 'no-store' });
+                    const json = await res.json();
+                    if (!res.ok || !json?.ok) return;
+                    const jockey = leadingPersonSets(json.jockey);
+                    const trainer = leadingPersonSets(json.trainer);
+                    leadingPeople = {
+                        jockeyIds: jockey.ids,
+                        jockeyNames: jockey.names,
+                        trainerIds: trainer.ids,
+                        trainerNames: trainer.names,
+                    };
+                    applyPersonDisplay();
+                } catch (e) {
+                    console.warn('fetchLeadingPeople:', e);
+                } finally {
+                    leadingPeopleFetchPromise = null;
+                }
+            })();
+            return leadingPeopleFetchPromise;
         }
 
         function rowPersonLookupKeys(row, person) {
@@ -5200,6 +5258,13 @@
         let currentStatsMode = 'combo';
         let currentStatsYears = '3';
         let currentPerson = 'jockey';
+        let leadingPeople = {
+            jockeyIds: new Set(),
+            jockeyNames: new Set(),
+            trainerIds: new Set(),
+            trainerNames: new Set(),
+        };
+        let leadingPeopleFetchPromise = null;
         const statsToggleEl = document.getElementById("statsToggle");
         const yearsToggleEl = document.getElementById("yearsToggle");
         const personToggleEl = document.getElementById("personToggle");
@@ -5736,6 +5801,7 @@
                 if (!nameEl || !statsEl) return;
                 if (sel.classList.contains("is-scratched")) {
                     nameEl.textContent = "";
+                    nameEl.classList.remove('is-leading');
                     statsEl.textContent = "";
                     return;
                 }
@@ -5748,7 +5814,9 @@
                     name = jockey;
                 }
                 const stats = currentPerson === 'trainer' ? (sel.dataset.tstats || "") : (sel.dataset.jstats || "");
-                nameEl.textContent = name;
+                const displayName = String(name || '').replace(/[＊*]+\s*$/, '');
+                nameEl.textContent = displayName;
+                nameEl.classList.toggle('is-leading', !!displayName && leadingPersonMatches(sel, currentPerson));
                 statsEl.textContent = formatPersonStatsDisplay(stats);
             });
         }
@@ -5958,6 +6026,7 @@
         restoreState();
         updateStatsPopLabel();
         loadWin5Tabs();
+        fetchLeadingPeople();
         initMarkWinRangeControls();
         fitAll();
     </script>
