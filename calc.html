@@ -4498,7 +4498,8 @@
                     const ninki = ninkiArr[i - 1];
                     const wakuClass = wakuClasses[i - 1] || "";
                     const waku = wakuClass || "";
-                    const umaban = umabans[i - 1] || String(i);
+                    const hasUmabanArray = Array.isArray(races[r]?.umabans) && races[r].umabans.length > 0;
+                    const umaban = hasUmabanArray ? (umabans[i - 1] || "") : String(i);
                     const scratched = isScratchedStatus(statuses[i - 1]);
 
                     const sel = document.querySelector(`.custom-select[data-race="${raceNum}"][data-horse="${horseNum}"]`);
