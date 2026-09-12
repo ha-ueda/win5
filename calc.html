@@ -808,12 +808,6 @@
             border-radius: 1em;
         }
 
-        .person-name.is-leading {
-            text-decoration: underline;
-            text-decoration-thickness: 1px;
-            text-underline-offset: 2px;
-        }
-
         .col-odds {
             width: 67px;
             font-feature-settings: "tnum" 1;
@@ -1858,7 +1852,7 @@
         const HORSE_MAX = 18;
         const MARKS = ["", "無", "✓", "◎"];
         const isHimoMark = (mark) => mark === "✓" || mark === "無";
-        const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱'];
+        const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
         const STORAGE_KEY = 'win5_state_v9';
         const STORAGE_KEY_OLD = 'win5_state_v8';
         const BG_RULE_SELECTION_VERSION = 6;
@@ -1908,26 +1902,34 @@
             return normalizePersonStatsName(value).replace(/[＊*]+$/, "");
         }
 
-        function leadingPersonMatches(row, person) {
+        function leadingPersonRank(row, person) {
             const idKey = person === 'trainer' ? 'tid' : 'jid';
             const nameKey = person === 'trainer' ? 'trainer' : 'jockey';
             const id = String(row?.dataset?.[idKey] || '').trim();
             const name = normalizeLeadingPersonName(row?.dataset?.[nameKey] || '');
-            const ids = person === 'trainer' ? leadingPeople.trainerIds : leadingPeople.jockeyIds;
-            const names = person === 'trainer' ? leadingPeople.trainerNames : leadingPeople.jockeyNames;
-            return (id && ids.has(id)) || (name && names.has(name));
+            const ranksById = person === 'trainer' ? leadingPeople.trainerRanksById : leadingPeople.jockeyRanksById;
+            const ranksByName = person === 'trainer' ? leadingPeople.trainerRanksByName : leadingPeople.jockeyRanksByName;
+            if (id && ranksById.has(id)) return ranksById.get(id);
+            if (name && ranksByName.has(name)) return ranksByName.get(name);
+            return null;
         }
 
         function leadingPersonSets(rows) {
             const ids = new Set();
             const names = new Set();
+            const ranksById = new Map();
+            const ranksByName = new Map();
             for (const row of Array.isArray(rows) ? rows : []) {
                 const id = String(row?.id || '').trim();
                 const name = normalizeLeadingPersonName(row?.name || '');
+                const rank = Number(row?.rank);
                 if (id) ids.add(id);
                 if (name) names.add(name);
+                if (!Number.isInteger(rank) || rank < 1 || rank > CIRCLES.length) continue;
+                if (id && !ranksById.has(id)) ranksById.set(id, rank);
+                if (name && !ranksByName.has(name)) ranksByName.set(name, rank);
             }
-            return { ids, names };
+            return { ids, names, ranksById, ranksByName };
         }
 
         async function fetchLeadingPeople() {
@@ -1943,8 +1945,12 @@
                     leadingPeople = {
                         jockeyIds: jockey.ids,
                         jockeyNames: jockey.names,
+                        jockeyRanksById: jockey.ranksById,
+                        jockeyRanksByName: jockey.ranksByName,
                         trainerIds: trainer.ids,
                         trainerNames: trainer.names,
+                        trainerRanksById: trainer.ranksById,
+                        trainerRanksByName: trainer.ranksByName,
                     };
                     applyPersonDisplay();
                 } catch (e) {
@@ -5263,8 +5269,12 @@
         let leadingPeople = {
             jockeyIds: new Set(),
             jockeyNames: new Set(),
+            jockeyRanksById: new Map(),
+            jockeyRanksByName: new Map(),
             trainerIds: new Set(),
             trainerNames: new Set(),
+            trainerRanksById: new Map(),
+            trainerRanksByName: new Map(),
         };
         let leadingPeopleFetchPromise = null;
         const statsToggleEl = document.getElementById("statsToggle");
@@ -5817,8 +5827,11 @@
                 }
                 const stats = currentPerson === 'trainer' ? (sel.dataset.tstats || "") : (sel.dataset.jstats || "");
                 const displayName = String(name || '').replace(/[＊*]+\s*$/, '');
-                nameEl.textContent = displayName;
-                nameEl.classList.toggle('is-leading', !!displayName && leadingPersonMatches(sel, currentPerson));
+                const leadingRank = displayName ? leadingPersonRank(sel, currentPerson) : null;
+                const rankLabel = Number.isInteger(leadingRank) ? (CIRCLES[leadingRank - 1] || String(leadingRank)) : "";
+                const isLeading = !!displayName && !!rankLabel;
+                nameEl.textContent = `${displayName}${rankLabel}`;
+                nameEl.classList.toggle('is-leading', isLeading);
                 statsEl.textContent = formatPersonStatsDisplay(stats);
             });
         }
