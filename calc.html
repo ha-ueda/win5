@@ -2810,8 +2810,10 @@
                 if (!ae && be) return -1;
                 const as = a.classList.contains("is-scratched");
                 const bs = b.classList.contains("is-scratched");
-                if (as && !bs) return 1;
-                if (!as && bs) return -1;
+                if (key === "odds") {
+                    if (as && !bs) return 1;
+                    if (!as && bs) return -1;
+                }
 
                 const av = getVal(a);
                 const bv = getVal(b);
