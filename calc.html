@@ -1585,13 +1585,13 @@
             <button id="modeToggle" class="race-clear clear-pc" type="button">個別背景</button>
             <button id="bgRuleBtn" class="race-clear clear-pc" type="button">条件背景</button>
             <button id="bgClearAllBtn" class="race-clear clear-pc" type="button">色クリア</button>
-            <button class="race-clear clear-pc" type="button" onclick="if(confirm('印と背景をすべてクリアしますか？'))clearAllMarks()">クリア</button>
+            <button class="race-clear clear-pc" type="button" onclick="confirmAndClearMarks()">クリア</button>
         </div>
         <div class="toggle-row toggle-row-sp-2">
             <button id="modeToggleSp" class="race-clear" type="button">個別背景</button>
             <button id="bgRuleBtnSp" class="race-clear" type="button">条件背景</button>
             <button class="race-clear" type="button" onclick="document.getElementById('bgClearAllBtn').click()">色クリア</button>
-            <button class="race-clear" type="button" onclick="if(confirm('印と背景をすべてクリアしますか？'))clearAllMarks()">クリア</button>
+            <button class="race-clear" type="button" onclick="confirmAndClearMarks()">クリア</button>
         </div>
     </div>
 
@@ -2184,6 +2184,7 @@
         updateSwitchAll();
 
         function clearAllRowBackgrounds() {
+            if (!hasAnyBackgroundClearTarget()) return;
             document.querySelectorAll('.custom-select:not(.is-empty)').forEach(r => {
                 if (!r) return;
                 const box = r.querySelector(".selected");
@@ -2202,9 +2203,41 @@
         const bgClearAllBtn = document.getElementById("bgClearAllBtn");
         if (bgClearAllBtn) {
             bgClearAllBtn.addEventListener("click", () => {
+                if (!hasAnyBackgroundClearTarget()) return;
                 if (!confirm("背景をすべてクリアしますか？")) return;
                 clearAllRowBackgrounds();
             });
+        }
+
+        function hasRowBackgroundClearTarget(rowEl) {
+            const box = rowEl?.querySelector(".selected");
+            if (!box) return false;
+            return normalizeBgColors(box.dataset.bg).length > 0
+                || normalizeBgColors(box.dataset.manualBg).length > 0
+                || normalizeBgColors(box.dataset.ruleBg).length > 0
+                || String(box.dataset.bgRuleDetails || "").trim() !== "";
+        }
+
+        function hasRowMarkOrBackgroundClearTarget(rowEl) {
+            const box = rowEl?.querySelector(".selected");
+            if (!box) return false;
+            return String(box.textContent || "").trim() !== ""
+                || hasRowBackgroundClearTarget(rowEl);
+        }
+
+        function hasRaceClearTarget(raceNum) {
+            return Array.from(document.querySelectorAll(`.custom-select[data-race="${raceNum}"]`))
+                .some(hasRowMarkOrBackgroundClearTarget);
+        }
+
+        function hasAnyBackgroundClearTarget() {
+            return Array.from(document.querySelectorAll(".custom-select:not(.is-empty)"))
+                .some(hasRowBackgroundClearTarget);
+        }
+
+        function hasAnyMarkOrBackgroundClearTarget() {
+            return Array.from(document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)"))
+                .some(hasRowMarkOrBackgroundClearTarget);
         }
 
         function normalizeBgColors(bg) {
@@ -3486,7 +3519,8 @@
                 clearBtn.className = "race-clear";
                 clearBtn.textContent = "クリア";
                 clearBtn.addEventListener("click", () => {
-                    if (confirm("このレースの印と背景をクリアしますか？")) clearColumn(r);
+                    if (!hasRaceClearTarget(r)) return;
+                    if (confirm("対象レースの印と背景をクリアしますか？")) clearColumn(r);
                 });
 
                 headRight.appendChild(clearBtn);
@@ -3801,6 +3835,7 @@
         }
 
         function clearColumn(colNum) {
+            if (!hasRaceClearTarget(colNum)) return;
             document.querySelectorAll(`.custom-select[data-race="${colNum}"]`).forEach(sel => {
                 const box = sel.querySelector(".selected");
                 if (box) {
@@ -5148,6 +5183,7 @@
 
 
         function clearAllMarks() {
+            if (!hasAnyMarkOrBackgroundClearTarget()) return;
             document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)').forEach(sel => {
                 const box = sel.querySelector('.selected');
                 if (box) {
@@ -5162,6 +5198,12 @@
                 applyBg(sel, "none");
             });
             saveState();
+        }
+
+        function confirmAndClearMarks() {
+            if (!hasAnyMarkOrBackgroundClearTarget()) return;
+            if (!confirm("印と背景をすべてクリアしますか？")) return;
+            clearAllMarks();
         }
 
         let currentSortKey = 'no';
