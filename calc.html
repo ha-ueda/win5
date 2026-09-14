@@ -1855,7 +1855,7 @@
         const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
         const STORAGE_KEY = 'win5_state_v9';
         const STORAGE_KEY_OLD = 'win5_state_v8';
-        const BG_RULE_SELECTION_VERSION = 6;
+        const BG_RULE_SELECTION_VERSION = 7;
         const WIN5_API = "https://win5.cooopew.workers.dev/";
         const BG_COLOR_TABLE_V1 = [
             "#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d",
@@ -1882,6 +1882,7 @@
         }).join(", ")})`;
         const RULE_BG_COLOR = BG_RULE_COLOR_PALETTE[0];
         const BG_PROBABILITY_TARGET = 3;
+        const BG_RULE_DATA_VERSION = 2;
 
         // JRA結果ページでは外国人騎手などのIDリンクが省略される
         // 場合があるため、成績APIの名前フォールバックキーと同じ形式で
@@ -1994,21 +1995,13 @@
             ).trim();
         }
         let jockeyWinsProbabilityTables = {
+            0: {
+                "芝": [{ starts: 14, probability: 2.76 }],
+                "ダ": [{ starts: 17, probability: 2.76 }]
+            },
             1: {
-                "芝": [
-                    { starts: 10, probability: 10.37 },
-                    { starts: 20, probability: 4.56 },
-                    { starts: 30, probability: 2.90 },
-                    { starts: 40, probability: 0.83 },
-                    { starts: 50, probability: 0.00 },
-                    { starts: 60, probability: 0.00 }
-                ],
-                "ダ": [
-                    { starts: 10, probability: 9.91 },
-                    { starts: 20, probability: 3.02 },
-                    { starts: 30, probability: 0.00 },
-                    { starts: 40, probability: 0.00 }
-                ]
+                "芝": [{ starts: 31, probability: 2.88 }],
+                "ダ": [{ starts: 40, probability: 2.88 }]
             },
             2: {
                 "芝": [{ starts: 12, probability: 2.88 }],
@@ -2016,18 +2009,13 @@
             }
         };
         let trainerWinsProbabilityTables = {
+            0: {
+                "芝": [{ starts: 15, probability: 2.64 }],
+                "ダ": [{ starts: 16, probability: 2.64 }]
+            },
             1: {
-                "芝": [
-                    { starts: 10, probability: 26.56 },
-                    { starts: 20, probability: 3.73 },
-                    { starts: 30, probability: 0.41 },
-                    { starts: 40, probability: 0.00 }
-                ],
-                "ダ": [
-                    { starts: 10, probability: 12.50 },
-                    { starts: 20, probability: 0.43 },
-                    { starts: 30, probability: 0.00 }
-                ]
+                "芝": [{ starts: 37, probability: 2.76 }],
+                "ダ": [{ starts: 14, probability: 2.76 }]
             },
             5: {
                 "芝": [{ starts: 14, probability: 2.88 }],
@@ -2060,6 +2048,20 @@
                 probabilityLabel: "-",
                 color: BG_RULE_COLOR_PALETTE[2],
                 match: row => isBackgroundRuleTarget(row) && isWins1Prob3Band(row, "trainer")
+            },
+            {
+                key: "jockeyWins0Prob3",
+                label: "1年間で0勝の騎手",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[3],
+                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "jockey", 0)
+            },
+            {
+                key: "trainerWins0Prob3",
+                label: "1年間で0勝の調教師",
+                probabilityLabel: "-",
+                color: BG_RULE_COLOR_PALETTE[4],
+                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "trainer", 0)
             },
             {
                 key: "jockeyWins2Prob3",
@@ -2558,8 +2560,10 @@
             const byKey = new Map(BACKGROUND_RULES.map(rule => [rule.key, rule]));
 
             [
+                ["jockeyWins0Prob3", "jockey"],
                 ["jockeyWins1Prob3", "jockey"],
                 ["jockeyWins2Prob3", "jockey"],
+                ["trainerWins0Prob3", "trainer"],
                 ["trainerWins1Prob3", "trainer"],
                 ["trainerWins5Prob3", "trainer"],
             ].forEach(([key]) => {
@@ -2592,7 +2596,7 @@
                     const u = new URL("background-rule-probabilities", WIN5_API);
                     const res = await fetch(u.toString(), { cache: "no-store" });
                     const json = await res.json();
-                    if (json.ok) {
+                    if (json.ok && Number(json.version) === BG_RULE_DATA_VERSION) {
                         applyBackgroundRuleProbabilityPayload(json);
                         renderBgRuleList();
                     }
@@ -3711,24 +3715,24 @@
                 }
                 if (Array.isArray(state.bgRuleKeys)) {
                     const valid = new Set(BACKGROUND_RULES.filter(isEnabledBackgroundRule).map(rule => rule.key));
-                    if (state.bgRuleSelectionVersion === BG_RULE_SELECTION_VERSION) {
-                        selectedBgRuleKeys = new Set(state.bgRuleKeys
-                            .flatMap(key => {
-                                if (key === "rank3") return ["redOdds"];
-                                if (key === "wins1") return ["jockeyWins1Prob3", "trainerWins1Prob3"];
-                                if (key === "jockeyLastWeekWin") return ["jockeyPreviousWin5Win"];
-                                return [key];
-                            })
-                            .filter(key => valid.has(key)));
-                    } else {
-                        selectedBgRuleKeys = new Set(valid);
+                    const migratedKeys = state.bgRuleKeys
+                        .flatMap(key => {
+                            if (key === "rank3") return ["redOdds"];
+                            if (key === "wins1") return ["jockeyWins1Prob3", "trainerWins1Prob3"];
+                            if (key === "jockeyLastWeekWin") return ["jockeyPreviousWin5Win"];
+                            return [key];
+                        })
+                        .filter(key => valid.has(key));
+                    selectedBgRuleKeys = new Set(migratedKeys);
+                    if (state.bgRuleSelectionVersion !== BG_RULE_SELECTION_VERSION) {
+                        selectedBgRuleKeys.add("jockeyWins0Prob3");
+                        selectedBgRuleKeys.add("trainerWins0Prob3");
                     }
                 }
-                if (state.bgRuleSelectionVersion === BG_RULE_SELECTION_VERSION
-                    && state.bgRuleColors && typeof state.bgRuleColors === "object") {
+                if (state.bgRuleColors && typeof state.bgRuleColors === "object") {
                     if (BG_RULE_COLOR_PALETTE.includes(state.bgRuleColors.wins1)) {
-                        bgRuleColors.jockeyWins1 = state.bgRuleColors.wins1;
-                        bgRuleColors.trainerWins1 = state.bgRuleColors.wins1;
+                        bgRuleColors.jockeyWins1Prob3 = state.bgRuleColors.wins1;
+                        bgRuleColors.trainerWins1Prob3 = state.bgRuleColors.wins1;
                     }
                     for (const rule of BACKGROUND_RULES) {
                         const saved = state.bgRuleColors[rule.key];
@@ -5518,6 +5522,8 @@
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
                 if (!json.ok || !json.thresholds) return;
+                if ((normalizedWinsMax === 0 || normalizedWinsMax === 1)
+                    && Number(json.version) !== BG_RULE_DATA_VERSION) return;
 
                 if (normalizedPerson === "all") {
                     applyProbabilityThresholdPayload("jockey", normalizedWinsMax, json.thresholds.jockey);
