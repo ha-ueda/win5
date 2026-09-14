@@ -1882,7 +1882,7 @@
         }).join(", ")})`;
         const RULE_BG_COLOR = BG_RULE_COLOR_PALETTE[0];
         const BG_PROBABILITY_TARGET = 3;
-        const BG_RULE_DATA_VERSION = 3;
+        const BG_RULE_DATA_VERSION = 5;
 
         // JRA結果ページでは外国人騎手などのIDリンクが省略される
         // 場合があるため、成績APIの名前フォールバックキーと同じ形式で
@@ -2558,7 +2558,9 @@
                     const race = String(row.dataset.race || "").trim();
                     if (!race) return;
                     activeRules.forEach(rule => {
-                        if (rule.match(row)) ruleRaceCounts.get(rule.key)?.add(race);
+                        if (!rule.match(row)) return;
+                        const raceKey = getBackgroundRuleRaceKey(rule, row);
+                        if (raceKey) ruleRaceCounts.get(rule.key)?.add(raceKey);
                     });
                 });
 
@@ -2566,7 +2568,7 @@
                     const box = row.querySelector(".selected");
                     if (!box) return;
                     const matchedRules = activeRules
-                        .filter(rule => (ruleRaceCounts.get(rule.key)?.size || 0) >= 2)
+                        .filter(rule => matchesBackgroundRuleRaceThreshold(rule, ruleRaceCounts.get(rule.key), row))
                         .filter(rule => rule.match(row));
                     const matchedColors = matchedRules.map(rule => getBgRuleColor(rule, row));
                     if (!matchedColors.length) return;
@@ -2930,11 +2932,13 @@
                 const race = String(row.dataset.race || "").trim();
                 if (!race) return;
                 activeRules.forEach(rule => {
-                    if (rule.match(row)) ruleRaceCounts.get(rule.key)?.add(race);
+                    if (!rule.match(row)) return;
+                    const raceKey = getBackgroundRuleRaceKey(rule, row);
+                    if (raceKey) ruleRaceCounts.get(rule.key)?.add(raceKey);
                 });
             });
             return activeRules
-                .filter(rule => (ruleRaceCounts.get(rule.key)?.size || 0) >= 2)
+                .filter(rule => matchesBackgroundRuleRaceThreshold(rule, ruleRaceCounts.get(rule.key), rowEl))
                 .filter(rule => rule.match(rowEl));
         }
 
@@ -2963,16 +2967,19 @@
                 const race = String(row.dataset.race || "").trim();
                 if (!race) return;
                 activeRules.forEach(rule => {
-                    if (rule.match(row)) ruleRaceCounts.get(rule.key)?.add(race);
+                    if (!rule.match(row)) return;
+                    const raceKey = getBackgroundRuleRaceKey(rule, row);
+                    if (raceKey) ruleRaceCounts.get(rule.key)?.add(raceKey);
                 });
             });
 
             activeRules
                 .filter(rule => !isFixedColorRule(rule))
-                .filter(rule => (ruleRaceCounts.get(rule.key)?.size || 0) >= 2)
+                .filter(rule => hasBackgroundRuleRaceThreshold(rule, ruleRaceCounts.get(rule.key)))
                 .forEach(rule => {
                     rows
-                        .filter(row => rule.match(row))
+                        .filter(row => rule.match(row)
+                            && matchesBackgroundRuleRaceThreshold(rule, ruleRaceCounts.get(rule.key), row))
                         .forEach(row => {
                             details.push({
                                 label: getBgRuleDetailLabel(rule, row),
@@ -5392,6 +5399,48 @@
             const course = extractCourse((window.raceCourses || [])[race - 1]);
             const m = course.match(/^(芝|ダ)/);
             return m ? m[1] : "";
+        }
+
+        function getBackgroundRuleRaceKey(rule, row) {
+            const race = String(row?.dataset?.race || "").trim();
+            if (!race) return "";
+            // 0勝条件は芝・ダートを分けてレース数を数える。
+            if (isSameSurfaceWinsRule(rule)) {
+                const surface = getRaceSurface(row);
+                return surface ? `${surface}:${race}` : "";
+            }
+            return race;
+        }
+
+        function isSameSurfaceWinsRule(rule) {
+            return rule?.key === "jockeyWins0Prob3" || rule?.key === "trainerWins0Prob3";
+        }
+
+        function hasBackgroundRuleRaceThreshold(rule, raceKeys) {
+            if (!(raceKeys instanceof Set)) return false;
+            if (!isSameSurfaceWinsRule(rule)) {
+                return raceKeys.size >= 2;
+            }
+            const countsBySurface = new Map();
+            raceKeys.forEach(key => {
+                const surface = String(key).split(":", 1)[0];
+                if (!surface) return;
+                countsBySurface.set(surface, (countsBySurface.get(surface) || 0) + 1);
+            });
+            return [...countsBySurface.values()].some(count => count >= 2);
+        }
+
+        function matchesBackgroundRuleRaceThreshold(rule, raceKeys, row) {
+            if (!hasBackgroundRuleRaceThreshold(rule, raceKeys)) return false;
+            if (!isSameSurfaceWinsRule(rule)) return true;
+            const surface = getRaceSurface(row);
+            if (!surface || !(raceKeys instanceof Set)) return false;
+            const prefix = `${surface}:`;
+            let count = 0;
+            raceKeys.forEach(key => {
+                if (String(key).startsWith(prefix)) count++;
+            });
+            return count >= 2;
         }
 
         function getProbabilityThresholdStarts(table, targetProbability) {
