@@ -452,6 +452,35 @@
             padding: 2px 0;
         }
 
+        .bg-rule-info-panel {
+            margin-bottom: 2px;
+        }
+
+        .bg-rule-info-list li {
+            display: grid;
+            grid-template-columns: 9em 1em minmax(0, 1fr);
+            column-gap: 0;
+            align-items: start;
+            padding: 3px 0;
+        }
+
+        .bg-rule-info-list {
+            padding-left: 0;
+        }
+
+        .bg-rule-info-list strong {
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .bg-rule-info-colon {
+            color: #333;
+        }
+
+        .bg-rule-info-description {
+            min-width: 0;
+        }
+
         .stats-modal-row {
             display: flex;
             align-items: center;
@@ -478,6 +507,9 @@
 
         .bg-rule-modal-card {
             width: min(460px, 100%);
+            max-height: calc(100vh - 28px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .bg-rule-list {
@@ -1753,8 +1785,21 @@
     <div id="bgRuleModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="条件背景">
         <div class="modal-card bg-rule-modal-card" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <div class="modal-title">条件背景</div>
+                <div class="modal-title">
+                    <span class="stats-title-wrap">
+                        <span>条件背景</span>
+                        <button id="bgRuleInfoBtn" class="stats-info-btn" type="button" aria-label="条件背景の仕様" aria-controls="bgRuleInfoPanel" aria-expanded="false">？</button>
+                    </span>
+                </div>
                 <button class="modal-close-btn" onclick="closeBgRuleModal()" aria-label="閉じる">&times;</button>
+            </div>
+            <div id="bgRuleInfoPanel" class="stats-info-panel bg-rule-info-panel">
+                <ul class="stats-info-list bg-rule-info-list">
+                    <li><strong>人気紐</strong><span class="bg-rule-info-colon">：</span><span class="bg-rule-info-description">単勝オッズが10倍未満かつ◎以外が対象。</span></li>
+                    <li><strong>1年間で0勝</strong><span class="bg-rule-info-colon">：</span><span class="bg-rule-info-description">1年間の勝利数が0勝かつ最低出走数以上が対象。最低出走数は5年間の発生率が0%の値を計算。</span></li>
+                    <li><strong>前回勝利</strong><span class="bg-rule-info-colon">：</span><span class="bg-rule-info-description">前回のWIN5で勝利かつ◎以外が対象。</span></li>
+                    <li><strong>1日2勝以上しない</strong><span class="bg-rule-info-colon">：</span><span class="bg-rule-info-description">5年間で1日2勝以上したことない人が対象。</span></li>
+                </ul>
             </div>
             <div id="bgRuleList" class="bg-rule-list"></div>
             <div class="bg-rule-actions">
@@ -2025,7 +2070,7 @@
                 getColor: row => getJockeyPreviousWin5Color(row),
                 swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
                 colorEditable: false,
-                match: row => isBackgroundRuleTarget(row)
+                match: row => isPreviousWinBackgroundRuleTarget(row)
                     && isJockeyPreviousWin5Winner(row)
                     && getSelectedJockeyPreviousWin5WinnerRaceCount(row) >= 2
             },
@@ -2036,13 +2081,13 @@
                 getColor: row => getTrainerPreviousWin5Color(row),
                 swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
                 colorEditable: false,
-                match: row => isBackgroundRuleTarget(row)
+                match: row => isPreviousWinBackgroundRuleTarget(row)
                     && isTrainerPreviousWin5Winner(row)
                     && getSelectedTrainerPreviousWin5WinnerRaceCount(row) >= 2
             },
             {
                 key: "jockeyNoDailyMultiWin5",
-                label: "5年間で1日2勝以上しない騎手",
+                label: "1日2勝以上しない騎手",
                 probabilityLabel: "-",
                 getColor: row => getJockeyColor(row),
                 swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
@@ -2053,7 +2098,7 @@
             },
             {
                 key: "trainerNoDailyMultiWin5",
-                label: "5年間で1日2勝以上しない調教師",
+                label: "1日2勝以上しない調教師",
                 probabilityLabel: "-",
                 getColor: row => getTrainerColor(row),
                 swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
@@ -2639,6 +2684,7 @@
         function openBgRuleModal() {
             renderBgRuleList();
             fetchBackgroundRuleProbabilities();
+            closeBgRuleInfo();
             const modal = document.getElementById("bgRuleModal");
             if (!modal) return;
             lockBodyScroll();
@@ -2646,6 +2692,7 @@
         }
 
         function closeBgRuleModal() {
+            closeBgRuleInfo();
             const modal = document.getElementById("bgRuleModal");
             if (!modal) return;
             modal.style.display = "none";
@@ -5295,6 +5342,8 @@
         const statsPopLabel = document.getElementById("statsPopLabel");
         const statsInfoBtn = document.getElementById("statsInfoBtn");
         const statsInfoPanel = document.getElementById("statsInfoPanel");
+        const bgRuleInfoBtn = document.getElementById("bgRuleInfoBtn");
+        const bgRuleInfoPanel = document.getElementById("bgRuleInfoPanel");
         const allStatsOptions = [...statsToggleEl.querySelectorAll(".sort-option")];
         const allYearsOptions = [...yearsToggleEl.querySelectorAll(".sort-option")];
         const allPersonOptions = [...personToggleEl.querySelectorAll(".sort-option")];
@@ -5361,8 +5410,22 @@
             statsInfoBtn?.setAttribute("aria-expanded", String(open));
         }
 
+        function closeBgRuleInfo() {
+            bgRuleInfoPanel?.classList.remove("open");
+            bgRuleInfoBtn?.setAttribute("aria-expanded", "false");
+        }
+
+        function toggleBgRuleInfo(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const open = !bgRuleInfoPanel?.classList.contains("open");
+            bgRuleInfoPanel?.classList.toggle("open", open);
+            bgRuleInfoBtn?.setAttribute("aria-expanded", String(open));
+        }
+
         statsPopBtn.addEventListener("click", openStatsModal);
         statsInfoBtn?.addEventListener("click", toggleStatsInfo);
+        bgRuleInfoBtn?.addEventListener("click", toggleBgRuleInfo);
         statsModal.addEventListener("click", closeStatsModal);
         document.addEventListener("keydown", (e) => {
             if (e.key === "Escape" && statsModal.style.display === "flex") closeStatsModal();
@@ -5387,6 +5450,16 @@
         function isBackgroundRuleTarget(row) {
             if (!row || row.classList.contains("is-empty") || row.classList.contains("is-scratched")) return false;
             return backgroundRuleTargetAll || hasAnyMark(row);
+        }
+
+        // 前回勝利条件は、本命（◎）を背景色の対象から外し、
+        // 印が付いている場合は紐（✓・無）だけを対象にする。
+        // 印が一つもない状態では、既存仕様どおり全馬を対象にする。
+        function isPreviousWinBackgroundRuleTarget(row) {
+            if (!isBackgroundRuleTarget(row)) return false;
+            if (backgroundRuleTargetAll) return true;
+            const mark = (row?.querySelector(".selected")?.textContent || "").trim();
+            return isHimoMark(mark);
         }
 
         function parseStatsRecord(stats) {
@@ -5864,11 +5937,13 @@
                             items.push(`trainerNoDaily:${tid}`);
                         }
                         if (jid
+                            && isPreviousWinBackgroundRuleTarget(sel)
                             && isJockeyPreviousWin5Winner(sel)
                             && getSelectedJockeyPreviousWin5WinnerRaceCount(sel) >= 2) {
                             items.push(`jockeyPrevious:${jid}`);
                         }
                         if (tid
+                            && isPreviousWinBackgroundRuleTarget(sel)
                             && isTrainerPreviousWin5Winner(sel)
                             && getSelectedTrainerPreviousWin5WinnerRaceCount(sel) >= 2) {
                             items.push(`trainerPrevious:${tid}`);
