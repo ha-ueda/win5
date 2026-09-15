@@ -1855,7 +1855,7 @@
         const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
         const STORAGE_KEY = 'win5_state_v9';
         const STORAGE_KEY_OLD = 'win5_state_v8';
-        const BG_RULE_SELECTION_VERSION = 8;
+        const BG_RULE_SELECTION_VERSION = 10;
         const WIN5_API = "https://win5.cooopew.workers.dev/";
         const BG_COLOR_TABLE_V1 = [
             "#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d",
@@ -1882,7 +1882,7 @@
         }).join(", ")})`;
         const RULE_BG_COLOR = BG_RULE_COLOR_PALETTE[0];
         const BG_PROBABILITY_TARGET = 3;
-        const BG_RULE_DATA_VERSION = 5;
+        const BG_RULE_DATA_VERSION = 10;
 
         // JRA結果ページでは外国人騎手などのIDリンクが省略される
         // 場合があるため、成績APIの名前フォールバックキーと同じ形式で
@@ -1916,21 +1916,17 @@
         }
 
         function leadingPersonSets(rows) {
-            const ids = new Set();
-            const names = new Set();
             const ranksById = new Map();
             const ranksByName = new Map();
             for (const row of Array.isArray(rows) ? rows : []) {
                 const id = String(row?.id || '').trim();
                 const name = normalizeLeadingPersonName(row?.name || '');
                 const rank = Number(row?.rank);
-                if (id) ids.add(id);
-                if (name) names.add(name);
                 if (!Number.isInteger(rank) || rank < 1 || rank > CIRCLES.length) continue;
                 if (id && !ranksById.has(id)) ranksById.set(id, rank);
                 if (name && !ranksByName.has(name)) ranksByName.set(name, rank);
             }
-            return { ids, names, ranksById, ranksByName };
+            return { ranksById, ranksByName };
         }
 
         async function fetchLeadingPeople() {
@@ -1944,12 +1940,8 @@
                     const jockey = leadingPersonSets(json.jockey);
                     const trainer = leadingPersonSets(json.trainer);
                     leadingPeople = {
-                        jockeyIds: jockey.ids,
-                        jockeyNames: jockey.names,
                         jockeyRanksById: jockey.ranksById,
                         jockeyRanksByName: jockey.ranksByName,
-                        trainerIds: trainer.ids,
-                        trainerNames: trainer.names,
                         trainerRanksById: trainer.ranksById,
                         trainerRanksByName: trainer.ranksByName,
                     };
@@ -2080,9 +2072,13 @@
         let bgRuleColors = Object.fromEntries(BACKGROUND_RULES.map(rule => [rule.key, rule.color]));
         ensureUniqueBgRuleColors();
         let jockeyPreviousWin5WinIds = null;
+        let jockeyPreviousWin5WinIdsDate = "";
         let jockeyPreviousWin5WinIdsPromise = null;
+        let jockeyPreviousWin5WinIdsPromiseDate = "";
         let trainerPreviousWin5WinIds = null;
+        let trainerPreviousWin5WinIdsDate = "";
         let trainerPreviousWin5WinIdsPromise = null;
+        let trainerPreviousWin5WinIdsPromiseDate = "";
 
         let jockeyDailyMultiWinIds5Years = null;
         let jockeyDailyMultiWinIds5YearsPromise = null;
@@ -2091,6 +2087,13 @@
         let backgroundRuleProbabilitiesPromise = null;
         const statsFetchCache = new Map();
         const modeBtn = document.getElementById("modeToggle");
+
+        function resetPreviousWin5Caches() {
+            jockeyPreviousWin5WinIds = null;
+            jockeyPreviousWin5WinIdsDate = "";
+            trainerPreviousWin5WinIds = null;
+            trainerPreviousWin5WinIdsDate = "";
+        }
 
 
         function updateSwitch() {
@@ -2517,7 +2520,9 @@
                 "trainerNoDailyMultiWin5",
             ].forEach(key => {
                 const rule = byKey.get(key);
-                if (rule) rule.probabilityLabel = formatRuleProbability(rules[key]?.probability);
+                if (!rule) return;
+                const data = rules[key];
+                rule.probabilityLabel = formatRuleProbability(data?.probability);
             });
             const redOdds = byKey.get("redOdds");
             if (redOdds) {
@@ -3619,6 +3624,7 @@
 
             try {
                 const state = JSON.parse(data);
+                const resetRuleBackgrounds = state.bgRuleSelectionVersion !== BG_RULE_SELECTION_VERSION;
 
                 if (state.raceInfo) window.raceInfo = state.raceInfo;
                 if (state.raceTimes) window.raceTimes = state.raceTimes;
@@ -3780,9 +3786,15 @@
                         sel.dataset.ninki = sel.classList.contains("is-scratched") ? "" : ((val.ninki || "") ? String(val.ninki).trim() : "");
                     });
                 }
+                if (resetRuleBackgrounds) {
+                    // 条件背景の判定単位が変わった場合、旧判定で保存した
+                    // ルール色だけを破棄し、個別背景は保持する。
+                    clearAppliedRuleBackgrounds();
+                }
                 applyPersonDisplay();
                 sortAllRaces(currentSortKey);
                 lastState = data;
+                if (resetRuleBackgrounds) saveState();
             } catch (e) {
                 console.warn("restoreState: 保存データの復元に失敗しました", e);
             }
@@ -3858,6 +3870,7 @@
             window.win5RaceIds = ["", "", "", "", ""];
             window.win5Source = "";
             window.win5SourceDate = "";
+            resetPreviousWin5Caches();
             updateRaceHeaders(window.raceInfo);
 
             saveState();
@@ -4514,6 +4527,9 @@
             window.win5Source = json.source || "";
             const nextSourceDate = json.sourceDate || "";
             window.win5SourceDate = nextSourceDate;
+            // 前回勝利者の対象IDは開催日ごとに変わるため、レースデータ更新時に破棄する。
+            // 取得中のPromiseは残し、各取得処理側で対象日が一致する場合だけ採用する。
+            resetPreviousWin5Caches();
             window.win5RaceIds = (json.races || []).map(r => String(r?.raceId || "").trim());
             while (window.win5RaceIds.length < TOTAL_RACES) window.win5RaceIds.push("");
             window.win5RaceIds = window.win5RaceIds.slice(0, TOTAL_RACES);
@@ -4795,6 +4811,7 @@
                     return;
                 }
 
+                const previousSourceDate = String(window.win5SourceDate || "").trim();
                 const json = await fetchSelectedWin5Data({ mode: "odds" });
                 if (!json.ok) {
                     showToast("オッズ取得に失敗しました", { type: "error" });
@@ -4803,6 +4820,7 @@
                 window.win5Source = json.source || "";
                 const nextSourceDate = json.sourceDate || "";
                 window.win5SourceDate = nextSourceDate;
+                if (previousSourceDate !== String(nextSourceDate).trim()) resetPreviousWin5Caches();
                 if (window.win5Source && window.win5Source !== "upcoming") {
                     showToast("オッズデータがありません");
                     return;
@@ -5263,12 +5281,8 @@
         let currentStatsYears = '3';
         let currentPerson = 'jockey';
         let leadingPeople = {
-            jockeyIds: new Set(),
-            jockeyNames: new Set(),
             jockeyRanksById: new Map(),
             jockeyRanksByName: new Map(),
-            trainerIds: new Set(),
-            trainerNames: new Set(),
             trainerRanksById: new Map(),
             trainerRanksByName: new Map(),
         };
@@ -5483,7 +5497,8 @@
 
         function getWinsProbabilityThreshold(surface, person, winsMax = 0) {
             if (!winsProbabilityThresholdReady.get(winsProbabilityThresholdKey(person, winsMax))) return null;
-            return getProbabilityThresholdStarts(getWinsProbabilityTable(person, winsMax)[surface], BG_PROBABILITY_TARGET);
+            const targetProbability = Number(winsMax) === 0 ? 0 : BG_PROBABILITY_TARGET;
+            return getProbabilityThresholdStarts(getWinsProbabilityTable(person, winsMax)[surface], targetProbability);
         }
 
         function updateWinsProbabilityRuleLabel(person, winsMax, thresholds) {
@@ -5531,7 +5546,7 @@
                 const u = new URL("probability-thresholds", WIN5_API);
                 u.searchParams.set("person", normalizedPerson);
                 u.searchParams.set("winsMax", String(normalizedWinsMax));
-                u.searchParams.set("target", String(BG_PROBABILITY_TARGET));
+                u.searchParams.set("target", String(normalizedWinsMax === 0 ? 0 : BG_PROBABILITY_TARGET));
                 u.searchParams.set("step", "1");
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
@@ -5623,47 +5638,81 @@
         }
 
         async function fetchJockeyPreviousWin5WinIds() {
-            if (jockeyPreviousWin5WinIds) return;
-            if (jockeyPreviousWin5WinIdsPromise) return jockeyPreviousWin5WinIdsPromise;
-            jockeyPreviousWin5WinIdsPromise = (async () => {
+            const sourceDate = String(window.win5SourceDate || "").trim();
+            if (jockeyPreviousWin5WinIds && jockeyPreviousWin5WinIdsDate === sourceDate) return;
+            if (jockeyPreviousWin5WinIdsPromise) {
+                const pending = jockeyPreviousWin5WinIdsPromise;
+                const pendingDate = jockeyPreviousWin5WinIdsPromiseDate;
+                await pending;
+                if (jockeyPreviousWin5WinIds && jockeyPreviousWin5WinIdsDate === sourceDate) return;
+                if (pendingDate === sourceDate) return;
+                return fetchJockeyPreviousWin5WinIds();
+            }
+            let requestPromise;
+            requestPromise = Promise.resolve().then(async () => {
             try {
                 const u = new URL("recent-win-persons", WIN5_API);
                 u.searchParams.set("person", "jockey");
                 u.searchParams.set("period", "previous-win5");
                 u.searchParams.set("winsMin", "1");
+                if (sourceDate) u.searchParams.set("date", sourceDate);
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
                 if (!json.ok || !Array.isArray(json.ids)) return;
+                if (String(window.win5SourceDate || "").trim() !== sourceDate) return;
                 jockeyPreviousWin5WinIds = new Set(json.ids.map(id => String(id)));
+                jockeyPreviousWin5WinIdsDate = sourceDate;
             } catch (e) {
                 console.warn("fetchJockeyPreviousWin5WinIds:", e);
             } finally {
-                jockeyPreviousWin5WinIdsPromise = null;
+                if (jockeyPreviousWin5WinIdsPromise === requestPromise) {
+                    jockeyPreviousWin5WinIdsPromise = null;
+                    jockeyPreviousWin5WinIdsPromiseDate = "";
+                }
             }
-            })();
-            return jockeyPreviousWin5WinIdsPromise;
+            });
+            jockeyPreviousWin5WinIdsPromise = requestPromise;
+            jockeyPreviousWin5WinIdsPromiseDate = sourceDate;
+            return requestPromise;
         }
 
         async function fetchTrainerPreviousWin5WinIds() {
-            if (trainerPreviousWin5WinIds) return;
-            if (trainerPreviousWin5WinIdsPromise) return trainerPreviousWin5WinIdsPromise;
-            trainerPreviousWin5WinIdsPromise = (async () => {
+            const sourceDate = String(window.win5SourceDate || "").trim();
+            if (trainerPreviousWin5WinIds && trainerPreviousWin5WinIdsDate === sourceDate) return;
+            if (trainerPreviousWin5WinIdsPromise) {
+                const pending = trainerPreviousWin5WinIdsPromise;
+                const pendingDate = trainerPreviousWin5WinIdsPromiseDate;
+                await pending;
+                if (trainerPreviousWin5WinIds && trainerPreviousWin5WinIdsDate === sourceDate) return;
+                if (pendingDate === sourceDate) return;
+                return fetchTrainerPreviousWin5WinIds();
+            }
+            let requestPromise;
+            requestPromise = Promise.resolve().then(async () => {
             try {
                 const u = new URL("recent-win-persons", WIN5_API);
                 u.searchParams.set("person", "trainer");
                 u.searchParams.set("period", "previous-win5");
                 u.searchParams.set("winsMin", "1");
+                if (sourceDate) u.searchParams.set("date", sourceDate);
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
                 if (!json.ok || !Array.isArray(json.ids)) return;
+                if (String(window.win5SourceDate || "").trim() !== sourceDate) return;
                 trainerPreviousWin5WinIds = new Set(json.ids.map(id => String(id)));
+                trainerPreviousWin5WinIdsDate = sourceDate;
             } catch (e) {
                 console.warn("fetchTrainerPreviousWin5WinIds:", e);
             } finally {
-                trainerPreviousWin5WinIdsPromise = null;
+                if (trainerPreviousWin5WinIdsPromise === requestPromise) {
+                    trainerPreviousWin5WinIdsPromise = null;
+                    trainerPreviousWin5WinIdsPromiseDate = "";
+                }
             }
-            })();
-            return trainerPreviousWin5WinIdsPromise;
+            });
+            trainerPreviousWin5WinIdsPromise = requestPromise;
+            trainerPreviousWin5WinIdsPromiseDate = sourceDate;
+            return requestPromise;
         }
 
         function isWinsProb3Band(row, person = "jockey", winsMax = 0) {
@@ -5814,10 +5863,14 @@
                         if (tid && isTrainerWithoutDailyMultiWin5Years(sel) && getSelectedTrainerRaceCount(sel) >= 2) {
                             items.push(`trainerNoDaily:${tid}`);
                         }
-                        if (jid && isJockeyPreviousWin5Winner(sel) && getSelectedJockeyPreviousWin5WinnerRaceCount(sel) >= 2) {
+                        if (jid
+                            && isJockeyPreviousWin5Winner(sel)
+                            && getSelectedJockeyPreviousWin5WinnerRaceCount(sel) >= 2) {
                             items.push(`jockeyPrevious:${jid}`);
                         }
-                        if (tid && isTrainerPreviousWin5Winner(sel) && getSelectedTrainerPreviousWin5WinnerRaceCount(sel) >= 2) {
+                        if (tid
+                            && isTrainerPreviousWin5Winner(sel)
+                            && getSelectedTrainerPreviousWin5WinnerRaceCount(sel) >= 2) {
                             items.push(`trainerPrevious:${tid}`);
                         }
                         return items;
