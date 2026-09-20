@@ -1636,7 +1636,7 @@
                     <span class="fav-label">◎</span>
                     <span class="fav-win-range">
                         <select id="minFav">
-                            <option value=""></option>
+                            <option value="0">0</option>
                             <option value="1">1</option>
                             <option value="2">2</option>
                             <option value="3" selected>3</option>
@@ -1645,7 +1645,7 @@
                         </select>
                         <span class="fav-range-sep">〜</span>
                         <select id="maxFav">
-                            <option value=""></option>
+                            <option value="0">0</option>
                             <option value="1">1</option>
                             <option value="2">2</option>
                             <option value="3" selected>3</option>
@@ -1659,7 +1659,7 @@
                     <span class="fav-label">✓</span>
                     <span class="fav-win-range">
                         <select id="minHimo">
-                            <option value="" selected></option>
+                            <option value="0" selected>0</option>
                             <option value="1">1</option>
                             <option value="2">2</option>
                             <option value="3">3</option>
@@ -1668,12 +1668,12 @@
                         </select>
                         <span class="fav-range-sep">〜</span>
                         <select id="maxHimo">
-                            <option value="" selected></option>
+                            <option value="0">0</option>
                             <option value="1">1</option>
                             <option value="2">2</option>
                             <option value="3">3</option>
                             <option value="4">4</option>
-                            <option value="5">5</option>
+                            <option value="5" selected>5</option>
                         </select>
                         <span class="fav-suffix">勝</span>
                     </span>
@@ -1682,7 +1682,7 @@
                     <span class="fav-label">無</span>
                     <span class="fav-win-range">
                         <select id="minNone">
-                            <option value="" selected></option>
+                            <option value="0" selected>0</option>
                             <option value="1">1</option>
                             <option value="2">2</option>
                             <option value="3">3</option>
@@ -1691,12 +1691,12 @@
                         </select>
                         <span class="fav-range-sep">〜</span>
                         <select id="maxNone">
-                            <option value="" selected></option>
+                            <option value="0">0</option>
                             <option value="1">1</option>
                             <option value="2">2</option>
                             <option value="3">3</option>
                             <option value="4">4</option>
-                            <option value="5">5</option>
+                            <option value="5" selected>5</option>
                         </select>
                         <span class="fav-suffix">勝</span>
                     </span>
@@ -1773,9 +1773,9 @@
             </div>
             <div class="stats-modal-row">
                 <div id="yearsToggle" class="sort-switch">
-                    <span class="sort-option" data-key="current">今年</span>
+                    <span class="sort-option active" data-key="current">今年</span>
                     <span class="sort-option" data-key="1">1年</span>
-                    <span class="sort-option active" data-key="3">3年</span>
+                    <span class="sort-option" data-key="3">3年</span>
                     <span class="sort-option" data-key="5">5年</span>
                 </div>
             </div>
@@ -3661,6 +3661,29 @@
             }
         }
 
+        function normalizeStoredWinRangeValue(value, fallback) {
+            if (value === undefined || value === null || String(value).trim() === "") {
+                return String(fallback);
+            }
+            const n = Number(value);
+            if (!Number.isFinite(n)) return String(fallback);
+            return String(Math.max(0, Math.min(TOTAL_RACES, Math.trunc(n))));
+        }
+
+        function restoreWinRangeState(state, minId, maxId, sync, defaults) {
+            if (state[minId] === undefined && state[maxId] === undefined) return;
+            const minEl = document.getElementById(minId);
+            if (!minEl) return;
+            const minValue = state[minId] === undefined
+                ? String(defaults.min)
+                : normalizeStoredWinRangeValue(state[minId], 0);
+            const maxValue = state[maxId] === undefined
+                ? String(defaults.max)
+                : normalizeStoredWinRangeValue(state[maxId], TOTAL_RACES);
+            minEl.value = minValue;
+            sync(maxValue);
+        }
+
         function restoreState() {
             let data = localStorage.getItem(STORAGE_KEY);
             if (!data) {
@@ -3687,18 +3710,9 @@
 
                 updateRaceHeaders(window.raceInfo || ["", "", "", "", ""]);
 
-                if (state.minFav !== undefined) {
-                    document.getElementById('minFav').value = state.minFav;
-                    syncMaxFavOptions(state.maxFav !== undefined ? state.maxFav : state.minFav);
-                }
-                if (state.minHimo !== undefined) {
-                    document.getElementById('minHimo').value = state.minHimo;
-                    syncMaxHimoOptions(state.maxHimo !== undefined ? state.maxHimo : state.minHimo);
-                }
-                if (state.minNone !== undefined) {
-                    document.getElementById('minNone').value = state.minNone;
-                    syncMaxNoneOptions(state.maxNone !== undefined ? state.maxNone : state.minNone);
-                }
+                restoreWinRangeState(state, 'minFav', 'maxFav', syncMaxFavOptions, { min: 3, max: 3 });
+                restoreWinRangeState(state, 'minHimo', 'maxHimo', syncMaxHimoOptions, { min: 0, max: TOTAL_RACES });
+                restoreWinRangeState(state, 'minNone', 'maxNone', syncMaxNoneOptions, { min: 0, max: TOTAL_RACES });
                 currentStatsModes = normalizeStatsModes(Array.isArray(state.statsModes) ? state.statsModes : []);
                 currentStatsMode = 'combo';
                 syncStatsToggleUI();
@@ -4077,14 +4091,14 @@
                     : minRaw === null
                         ? 0
                         : Number.isFinite(minRaw)
-                    ? Math.max(1, Math.min(TOTAL_RACES, Math.trunc(minRaw)))
+                    ? Math.max(0, Math.min(TOTAL_RACES, Math.trunc(minRaw)))
                     : fallbackLo;
                 const maxValue = maxText === undefined
                     ? fallbackHi
                     : maxRaw === null
                         ? TOTAL_RACES
                         : Number.isFinite(maxRaw)
-                    ? Math.max(1, Math.min(TOTAL_RACES, Math.trunc(maxRaw)))
+                    ? Math.max(0, Math.min(TOTAL_RACES, Math.trunc(maxRaw)))
                     : fallbackHi;
                 return [Math.min(minValue, maxValue), Math.max(minValue, maxValue)];
             };
@@ -5325,7 +5339,7 @@
         const VALID_STATS_MODES = ['venue', 'distance'];
         let currentStatsModes = [];
         let currentStatsMode = 'combo';
-        let currentStatsYears = '3';
+        let currentStatsYears = 'current';
         let currentPerson = 'jockey';
         let leadingPeople = {
             jockeyRanksById: new Map(),
@@ -6153,30 +6167,23 @@
             if (!minEl || !maxEl) return;
 
             const minText = minEl.value;
-            const minN = minText === "" ? null : Number(minText);
-            const lo = Number.isFinite(minN) && minN >= 1 && minN <= TOTAL_RACES
+            const minN = minText === "" ? 0 : Number(minText);
+            const lo = Number.isFinite(minN) && minN >= 0 && minN <= TOTAL_RACES
                 ? Math.trunc(minN)
-                : null;
+                : 0;
             const prevMaxText = preferredMax !== undefined ? String(preferredMax) : maxEl.value;
             const prevMax = prevMaxText === "" ? null : Number(prevMaxText);
-            minEl.value = lo === null ? "" : String(lo);
+            minEl.value = String(lo);
             maxEl.replaceChildren();
-            const blankOption = document.createElement('option');
-            blankOption.value = "";
-            blankOption.textContent = "";
-            maxEl.appendChild(blankOption);
-            const firstMax = lo === null ? 1 : lo;
-            for (let n = firstMax; n <= TOTAL_RACES; n++) {
+            for (let n = lo; n <= TOTAL_RACES; n++) {
                 const opt = document.createElement('option');
                 opt.value = String(n);
                 opt.textContent = String(n);
                 maxEl.appendChild(opt);
             }
-            const nextMax = prevMax === null
-                ? ""
-                : (Number.isFinite(prevMax) && prevMax >= firstMax && prevMax <= TOTAL_RACES
-                    ? String(Math.trunc(prevMax))
-                    : (lo === null ? "" : String(lo)));
+            const nextMax = Number.isFinite(prevMax) && prevMax >= lo && prevMax <= TOTAL_RACES
+                ? String(Math.trunc(prevMax))
+                : String(lo);
             maxEl.value = nextMax;
         }
 
