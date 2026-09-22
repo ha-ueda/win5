@@ -481,6 +481,67 @@
             min-width: 0;
         }
 
+        .mark-profile-info-panel {
+            margin-bottom: 12px;
+        }
+
+        .mark-performance-heading {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 6px;
+            color: #333;
+            font-weight: 700;
+        }
+
+        .mark-performance-start-date {
+            color: #777;
+            font-size: 12px;
+            font-weight: 400;
+            white-space: nowrap;
+        }
+
+        .mark-performance-list {
+            display: grid;
+            gap: 8px;
+            color: #555;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .mark-performance-profile {
+            display: grid;
+            grid-template-columns: 4em minmax(0, 1fr);
+            gap: 8px;
+            align-items: start;
+            padding: 6px 0;
+            border-top: 1px solid #e5e5e5;
+        }
+
+        .mark-performance-profile:first-child {
+            border-top: 0;
+        }
+
+        .mark-performance-name {
+            color: #333;
+            font-weight: 700;
+        }
+
+        .mark-performance-values {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 10px;
+        }
+
+        .mark-performance-value {
+            white-space: nowrap;
+        }
+
+        .mark-performance-meta {
+            margin-top: 3px;
+            color: #777;
+            font-size: 11px;
+        }
+
         .stats-modal-row {
             display: flex;
             align-items: center;
@@ -1037,7 +1098,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             color: #c5c5c5;
         }
@@ -1398,15 +1459,82 @@
             border-radius: 6px;
         }
 
-        .modal-close-btn:active {
-            background: #f0f0f0;
-        }
-
         .mark-profile-select-wrap {
             display: flex;
             flex-direction: column;
             gap: 12px;
             margin-top: 0;
+        }
+
+        .mark-profile-date-tabs {
+            align-self: stretch;
+            width: 100%;
+            min-width: 0;
+            height: 40px;
+            min-height: 40px;
+            box-sizing: border-box;
+            display: flex;
+            gap: 0;
+            overflow-x: auto;
+            padding: 0;
+            border-bottom: 1px solid #d4d7dc;
+            margin-bottom: 10px;
+            -webkit-overflow-scrolling: touch;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .mark-profile-date-tabs::-webkit-scrollbar {
+            display: none;
+            width: 0;
+            height: 0;
+        }
+
+        .mark-profile-date-tab {
+            flex: 0 0 50%;
+            min-width: 0;
+            height: 40px;
+            min-height: 0;
+            padding: 0 12px;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            color: #666;
+            font: inherit;
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mark-profile-date-tab:only-child {
+            flex-basis: 100%;
+        }
+
+        .mark-profile-date-tab.active {
+            color: #555;
+        }
+
+        .mark-profile-date-tab.active::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -1px;
+            height: 4px;
+            background: #3251bc;
+        }
+
+        .mark-profile-date-weekday.saturday {
+            color: #3251bc;
+        }
+
+        .mark-profile-date-weekday.sunday {
+            color: #d13b3b;
         }
 
         .mark-profile-select-wrap label {
@@ -1452,6 +1580,8 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
+            height: 40px;
+            min-height: 40px;
             margin-top: 0;
         }
 
@@ -1460,12 +1590,14 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            height: 40px;
+            min-height: 40px;
             gap: 4px;
-            padding: 14px 6px;
+            padding: 0 6px;
             background: #fff;
             color: #333;
             border: 1px solid #e0e0e0;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 400;
@@ -1478,10 +1610,35 @@
             background: #f3f4f6;
         }
 
+        #markProfileSaveBtn {
+            background: #fff;
+            border-color: #3251bc;
+            color: #3251bc;
+        }
+
+        #markProfileApplyBtn {
+            background: #3251bc;
+            border-color: #3251bc;
+            color: #fff;
+        }
+
+        #markProfileSaveBtn:active:not(:disabled) {
+            background: #eef2ff;
+            border-color: #2945a0;
+            color: #2945a0;
+        }
+
+        #markProfileApplyBtn:active:not(:disabled) {
+            background: #2945a0;
+            border-color: #2945a0;
+        }
+
         .mark-profile-actions button:disabled {
             opacity: .45;
             cursor: default;
             background: #f3f4f6;
+            border-color: #e0e0e0;
+            color: #999;
         }
 
         .ns-toast {
@@ -1718,9 +1875,24 @@
     <div id="markProfileModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="印プロファイル">
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <div class="modal-title">予想印</div>
+                <div class="modal-title">
+                    <span class="stats-title-wrap">
+                        <span>予想印</span>
+                        <button id="markProfileInfoBtn" class="stats-info-btn" type="button" aria-label="予想印の成績" aria-controls="markProfileInfoPanel" aria-expanded="false">？</button>
+                    </span>
+                </div>
                 <button class="modal-close-btn" onclick="closeMarkProfileModal()" aria-label="閉じる">&times;</button>
             </div>
+
+            <div id="markProfileInfoPanel" class="stats-info-panel mark-profile-info-panel">
+                <div class="mark-performance-heading">
+                    <span>これまでの成績</span>
+                    <span id="markPerformanceStartDate" class="mark-performance-start-date"></span>
+                </div>
+                <div id="markPerformanceList" class="mark-performance-list">読み込み中…</div>
+            </div>
+
+            <div id="markProfileDateTabs" class="mark-profile-date-tabs" role="tablist" aria-label="開催日"></div>
 
             <div class="mark-profile-select-wrap">
                 <select id="markProfileSelect" class="mark-profile-select" onchange="syncMarkProfileSaveButton(); syncMarkProfileUpdatedAt();">
@@ -1733,7 +1905,7 @@
 
             <div class="mark-profile-actions">
                 <button id="markProfileSaveBtn" onclick="saveSelectedMarkProfile()">保存</button>
-                <button onclick="applySelectedMarkProfile()">反映</button>
+                <button id="markProfileApplyBtn" onclick="applySelectedMarkProfile()">反映</button>
             </div>
         </div>
     </div>
@@ -4919,6 +5091,14 @@
                 const tabs = json.tabs || [];
                 const current = json.activeTab ?? 0;
 
+                // 予想印モーダルの日付一覧でも、現在取得できるWIN5開催日を
+                // 保存履歴がなくても選択できるように保持しておく。
+                window.win5AvailableTabs = tabs.map((tab) => ({
+                    href: String(tab?.href || ""),
+                    label: String(tab?.label || ""),
+                    source: String(tab?.source || "")
+                }));
+
                 const select = document.getElementById("win5TabSelect");
                 if (!select) return;
 
@@ -4931,23 +5111,102 @@
                     if (i === current) op.selected = true;
                     select.appendChild(op);
                 });
+
+                if (document.getElementById("markProfileModal")?.style.display === "flex") {
+                    renderMarkProfileDateTabs(markProfilesCache);
+                }
             } catch (e) {
                 showToast("タブ取得に失敗しました");
             }
         }
 
+        function getSelectedWin5TabDate() {
+            const select = document.getElementById("win5TabSelect");
+            const index = Number(select?.value);
+            const tab = Number.isInteger(index) ? (window.win5AvailableTabs || [])[index] : null;
+            const match = String(tab?.href || "").match(/[?&]date=(20\d{6})/);
+            return match ? match[1] : String(window.win5SourceDate || "").trim();
+        }
+
         let markProfilesCache = null;
         let markProfilesFetchPromise = null;
         let markProfileUpdatedAtRequestId = 0;
+        let markPerformanceFetchPromise = null;
+        let markProfileSelectedDate = "";
         const MARK_PROFILE_NAMES = ["上田", "千葉"];
         const PROFILE_MARK_VALUES = new Set(MARKS);
 
         function syncMarkProfileSaveButton() {
             const select = document.getElementById("markProfileSelect");
             const saveButton = document.getElementById("markProfileSaveBtn");
+            const applyButton = document.getElementById("markProfileApplyBtn");
             if (!saveButton) return;
             const hasMarks = typeof hasExistingMarks === "function" && hasExistingMarks();
-            saveButton.disabled = select?.value === "combined" || !hasMarks;
+            const activeDate = String(window.win5SourceDate || "").trim();
+            const selectedDate = String(markProfileSelectedDate || activeDate).trim();
+            const sameDate = !!activeDate && !!selectedDate && activeDate === selectedDate;
+            saveButton.disabled = select?.value === "combined" || !hasMarks || !sameDate;
+            if (applyButton) applyButton.disabled = !sameDate;
+        }
+
+        function formatMarkProfileDateLabel(value) {
+            const text = String(value || "").trim();
+            if (!/^20\d{6}$/.test(text)) return { date: text, weekday: "", weekdayClass: "" };
+            const date = new Date(Date.UTC(Number(text.slice(0, 4)), Number(text.slice(4, 6)) - 1, Number(text.slice(6, 8))));
+            if (!Number.isFinite(date.getTime())) return { date: text, weekday: "", weekdayClass: "" };
+            const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+            const weekday = weekdays[date.getUTCDay()];
+            const weekdayClass = weekday === "土" ? "saturday" : (weekday === "日" ? "sunday" : "");
+            return {
+                date: `${Number(text.slice(4, 6))}/${Number(text.slice(6, 8))}`,
+                weekday,
+                weekdayClass,
+            };
+        }
+
+        function renderMarkProfileDateTabs(profiles = markProfilesCache) {
+            const container = document.getElementById("markProfileDateTabs");
+            if (!container) return;
+            const activeDate = String(window.win5SourceDate || "").trim();
+            if (!markProfileSelectedDate) markProfileSelectedDate = activeDate;
+            const dates = new Set(Object.keys(profiles?.history || {}));
+            (window.win5AvailableTabs || []).forEach((tab) => {
+                const match = String(tab?.href || "").match(/[?&]date=(20\d{6})/);
+                if (match) dates.add(match[1]);
+            });
+            if (activeDate) dates.add(activeDate);
+            const ordered = [...dates].filter(date => /^20\d{6}$/.test(date)).sort((a, b) => a.localeCompare(b));
+            container.replaceChildren();
+            if (!ordered.length) return;
+            ordered.forEach(date => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "mark-profile-date-tab";
+                button.setAttribute("role", "tab");
+                button.setAttribute("aria-selected", String(date === markProfileSelectedDate));
+                button.classList.toggle("active", date === markProfileSelectedDate);
+                const label = formatMarkProfileDateLabel(date);
+                const dateText = document.createElement("span");
+                dateText.textContent = label.date;
+                const weekdayText = document.createElement("span");
+                weekdayText.className = `mark-profile-date-weekday${label.weekdayClass ? ` ${label.weekdayClass}` : ""}`;
+                weekdayText.textContent = label.weekday ? `(${label.weekday})` : "";
+                button.replaceChildren(dateText, weekdayText);
+                button.addEventListener("click", () => {
+                    markProfileSelectedDate = date;
+                    renderMarkProfileDateTabs(markProfilesCache);
+                    syncMarkProfileSaveButton();
+                    syncMarkProfileUpdatedAt();
+                });
+                container.appendChild(button);
+            });
+        }
+
+        function selectedMarkProfileEntries(profiles, date) {
+            const selectedDate = String(date || "").trim();
+            const historyProfiles = profiles?.history?.[selectedDate]?.profiles;
+            if (historyProfiles) return historyProfiles;
+            return profiles?.profiles || {};
         }
 
         function formatMarkProfileUpdatedAt(value) {
@@ -4970,18 +5229,20 @@
             if (!select || !display) return;
 
             const selected = select.value || "上田";
+            const selectedDate = String(markProfileSelectedDate || window.win5SourceDate || "").trim();
             const requestId = ++markProfileUpdatedAtRequestId;
             display.textContent = "更新日を取得中…";
             try {
                 const profiles = await fetchMarkProfiles();
                 if (requestId !== markProfileUpdatedAtRequestId) return;
+                const entries = selectedMarkProfileEntries(profiles, selectedDate);
                 if (selected === "combined") {
-                    const ueda = formatMarkProfileUpdatedAt(profiles.profiles?.上田?.updatedAt);
-                    const chiba = formatMarkProfileUpdatedAt(profiles.profiles?.千葉?.updatedAt);
+                    const ueda = formatMarkProfileUpdatedAt(entries?.上田?.updatedAt);
+                    const chiba = formatMarkProfileUpdatedAt(entries?.千葉?.updatedAt);
                     display.textContent = `上田：${ueda || "未保存"}　千葉：${chiba || "未保存"}`;
                     return;
                 }
-                const updatedAt = formatMarkProfileUpdatedAt(profiles.profiles?.[selected]?.updatedAt);
+                const updatedAt = formatMarkProfileUpdatedAt(entries?.[selected]?.updatedAt);
                 display.textContent = `更新日：${updatedAt || "未保存"}`;
             } catch (e) {
                 if (requestId === markProfileUpdatedAtRequestId) display.textContent = "更新日を取得できません";
@@ -4991,16 +5252,24 @@
         function openMarkProfileModal() {
             const modal = document.getElementById("markProfileModal");
             if (!modal) return;
+            closeMarkProfileInfo();
+            markProfileSelectedDate = getSelectedWin5TabDate();
             const select = document.getElementById("markProfileSelect");
             if (select && !select.value) select.value = "上田";
             syncMarkProfileSaveButton();
             syncMarkProfileUpdatedAt();
+            fetchMarkProfiles().then(profiles => {
+                renderMarkProfileDateTabs(profiles);
+                syncMarkProfileUpdatedAt();
+                syncMarkProfileSaveButton();
+            }).catch(() => renderMarkProfileDateTabs());
             lockBodyScroll();
             modal.style.display = "flex";
             modal.onclick = () => closeMarkProfileModal();
         }
 
         function closeMarkProfileModal() {
+            closeMarkProfileInfo();
             const modal = document.getElementById("markProfileModal");
             if (modal) modal.style.display = "none";
             unlockBodyScroll();
@@ -5018,12 +5287,20 @@
                     return PROFILE_MARK_VALUES.has(mark) ? mark : "";
                 });
             });
+            const umabans = Array.from({ length: TOTAL_RACES }, (_, raceIndex) => {
+                const raceUmabans = Array.isArray(entry.umabans?.[raceIndex]) ? entry.umabans[raceIndex] : [];
+                return Array.from({ length: HORSE_MAX }, (_, horseIndex) => {
+                    const umaban = String(raceUmabans[horseIndex] || "").replace(/[^0-9]/g, "").trim();
+                    return /^\d{1,2}$/.test(umaban) ? String(Number(umaban)) : "";
+                });
+            });
             return {
                 profile: name,
                 sourceDate: String(entry.sourceDate || "").trim(),
                 source: String(entry.source || "").trim(),
                 raceIds: Array.from({ length: TOTAL_RACES }, (_, index) => String(entry.raceIds?.[index] || "").trim()),
                 marks,
+                umabans,
                 updatedAt: String(entry.updatedAt || "").trim(),
             };
         }
@@ -5033,7 +5310,22 @@
             for (const name of MARK_PROFILE_NAMES) {
                 profiles[name] = normalizeClientMarkProfileEntry(name, payload?.profiles?.[name]);
             }
-            return { ok: true, profiles };
+            const history = {};
+            const rawHistory = payload?.history && typeof payload.history === "object" ? payload.history : {};
+            Object.keys(rawHistory).sort().forEach(date => {
+                const source = rawHistory[date] && typeof rawHistory[date] === "object" ? rawHistory[date] : {};
+                const dateProfiles = {};
+                for (const name of MARK_PROFILE_NAMES) {
+                    dateProfiles[name] = normalizeClientMarkProfileEntry(name, source.profiles?.[name] || source[name]);
+                }
+                const result = source.result && typeof source.result === "object" ? {
+                    raceIds: Array.from({ length: TOTAL_RACES }, (_, index) => String(source.result.raceIds?.[index] || "").trim()),
+                    winningUmabans: Array.from({ length: TOTAL_RACES }, (_, index) => String(source.result.winningUmabans?.[index] || "").trim()),
+                    updatedAt: String(source.result.updatedAt || "").trim(),
+                } : null;
+                history[date] = result ? { profiles: dateProfiles, result } : { profiles: dateProfiles };
+            });
+            return { ok: true, version: Number(payload?.version) || 2, updatedAt: String(payload?.updatedAt || "").trim(), profiles, history };
         }
 
         async function fetchMarkProfiles({ force = false } = {}) {
@@ -5065,8 +5357,109 @@
             }
         }
 
+        function formatMarkPerformanceValue(value, mark) {
+            const stats = value?.marks?.[mark];
+            if (!stats || !Number(stats.marked)) return `${mark} -`;
+            const rate = Number.isFinite(Number(stats.rate)) ? `${Number(stats.rate).toFixed(1)}%` : "-";
+            return `${mark} ${rate}（${Number(stats.hits) || 0}/${Number(stats.marked) || 0}）`;
+        }
+
+        function formatMarkPerformanceDate(value) {
+            const text = String(value || "").trim();
+            if (!/^20\d{6}$/.test(text)) return "";
+            return `${text.slice(0, 4)}/${text.slice(4, 6)}/${text.slice(6, 8)}`;
+        }
+
+        function renderMarkPerformance(payload) {
+            const list = document.getElementById("markPerformanceList");
+            if (!list) return;
+            const profiles = payload?.profiles || {};
+            const startDate = Object.values(profiles)
+                .map(value => String(value?.startDate || "").trim())
+                .filter(value => /^20\d{6}$/.test(value))
+                .sort()[0] || "";
+            const startDateEl = document.getElementById("markPerformanceStartDate");
+            if (startDateEl) {
+                startDateEl.textContent = startDate
+                    ? `集計開始：${formatMarkPerformanceDate(startDate)}`
+                    : "";
+            }
+            list.replaceChildren();
+            ["上田", "千葉", "合成"].forEach(name => {
+                const value = profiles[name] || {};
+                const row = document.createElement("div");
+                row.className = "mark-performance-profile";
+                const title = document.createElement("div");
+                title.className = "mark-performance-name";
+                title.textContent = name;
+                const body = document.createElement("div");
+                const values = document.createElement("div");
+                values.className = "mark-performance-values";
+                ["◎", "✓", "無"].forEach(mark => {
+                    const item = document.createElement("span");
+                    item.className = "mark-performance-value";
+                    item.textContent = formatMarkPerformanceValue(value, mark);
+                    values.appendChild(item);
+                });
+                const meta = document.createElement("div");
+                meta.className = "mark-performance-meta";
+                const days = Number(value.days) || 0;
+                const races = Number(value.races) || 0;
+                meta.textContent = days > 0
+                    ? `集計：${days}開催・${races}レース`
+                    : "集計対象なし";
+                body.append(values, meta);
+                row.append(title, body);
+                list.appendChild(row);
+            });
+        }
+
+        async function fetchMarkPerformance({ force = false } = {}) {
+            if (!force && markPerformanceFetchPromise) return markPerformanceFetchPromise;
+            markPerformanceFetchPromise = (async () => {
+                const list = document.getElementById("markPerformanceList");
+                if (list) list.textContent = "読み込み中…";
+                try {
+                    const url = new URL("mark-performance", WIN5_API);
+                    url.searchParams.set("_", String(Date.now()));
+                    const response = await fetch(url.toString(), { cache: "no-store" });
+                    const text = await response.text();
+                    const json = JSON.parse(text);
+                    if (!response.ok || !json?.ok) throw new Error(json?.error || `HTTP ${response.status}`);
+                    renderMarkPerformance(json);
+                    return json;
+                } catch (error) {
+                    console.warn("fetchMarkPerformance:", error);
+                    if (list) list.textContent = "成績を取得できません";
+                    return null;
+                } finally {
+                    markPerformanceFetchPromise = null;
+                }
+            })();
+            return markPerformanceFetchPromise;
+        }
+
+        function closeMarkProfileInfo() {
+            const panel = document.getElementById("markProfileInfoPanel");
+            const button = document.getElementById("markProfileInfoBtn");
+            panel?.classList.remove("open");
+            button?.setAttribute("aria-expanded", "false");
+        }
+
+        function toggleMarkProfileInfo(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const panel = document.getElementById("markProfileInfoPanel");
+            const button = document.getElementById("markProfileInfoBtn");
+            const open = !panel?.classList.contains("open");
+            panel?.classList.toggle("open", open);
+            button?.setAttribute("aria-expanded", String(open));
+            if (open) fetchMarkPerformance();
+        }
+
         function collectCurrentMarkProfile(profile) {
             const marks = Array.from({ length: TOTAL_RACES }, () => Array(HORSE_MAX).fill(""));
+            const umabans = Array.from({ length: TOTAL_RACES }, () => Array(HORSE_MAX).fill(""));
             document.querySelectorAll(".custom-select").forEach(sel => {
                 const race = Number(sel.dataset.race);
                 const horse = Number(sel.dataset.horse);
@@ -5075,6 +5468,8 @@
                 if (sel.classList.contains("is-empty") || sel.classList.contains("is-scratched")) return;
                 const mark = String(sel.querySelector(".selected")?.textContent || "").trim();
                 marks[race - 1][horse - 1] = PROFILE_MARK_VALUES.has(mark) ? mark : "";
+                const umaban = String(sel.dataset.umaban || horse).replace(/[^0-9]/g, "").trim();
+                umabans[race - 1][horse - 1] = /^\d{1,2}$/.test(umaban) ? String(Number(umaban)) : String(horse);
             });
             const raceIds = Array.from({ length: TOTAL_RACES }, (_, index) => String(window.win5RaceIds?.[index] || "").trim());
             return {
@@ -5083,6 +5478,7 @@
                 source: String(window.win5Source || "").trim(),
                 raceIds,
                 marks,
+                umabans,
             };
         }
 
@@ -5140,6 +5536,7 @@
             if (!MARK_PROFILE_NAMES.includes(profile)) return;
 
             const profileData = collectCurrentMarkProfile(profile);
+            if (String(markProfileSelectedDate || window.win5SourceDate || "").trim() !== String(window.win5SourceDate || "").trim()) return;
             const markCount = profileData.marks.flat().filter(mark => !!mark).length;
             if (markCount === 0) return;
             if (!confirm("印が上書きされます。よろしいですか？")) return;
@@ -5155,6 +5552,7 @@
                 const json = await response.json();
                 if (!response.ok || !json?.ok) throw new Error(json?.error || `HTTP ${response.status}`);
                 markProfilesCache = normalizeClientMarkProfiles(json);
+                renderMarkProfileDateTabs(markProfilesCache);
                 showToast("保存しました");
                 syncMarkProfileUpdatedAt();
             } catch (e) {
@@ -5165,20 +5563,23 @@
 
         async function applySelectedMarkProfile() {
             const selected = document.getElementById("markProfileSelect")?.value || "上田";
+            const selectedDate = String(markProfileSelectedDate || window.win5SourceDate || "").trim();
+            if (selectedDate !== String(window.win5SourceDate || "").trim()) return;
             if (hasExistingMarks() && !confirm("現在の印が上書きされます。よろしいですか？")) return;
 
             try {
                 const profiles = await fetchMarkProfiles({ force: true });
+                const entries = selectedMarkProfileEntries(profiles, selectedDate);
                 if (selected === "combined") {
-                    const ueda = profiles.profiles.上田;
-                    const chiba = profiles.profiles.千葉;
+                    const ueda = entries.上田;
+                    const chiba = entries.千葉;
                     if (!ueda.updatedAt || !chiba.updatedAt) {
                         showToast("印を保存してください", { type: "error" });
                         return;
                     }
                     applyMarkProfileEntries([ueda, chiba], true);
                 } else {
-                    const profile = profiles.profiles[selected];
+                    const profile = entries[selected];
                     if (!profile?.updatedAt) {
                         showToast("印を保存してください", { type: "error" });
                         return;
@@ -5358,6 +5759,7 @@
         const statsInfoPanel = document.getElementById("statsInfoPanel");
         const bgRuleInfoBtn = document.getElementById("bgRuleInfoBtn");
         const bgRuleInfoPanel = document.getElementById("bgRuleInfoPanel");
+        const markProfileInfoBtn = document.getElementById("markProfileInfoBtn");
         const allStatsOptions = [...statsToggleEl.querySelectorAll(".sort-option")];
         const allYearsOptions = [...yearsToggleEl.querySelectorAll(".sort-option")];
         const allPersonOptions = [...personToggleEl.querySelectorAll(".sort-option")];
@@ -5440,6 +5842,7 @@
         statsPopBtn.addEventListener("click", openStatsModal);
         statsInfoBtn?.addEventListener("click", toggleStatsInfo);
         bgRuleInfoBtn?.addEventListener("click", toggleBgRuleInfo);
+        markProfileInfoBtn?.addEventListener("click", toggleMarkProfileInfo);
         statsModal.addEventListener("click", closeStatsModal);
         document.addEventListener("keydown", (e) => {
             if (e.key === "Escape" && statsModal.style.display === "flex") closeStatsModal();
