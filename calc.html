@@ -5387,13 +5387,13 @@
                     : "";
             }
             list.replaceChildren();
-            ["上田", "千葉", "合成"].forEach(name => {
-                const value = profiles[name] || {};
+            [["上田", "上田"], ["千葉", "千葉"], ["確定", "確定"]].forEach(([profileKey, displayName]) => {
+                const value = profiles[profileKey] || {};
                 const row = document.createElement("div");
                 row.className = "mark-performance-profile";
                 const title = document.createElement("div");
                 title.className = "mark-performance-name";
-                title.textContent = name;
+                title.textContent = displayName;
                 const body = document.createElement("div");
                 const values = document.createElement("div");
                 values.className = "mark-performance-values";
