@@ -1899,6 +1899,7 @@
                     <option value="上田">上田</option>
                     <option value="千葉">千葉</option>
                     <option value="combined">合成</option>
+                    <option value="確定">確定</option>
                 </select>
                 <div id="markProfileUpdatedAt" class="mark-profile-updated-at" aria-live="polite"></div>
             </div>
@@ -5133,7 +5134,7 @@
         let markProfileUpdatedAtRequestId = 0;
         let markPerformanceFetchPromise = null;
         let markProfileSelectedDate = "";
-        const MARK_PROFILE_NAMES = ["上田", "千葉"];
+        const MARK_PROFILE_NAMES = ["上田", "千葉", "確定"];
         const PROFILE_MARK_VALUES = new Set(MARKS);
 
         function syncMarkProfileSaveButton() {
@@ -5202,9 +5203,10 @@
             });
         }
 
-        function selectedMarkProfileEntries(profiles, date) {
+        function selectedMarkProfileEntries(profiles, date, profileName = "") {
             const selectedDate = String(date || "").trim();
             const historyProfiles = profiles?.history?.[selectedDate]?.profiles;
+            if (profileName === "確定") return historyProfiles || {};
             if (historyProfiles) return historyProfiles;
             return profiles?.profiles || {};
         }
@@ -5235,7 +5237,7 @@
             try {
                 const profiles = await fetchMarkProfiles();
                 if (requestId !== markProfileUpdatedAtRequestId) return;
-                const entries = selectedMarkProfileEntries(profiles, selectedDate);
+                const entries = selectedMarkProfileEntries(profiles, selectedDate, selected);
                 if (selected === "combined") {
                     const ueda = formatMarkProfileUpdatedAt(entries?.上田?.updatedAt);
                     const chiba = formatMarkProfileUpdatedAt(entries?.千葉?.updatedAt);
@@ -5569,7 +5571,7 @@
 
             try {
                 const profiles = await fetchMarkProfiles({ force: true });
-                const entries = selectedMarkProfileEntries(profiles, selectedDate);
+                const entries = selectedMarkProfileEntries(profiles, selectedDate, selected);
                 if (selected === "combined") {
                     const ueda = entries.上田;
                     const chiba = entries.千葉;
