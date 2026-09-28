@@ -133,8 +133,8 @@
         }
 
         .month-profit {
-            font-size: 30px;
-            font-weight: bold;
+            font-size: 26px;
+            font-weight: 800;
             letter-spacing: 0.2px;
         }
 
@@ -157,19 +157,19 @@
         .day-summary-list {
             display: grid;
             gap: 18px;
-            margin-top: 16px;
+            margin-top: 0;
         }
 
         .day-summary-entry {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             gap: 14px;
         }
 
         .day-entry-profit {
             font-size: 26px;
-            font-weight: 900;
+            font-weight: 800;
             letter-spacing: 0.2px;
         }
 
@@ -177,6 +177,25 @@
             min-width: 160px;
             display: grid;
             gap: 10px;
+        }
+
+        .day-entry-images {
+            justify-self: end;
+            border: 1px solid #cbd3e8;
+            border-radius: 8px;
+            background: #f5f7ff;
+            color: #3251bc;
+            padding: 7px 10px;
+            font: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .day-entry-images:active,
+        .ticket-image-button:active,
+        .ticket-image-upload:active {
+            transform: scale(.98);
         }
 
         .ms-row {
@@ -246,6 +265,13 @@
         .loss {
             color: #d40000;
             font-weight: bold;
+        }
+
+        .month-profit.profit,
+        .month-profit.loss,
+        .day-entry-profit.profit,
+        .day-entry-profit.loss {
+            font-weight: 800;
         }
 
         .container {
@@ -759,7 +785,7 @@
             align-items: center;
             justify-content: center;
             color: #fff;
-            font-size: 12px;
+            font-size: 18px;
             font-weight: 600;
             flex: 0 0 auto;
         }
@@ -843,6 +869,216 @@
             font-size: 18px;
             font-weight: 900;
             cursor: pointer;
+        }
+
+        .ticket-image-card {
+            margin: 10px 0;
+        }
+
+        .ticket-image-tools {
+            min-width: 0;
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .ticket-image-field {
+            justify-content: center;
+        }
+
+        .ticket-image-upload {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 42px;
+            padding: 0 14px;
+            border: 1px solid #cbd3e8;
+            border-radius: 8px;
+            background: #f5f7ff;
+            color: #3251bc;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .ticket-image-upload input {
+            display: none;
+        }
+
+        .ticket-image-status {
+            min-height: 20px;
+            margin-top: 8px;
+            color: #777;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .ticket-image-status:empty,
+        .ticket-image-list:empty {
+            display: none;
+        }
+
+        .ticket-image-list {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 8px;
+            margin-top: 8px;
+            width: 100%;
+        }
+
+        .ticket-image-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .ticket-image-item:not(.is-pending) {
+            flex: 1 1 100%;
+        }
+
+        .ticket-image-item.is-pending {
+            position: relative;
+            flex: 0 0 80px;
+            width: 80px;
+            height: 104px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f6f6f6;
+        }
+
+        .ticket-image-thumbnail {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .ticket-image-item.is-pending .ticket-image-remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            min-height: 28px;
+            width: 28px;
+            padding: 0;
+            background: rgba(255, 255, 255, .94);
+            color: #111;
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .ticket-image-name {
+            min-width: 0;
+            flex: 1 1 auto;
+            overflow: hidden;
+            color: #555;
+            font-size: 14px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ticket-image-button,
+        .ticket-image-remove {
+            flex: 0 0 auto;
+            min-height: 36px;
+            padding: 0 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            color: #333;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .ticket-image-remove {
+            color: #c62828;
+        }
+
+        .ticket-image-viewer {
+            position: fixed;
+            inset: 0;
+            z-index: 2147483000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(0, 0, 0, .88);
+        }
+
+        .ticket-image-viewer.show {
+            display: flex;
+        }
+
+        .ticket-image-viewer-content {
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            width: min(100%, 900px);
+            height: min(100%, 900px);
+            gap: 12px;
+            color: #fff;
+        }
+
+        .ticket-image-viewer-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .ticket-image-viewer-stage {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-height: 0;
+        }
+
+        .ticket-image-viewer-title {
+            overflow: hidden;
+            color: #fff;
+            font-size: 14px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .ticket-image-viewer-stage img {
+            display: block;
+            flex: 1 1 auto;
+            min-width: 0;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            justify-self: center;
+            align-self: center;
+        }
+
+        .ticket-image-viewer-button {
+            flex: 0 0 auto;
+            min-width: 40px;
+            min-height: 40px;
+            padding: 6px 12px;
+            border: 1px solid rgba(255, 255, 255, .35);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, .12);
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 640px) {
+            .ticket-image-viewer {
+                padding: 12px;
+            }
+
+            .ticket-image-viewer-content {
+                height: 100%;
+            }
         }
 
         @media (max-width: 760px) {
@@ -1035,25 +1271,38 @@
         <div class="editor-body">
             <div class="editor-card">
                 <div class="editor-field">
-                    <div class="editor-icon invest">購入</div>
+                    <div class="editor-icon invest">購</div>
                     <input id="editorInvest" class="editor-input" inputmode="numeric" placeholder="購入金額">
                 </div>
                 <div class="editor-field">
-                    <div class="editor-icon recover">払戻</div>
+                    <div class="editor-icon recover">払</div>
                     <input id="editorRecover" class="editor-input" inputmode="numeric" placeholder="払戻金額">
                 </div>
                 <div class="editor-field">
-                    <div class="editor-icon profit">収支</div>
+                    <div class="editor-icon profit">収</div>
                     <div class="editor-profit" id="editorProfit">0円</div>
                 </div>
             </div>
 
             <div class="editor-card">
                 <div class="editor-field">
-                    <div class="editor-icon buyer">買主</div>
+                    <div class="editor-icon buyer">主</div>
                     <div class="buyer-seg" id="buyerSeg">
                         <button type="button" class="buyer-btn active" data-buyer="上田" aria-pressed="true">上田</button>
                         <button type="button" class="buyer-btn" data-buyer="千葉" aria-pressed="false">千葉</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ticket-image-card">
+                <div class="editor-field ticket-image-field">
+                    <div class="ticket-image-tools">
+                        <label class="ticket-image-upload">
+                            画像を追加
+                            <input id="editorImageInput" type="file" accept="image/*" multiple>
+                        </label>
+                        <div class="ticket-image-status" id="editorImageStatus" aria-live="polite"></div>
+                        <div class="ticket-image-list" id="editorImageList"></div>
                     </div>
                 </div>
             </div>
@@ -1063,15 +1312,40 @@
         </div>
     </div>
 
+    <div class="ticket-image-viewer" id="ticketImageViewer" aria-hidden="true">
+        <div class="ticket-image-viewer-content" role="dialog" aria-modal="true" aria-label="買い目画像">
+            <div class="ticket-image-viewer-top">
+                <div class="ticket-image-viewer-title" id="ticketImageViewerTitle"></div>
+                <button class="ticket-image-viewer-button" id="ticketImageViewerClose" type="button" aria-label="閉じる">×</button>
+            </div>
+            <div class="ticket-image-viewer-stage">
+                <button class="ticket-image-viewer-button" id="ticketImageViewerPrev" type="button" aria-label="前の画像">‹</button>
+                <img id="ticketImageViewerImage" alt="買い目画像">
+                <button class="ticket-image-viewer-button" id="ticketImageViewerNext" type="button" aria-label="次の画像">›</button>
+            </div>
+        </div>
+    </div>
+
     <div class="page-end-actions">
         <button class="fab-edit" id="fabEdit" type="button" onclick="openEditorFromFab()">✎</button>
     </div>
 
     <script>
         const API_URL = "https://shushi.cooopew.workers.dev/";
+        const IMAGE_API_URL = "https://shushi-images.cooopew.workers.dev";
+        const IMAGE_TOKEN_STORAGE_KEY = "shushi_image_api_token";
 
         let rows = [];
         let uidSeq = 1;
+        let editorImageDraft = [];
+        let editorPendingImageFiles = [];
+        let editorUploadedImageIds = new Set();
+        let imageUploadInProgress = false;
+        let editorSaveInProgress = false;
+        let viewerImages = [];
+        let viewerImageIndex = 0;
+        let viewerImageObjectUrl = "";
+        let viewerLoadToken = 0;
 
         const calGrid = document.getElementById("calGrid");
         const monthTitle = document.getElementById("monthTitle");
@@ -1087,6 +1361,12 @@
         const editorRecover = document.getElementById("editorRecover");
         const editorProfit = document.getElementById("editorProfit");
         const editorDelete = document.getElementById("editorDelete");
+        const editorImageInput = document.getElementById("editorImageInput");
+        const editorImageStatus = document.getElementById("editorImageStatus");
+        const editorImageList = document.getElementById("editorImageList");
+        const ticketImageViewer = document.getElementById("ticketImageViewer");
+        const ticketImageViewerTitle = document.getElementById("ticketImageViewerTitle");
+        const ticketImageViewerImage = document.getElementById("ticketImageViewerImage");
         const buyerBtns = Array.from(document.querySelectorAll(".buyer-btn"));
         const fabEdit = document.getElementById("fabEdit");
         const yearFilter = document.getElementById("yearFilter");
@@ -1101,6 +1381,21 @@
 
         buyerBtns.forEach(btn => {
             btn.addEventListener("click", () => setEditorBuyer(btn.dataset.buyer || "上田"));
+        });
+
+        if (editorImageInput) editorImageInput.addEventListener("change", queueEditorImages);
+        if (editorImageList) editorImageList.addEventListener("click", handleEditorImageListClick);
+        document.getElementById("ticketImageViewerClose").addEventListener("click", closeTicketImageViewer);
+        document.getElementById("ticketImageViewerPrev").addEventListener("click", () => moveViewerImage(-1));
+        document.getElementById("ticketImageViewerNext").addEventListener("click", () => moveViewerImage(1));
+        ticketImageViewer.addEventListener("click", e => {
+            if (e.target === ticketImageViewer) closeTicketImageViewer();
+        });
+        document.addEventListener("keydown", e => {
+            if (!ticketImageViewer.classList.contains("show")) return;
+            if (e.key === "Escape") closeTicketImageViewer();
+            if (e.key === "ArrowLeft") moveViewerImage(-1);
+            if (e.key === "ArrowRight") moveViewerImage(1);
         });
 
         let viewMonth = "";
@@ -1157,6 +1452,59 @@
                 if (ch === '"') return "&quot;";
                 return "&#39;";
             });
+        }
+
+        function normalizeTicketImages(images) {
+            if (!Array.isArray(images)) return [];
+            return images
+                .filter(image => image && /^[0-9a-f-]{36}$/i.test(String(image.id || "")))
+                .map(image => ({
+                    id: String(image.id),
+                    name: String(image.name || "買い目画像"),
+                    type: String(image.type || "image/jpeg")
+                }));
+        }
+
+        function getImageApiToken() {
+            let token = localStorage.getItem(IMAGE_TOKEN_STORAGE_KEY) || "";
+            if (!token) {
+                token = window.prompt("画像Workerに設定したアクセスキーを入力してください") || "";
+                token = token.trim();
+                if (token) localStorage.setItem(IMAGE_TOKEN_STORAGE_KEY, token);
+            }
+            if (!token) throw new Error("画像用アクセスキーが必要です");
+            return token;
+        }
+
+        async function imageApiRequest(path, options = {}) {
+            const token = getImageApiToken();
+            const headers = new Headers(options.headers || {});
+            headers.set("Authorization", `Bearer ${token}`);
+            const response = await fetch(`${IMAGE_API_URL}${path}`, { ...options, headers });
+
+            if (response.status === 401) {
+                localStorage.removeItem(IMAGE_TOKEN_STORAGE_KEY);
+                throw new Error("画像用アクセスキーが正しくありません。もう一度お試しください");
+            }
+
+            if (!response.ok) {
+                let message = "画像の処理に失敗しました";
+                try {
+                    const data = await response.clone().json();
+                    if (data && data.error === "image service is not configured") {
+                        message = "画像WorkerのR2設定が完了していません";
+                    } else if (data && data.error === "unsupported image type") {
+                        message = "この画像形式には対応していません";
+                    }
+                } catch { }
+                throw new Error(message);
+            }
+            return response;
+        }
+
+        function imageErrorMessage(error) {
+            if (error instanceof TypeError) return "画像Workerに接続できません。URLとデプロイ状態を確認してください";
+            return error?.message || "画像の処理に失敗しました";
         }
 
         function startEdit(el) {
@@ -1415,6 +1763,7 @@
                 const recover = Number(r.payout) || 0;
                 const profit = recover - invest;
                 const buyer = r.buyer || "上田";
+                const images = normalizeTicketImages(r.images);
                 const profitClass = profit > 0 ? "profit" : (profit < 0 ? "loss" : "");
                 return `
                     <div class="day-summary-entry" data-uid="${r.uid}">
@@ -1432,6 +1781,7 @@
                                 <div>買主</div>
                                 <div class="ms-val">${escapeHtml(buyer)}</div>
                             </div>
+                            ${images.length ? `<button class="day-entry-images" type="button" data-uid="${r.uid}">買い目画像 ${images.length}枚</button>` : ""}
                         </div>
                     </div>
                 `;
@@ -1550,7 +1900,17 @@
         }
 
         function setEditorBuyer(b) {
-            editorBuyer = b || "上田";
+            if (imageUploadInProgress || editorSaveInProgress) {
+                showToast(imageUploadInProgress ? "画像のアップロードが終わるまでお待ちください" : "保存が終わるまでお待ちください");
+                return;
+            }
+            const nextBuyer = b || "上田";
+            if (nextBuyer !== editorBuyer && (editorUploadedImageIds.size || editorPendingImageFiles.length)) {
+                clearPendingEditorImages();
+                if (editorImageInput) editorImageInput.value = "";
+                void discardPendingEditorUploads();
+            }
+            editorBuyer = nextBuyer;
             lastBuyer = editorBuyer;
             if (editingUid && !editorForceNew) {
                 editingUid = null;
@@ -1565,6 +1925,9 @@
 
         function openEditor(d, options = {}) {
             const { buyer, uid, forceNew = false } = options;
+            clearPendingEditorImages();
+            if (editorImageInput) editorImageInput.value = "";
+            editorUploadedImageIds = new Set();
             editorDate = d;
             editorForceNew = !!forceNew;
             editingUid = uid ?? null;
@@ -1583,7 +1946,16 @@
             document.body.classList.add("editor-open");
         }
 
-        function closeEditor() {
+        async function closeEditor({ discardUploads = true, force = false } = {}) {
+            if (!force && (imageUploadInProgress || editorSaveInProgress)) {
+                showToast(imageUploadInProgress ? "画像のアップロードが終わるまでお待ちください" : "保存が終わるまでお待ちください");
+                return;
+            }
+            if (discardUploads) await discardPendingEditorUploads();
+            editorImageDraft = [];
+            clearPendingEditorImages();
+            if (editorImageInput) editorImageInput.value = "";
+            renderEditorImages();
             if (editorOverlay) {
                 editorOverlay.classList.remove("show");
                 editorOverlay.setAttribute("aria-hidden", "true");
@@ -1592,6 +1964,8 @@
         }
 
         function loadEditorState() {
+            clearPendingEditorImages();
+            if (editorImageInput) editorImageInput.value = "";
             const row = editingUid != null
                 ? rows.find(r => String(r.uid) === String(editingUid))
                 : (editorForceNew ? null : rows.find(r => r.date === editorDate && (r.buyer || "上田") === editorBuyer));
@@ -1599,12 +1973,205 @@
 
             if (editorInvest) editorInvest.value = row && row.amount != null && row.amount !== 0 ? String(row.amount).replace(/[^\d]/g, "") : "";
             if (editorRecover) editorRecover.value = row && row.payout != null && row.payout !== 0 ? String(row.payout).replace(/[^\d]/g, "") : "";
+            editorImageDraft = normalizeTicketImages(row && row.images);
+            if (editorImageStatus) editorImageStatus.textContent = "";
+            renderEditorImages();
 
             const isEdit = !!row;
             if (editorTitle) editorTitle.textContent = formatEditorTitle(editorDate, isEdit);
             if (editorDelete) editorDelete.style.display = isEdit ? "block" : "none";
 
             updateEditorProfit();
+        }
+
+        function renderEditorImages() {
+            if (!editorImageList) return;
+            const savedImages = editorImageDraft.map((image, index) => `
+                <div class="ticket-image-item">
+                    <span class="ticket-image-name">${escapeHtml(image.name)}</span>
+                    <button class="ticket-image-button" type="button" data-image-action="view" data-image-index="${index}">表示</button>
+                    <button class="ticket-image-remove" type="button" data-image-action="remove" data-image-index="${index}">削除</button>
+                </div>
+            `);
+            const pendingImages = editorPendingImageFiles.map((pending, index) => `
+                <div class="ticket-image-item is-pending">
+                    <img class="ticket-image-thumbnail" src="${escapeHtml(pending.previewUrl)}" alt="">
+                    <button class="ticket-image-remove" type="button" aria-label="選択した画像を削除" data-image-action="remove-pending" data-image-index="${index}">×</button>
+                </div>
+            `);
+            editorImageList.innerHTML = [...savedImages, ...pendingImages].join("");
+        }
+
+        function clearPendingEditorImages() {
+            for (const pending of editorPendingImageFiles) {
+                if (pending.previewUrl) URL.revokeObjectURL(pending.previewUrl);
+            }
+            editorPendingImageFiles = [];
+        }
+
+        function queueEditorImages() {
+            const files = Array.from(editorImageInput?.files || []);
+            if (editorImageInput) editorImageInput.value = "";
+            if (!files.length || imageUploadInProgress || editorSaveInProgress) return;
+
+            let added = 0;
+            for (const file of files) {
+                const extension = file.name.split(".").pop().toLowerCase();
+                const supportedByExtension = ["avif", "bmp", "gif", "heic", "heif", "jpeg", "jpg", "png", "tif", "tiff", "webp"].includes(extension);
+                if ((!file.type.startsWith("image/") && !supportedByExtension) || file.type === "image/svg+xml") {
+                    showToast(`${file.name}: 画像ファイルを選択してください`);
+                    continue;
+                }
+                editorPendingImageFiles.push({ file, previewUrl: URL.createObjectURL(file) });
+                added++;
+            }
+            if (editorImageStatus && added) editorImageStatus.textContent = "";
+            renderEditorImages();
+        }
+
+        async function uploadEditorImages() {
+            if (!editorPendingImageFiles.length) return true;
+
+            imageUploadInProgress = true;
+            if (editorImageInput) editorImageInput.disabled = true;
+            if (editorImageStatus) editorImageStatus.textContent = "アップロードを準備しています…";
+            let completed = 0;
+            const total = editorPendingImageFiles.length;
+
+            try {
+                while (editorPendingImageFiles.length) {
+                    const pending = editorPendingImageFiles[0];
+                    const file = pending.file;
+                    if (editorImageStatus) editorImageStatus.textContent = `アップロード中 ${completed + 1}/${total}`;
+
+                    const response = await imageApiRequest("/images/upload", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": file.type || "application/octet-stream",
+                            "X-File-Name": encodeURIComponent(file.name)
+                        },
+                        body: file
+                    });
+                    const data = await response.json();
+                    if (!data?.id) throw new Error("画像Workerから画像IDが返されませんでした");
+
+                    const image = {
+                        id: String(data.id),
+                        name: file.name || "買い目画像",
+                        type: String(data.type || file.type || "image/jpeg")
+                    };
+                    editorImageDraft.push(image);
+                    editorUploadedImageIds.add(image.id);
+                    editorPendingImageFiles.shift();
+                    if (pending.previewUrl) URL.revokeObjectURL(pending.previewUrl);
+                    completed++;
+                    renderEditorImages();
+                }
+                if (editorImageStatus) editorImageStatus.textContent = completed ? "画像をアップロードしました。記録を保存しています…" : "";
+                return true;
+            } catch (error) {
+                if (editorImageStatus) {
+                    editorImageStatus.textContent = editorPendingImageFiles.length
+                        ? `${editorPendingImageFiles.length}枚の画像が未アップロードです。保存を再試行できます`
+                        : "";
+                }
+                showToast(imageErrorMessage(error), { type: "error" });
+                return false;
+            } finally {
+                imageUploadInProgress = false;
+                if (editorImageInput) editorImageInput.disabled = editorSaveInProgress;
+            }
+        }
+
+        function handleEditorImageListClick(event) {
+            const button = event.target.closest("[data-image-action]");
+            if (!button) return;
+            const index = Number(button.dataset.imageIndex);
+            if (button.dataset.imageAction === "remove-pending") {
+                const [removed] = editorPendingImageFiles.splice(index, 1);
+                if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+                if (editorImageStatus) editorImageStatus.textContent = "";
+                renderEditorImages();
+                return;
+            }
+            const image = editorImageDraft[index];
+            if (!image) return;
+
+            if (button.dataset.imageAction === "view") {
+                openTicketImageViewer(editorImageDraft, `${formatDayLabel(editorDate)}・${editorBuyer}`, index);
+            } else if (button.dataset.imageAction === "remove") {
+                editorImageDraft.splice(index, 1);
+                renderEditorImages();
+            }
+        }
+
+        async function discardPendingEditorUploads() {
+            const ids = Array.from(editorUploadedImageIds);
+            editorUploadedImageIds.clear();
+            if (!ids.length) return;
+            const results = await Promise.allSettled(ids.map(id => imageApiRequest(`/images/${encodeURIComponent(id)}`, { method: "DELETE" })));
+            if (results.some(result => result.status === "rejected")) {
+                showToast("未保存の画像を削除できませんでした", { type: "error" });
+            }
+        }
+
+        async function deleteStoredImages(images) {
+            const ids = Array.from(new Set(normalizeTicketImages(images).map(image => image.id)));
+            if (!ids.length) return true;
+            const results = await Promise.allSettled(ids.map(id => imageApiRequest(`/images/${encodeURIComponent(id)}`, { method: "DELETE" })));
+            const ok = results.every(result => result.status === "fulfilled");
+            if (!ok) showToast("記録は保存されましたが、一部画像を削除できませんでした", { type: "error" });
+            return ok;
+        }
+
+        function openTicketImageViewer(images, label = "", startIndex = 0) {
+            viewerImages = normalizeTicketImages(images);
+            if (!viewerImages.length) {
+                showToast("表示できる画像がありません");
+                return;
+            }
+            viewerImageIndex = Math.max(0, Math.min(startIndex, viewerImages.length - 1));
+            ticketImageViewer.classList.add("show");
+            ticketImageViewer.setAttribute("aria-hidden", "false");
+            ticketImageViewer.dataset.label = label;
+            void renderViewerImage();
+        }
+
+        async function renderViewerImage() {
+            const token = ++viewerLoadToken;
+            const image = viewerImages[viewerImageIndex];
+            if (!image) return;
+            if (viewerImageObjectUrl) URL.revokeObjectURL(viewerImageObjectUrl);
+            viewerImageObjectUrl = "";
+            ticketImageViewerImage.removeAttribute("src");
+            ticketImageViewerTitle.textContent = `${ticketImageViewer.dataset.label || "買い目画像"}　${viewerImageIndex + 1}/${viewerImages.length}　${image.name}`;
+
+            try {
+                const response = await imageApiRequest(`/images/${encodeURIComponent(image.id)}`);
+                const blob = await response.blob();
+                if (token !== viewerLoadToken) return;
+                viewerImageObjectUrl = URL.createObjectURL(blob);
+                ticketImageViewerImage.src = viewerImageObjectUrl;
+                ticketImageViewerImage.alt = image.name;
+            } catch (error) {
+                if (token === viewerLoadToken) showToast(imageErrorMessage(error), { type: "error" });
+            }
+        }
+
+        function moveViewerImage(delta) {
+            if (!viewerImages.length) return;
+            viewerImageIndex = (viewerImageIndex + delta + viewerImages.length) % viewerImages.length;
+            void renderViewerImage();
+        }
+
+        function closeTicketImageViewer() {
+            viewerLoadToken++;
+            ticketImageViewer.classList.remove("show");
+            ticketImageViewer.setAttribute("aria-hidden", "true");
+            ticketImageViewerImage.removeAttribute("src");
+            if (viewerImageObjectUrl) URL.revokeObjectURL(viewerImageObjectUrl);
+            viewerImageObjectUrl = "";
+            viewerImages = [];
         }
 
         function updateEditorProfit() {
@@ -1621,44 +2188,89 @@
 
         async function saveEditor() {
             if (!editorDate) return;
-
-            const a = editorInvest ? Number(editorInvest.value) || 0 : 0;
-            const p = editorRecover ? Number(editorRecover.value) || 0 : 0;
-
-            const existing = editingUid != null
-                ? rows.find(r => String(r.uid) === String(editingUid))
-                : (editorForceNew ? null : rows.find(r => r.date === editorDate && (r.buyer || "上田") === editorBuyer));
-            if (existing) {
-                existing.amount = a ? String(a) : "";
-                existing.payout = p ? String(p) : "";
-                existing.buyer = editorBuyer || "上田";
-            } else {
-                rows.push({
-                    uid: uidSeq++,
-                    date: editorDate,
-                    amount: a ? String(a) : "",
-                    payout: p ? String(p) : "",
-                    buyer: editorBuyer || "上田"
-                });
+            if (imageUploadInProgress || editorSaveInProgress) {
+                showToast(imageUploadInProgress ? "画像のアップロードが終わるまでお待ちください" : "保存中です。しばらくお待ちください");
+                return;
             }
+            editorSaveInProgress = true;
+            if (editorImageInput) editorImageInput.disabled = true;
 
-            calc();
-            renderCalendar();
+            try {
+                if (!(await uploadEditorImages())) return;
+
+                const a = editorInvest ? Number(editorInvest.value) || 0 : 0;
+                const p = editorRecover ? Number(editorRecover.value) || 0 : 0;
+
+                const existing = editingUid != null
+                    ? rows.find(r => String(r.uid) === String(editingUid))
+                    : (editorForceNew ? null : rows.find(r => r.date === editorDate && (r.buyer || "上田") === editorBuyer));
+                const previousImages = normalizeTicketImages(existing && existing.images);
+                let savedRow = existing;
+                if (existing) {
+                    existing.amount = a ? String(a) : "";
+                    existing.payout = p ? String(p) : "";
+                    existing.buyer = editorBuyer || "上田";
+                    existing.images = normalizeTicketImages(editorImageDraft);
+                } else {
+                    savedRow = {
+                        uid: uidSeq++,
+                        date: editorDate,
+                        amount: a ? String(a) : "",
+                        payout: p ? String(p) : "",
+                        buyer: editorBuyer || "上田",
+                        images: normalizeTicketImages(editorImageDraft)
+                    };
+                    rows.push(savedRow);
+                }
+                editingUid = savedRow.uid;
+                editorForceNew = false;
+
+                calc();
+                renderCalendar();
 
 
-            rebuildYearOptions();
-            applyYearFilter();
+                rebuildYearOptions();
+                applyYearFilter();
 
-            const ok = await saveData();
-            if (ok) closeEditor();
+                const ok = await saveData();
+                if (ok) {
+                    const savedImageIds = new Set(normalizeTicketImages(savedRow.images).map(image => image.id));
+                    const removedImages = [
+                        ...previousImages,
+                        ...Array.from(editorUploadedImageIds, id => ({ id }))
+                    ].filter(image => !savedImageIds.has(image.id));
+                    editorUploadedImageIds.clear();
+                    await deleteStoredImages(removedImages);
+                    await closeEditor({ discardUploads: false, force: true });
+                } else if (savedRow) {
+                    savedRow.images = previousImages;
+                    if (editorImageStatus && editorUploadedImageIds.size) {
+                        editorImageStatus.textContent = "画像はアップロード済みです。記録の保存を再試行してください";
+                    }
+                    calc();
+                    renderCalendar();
+                }
+            } finally {
+                editorSaveInProgress = false;
+                if (editorImageInput) editorImageInput.disabled = false;
+            }
         }
 
         async function deleteEditor() {
+            if (imageUploadInProgress || editorSaveInProgress) {
+                showToast(imageUploadInProgress ? "画像のアップロードが終わるまでお待ちください" : "保存が終わるまでお待ちください");
+                return;
+            }
             const row = editingUid != null
                 ? rows.find(r => String(r.uid) === String(editingUid))
                 : rows.find(r => r.date === editorDate && (r.buyer || "上田") === editorBuyer);
             if (!row) return;
+            const imagesToDelete = [
+                ...normalizeTicketImages(row.images),
+                ...Array.from(editorUploadedImageIds, id => ({ id }))
+            ];
 
+            const originalIndex = rows.indexOf(row);
             rows = rows.filter(x => x.uid !== row.uid);
 
             calc();
@@ -1669,7 +2281,16 @@
             applyYearFilter();
 
             const ok = await saveData({ message: "削除しました" });
-            if (ok) closeEditor();
+            if (ok) {
+                editorUploadedImageIds.clear();
+                await deleteStoredImages(imagesToDelete);
+                await closeEditor({ discardUploads: false });
+            } else {
+                rows.splice(Math.max(0, originalIndex), 0, row);
+                editingUid = row.uid;
+                calc();
+                renderCalendar();
+            }
         }
 
         function openEditorFromFab() {
@@ -1706,7 +2327,8 @@
                     date: r.date || "",
                     amount: r.amount ?? "",
                     payout: r.payout ?? "",
-                    buyer: r.buyer || "上田"
+                    buyer: r.buyer || "上田",
+                    images: normalizeTicketImages(r.images)
                 }));
 
                 rebuildYearOptions();
@@ -1725,19 +2347,24 @@
         }
 
         async function saveData({ message = "保存しました" } = {}) {
-            const payload = rows.map(r => ({
-                date: r.date,
-                amount: Number(r.amount) || 0,
-                payout: Number(r.payout) || 0,
-                buyer: r.buyer || "上田"
-            }));
+            const payload = rows.map(r => {
+                const images = normalizeTicketImages(r.images);
+                return {
+                    date: r.date,
+                    amount: Number(r.amount) || 0,
+                    payout: Number(r.payout) || 0,
+                    buyer: r.buyer || "上田",
+                    ...(images.length ? { images } : {})
+                };
+            });
 
             try {
-                await fetch(API_URL, {
+                const res = await fetch(API_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 showToast(message);
                 return true;
             } catch {
@@ -1757,6 +2384,13 @@
         });
 
         daySummaryList.addEventListener("click", e => {
+            const imageButton = e.target.closest(".day-entry-images");
+            if (imageButton) {
+                const imageRow = rows.find(r => String(r.uid) === String(imageButton.dataset.uid));
+                if (imageRow) openTicketImageViewer(imageRow.images, `${formatDayLabel(imageRow.date)}・${imageRow.buyer || "上田"}`);
+                return;
+            }
+
             const entry = e.target.closest(".day-summary-entry");
             if (!entry) return;
             const uid = entry.dataset.uid;
