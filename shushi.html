@@ -180,19 +180,37 @@
         }
 
         .day-entry-images {
-            justify-self: end;
-            border: 1px solid #cbd3e8;
-            border-radius: 8px;
-            background: #f5f7ff;
-            color: #3251bc;
-            padding: 7px 10px;
-            font: inherit;
-            font-size: 14px;
-            font-weight: 700;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+
+        .day-entry-image-thumb {
+            display: block;
+            flex: 0 0 54px;
+            width: 54px;
+            height: 72px;
+            overflow: hidden;
+            padding: 0;
+            border: 1px solid #d5d5d5;
+            border-radius: 6px;
+            background: #f2f2f2;
             cursor: pointer;
         }
 
-        .day-entry-images:active,
+        .day-entry-image-thumb img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .day-entry-image-thumb.is-error {
+            color: #777;
+            font-size: 11px;
+        }
+
         .ticket-image-button:active,
         .ticket-image-upload:active {
             transform: scale(.98);
@@ -1346,6 +1364,12 @@
         let viewerImageIndex = 0;
         let viewerImageObjectUrl = "";
         let viewerLoadToken = 0;
+        let dayImagePreviewUrls = new Map();
+        let dayImagePreviewRequests = new Map();
+        let dayImagePreviewObserver = null;
+        let dayImagePreviewSignature = "";
+        let dayImagePreviewGeneration = 0;
+        let dayImagePreviewErrorGeneration = -1;
 
         const calGrid = document.getElementById("calGrid");
         const monthTitle = document.getElementById("monthTitle");
@@ -1505,6 +1529,98 @@
         function imageErrorMessage(error) {
             if (error instanceof TypeError) return "画像Workerに接続できません。URLとデプロイ状態を確認してください";
             return error?.message || "画像の処理に失敗しました";
+        }
+
+        function setDayImagePreviewSignature(signature) {
+            if (signature === dayImagePreviewSignature) return;
+            dayImagePreviewGeneration++;
+            if (dayImagePreviewObserver) {
+                dayImagePreviewObserver.disconnect();
+                dayImagePreviewObserver = null;
+            }
+            dayImagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
+            dayImagePreviewUrls.clear();
+            dayImagePreviewRequests.clear();
+            dayImagePreviewSignature = signature;
+            dayImagePreviewErrorGeneration = -1;
+        }
+
+        function observeDayImagePreviews() {
+            if (!daySummaryList) return;
+            if (dayImagePreviewObserver) dayImagePreviewObserver.disconnect();
+            const generation = dayImagePreviewGeneration;
+            const pendingImages = Array.from(daySummaryList.querySelectorAll("img[data-day-image-id]:not([src])"));
+            if (!pendingImages.length) return;
+
+            if ("IntersectionObserver" in window) {
+                dayImagePreviewObserver = new IntersectionObserver(entries => {
+                    entries.forEach(entry => {
+                        if (!entry.isIntersecting) return;
+                        dayImagePreviewObserver?.unobserve(entry.target);
+                        void loadDayImagePreview(entry.target, generation);
+                    });
+                }, { rootMargin: "160px 0px" });
+                pendingImages.forEach(image => dayImagePreviewObserver.observe(image));
+            } else {
+                pendingImages.forEach(image => void loadDayImagePreview(image, generation));
+            }
+        }
+
+        async function loadDayImagePreview(imageElement, generation) {
+            if (generation !== dayImagePreviewGeneration) return;
+            const imageId = imageElement.dataset.dayImageId;
+            if (!imageId) return;
+
+            const cachedUrl = dayImagePreviewUrls.get(imageId);
+            if (cachedUrl) {
+                setDayImagePreviewUrl(imageId, cachedUrl, generation);
+                return;
+            }
+
+            let request = dayImagePreviewRequests.get(imageId);
+            if (!request) {
+                request = (async () => {
+                    const response = await imageApiRequest(`/images/${encodeURIComponent(imageId)}`);
+                    const url = URL.createObjectURL(await response.blob());
+                    if (generation !== dayImagePreviewGeneration) {
+                        URL.revokeObjectURL(url);
+                        return "";
+                    }
+                    dayImagePreviewUrls.set(imageId, url);
+                    return url;
+                })();
+                dayImagePreviewRequests.set(imageId, request);
+            }
+
+            try {
+                const url = await request;
+                if (url && generation === dayImagePreviewGeneration) {
+                    setDayImagePreviewUrl(imageId, url, generation);
+                }
+            } catch (error) {
+                if (generation === dayImagePreviewGeneration) {
+                    daySummaryList.querySelectorAll(".day-entry-image-thumb img[data-day-image-id]").forEach(image => {
+                        if (image.dataset.dayImageId !== imageId) return;
+                        image.closest(".day-entry-image-thumb")?.classList.add("is-error");
+                    });
+                    if (dayImagePreviewErrorGeneration !== generation) {
+                        dayImagePreviewErrorGeneration = generation;
+                        showToast(imageErrorMessage(error), { type: "error" });
+                    }
+                }
+            } finally {
+                if (generation === dayImagePreviewGeneration) dayImagePreviewRequests.delete(imageId);
+            }
+        }
+
+        function setDayImagePreviewUrl(imageId, url, generation) {
+            if (generation !== dayImagePreviewGeneration) return;
+            daySummaryList.querySelectorAll(".day-entry-image-thumb img[data-day-image-id]").forEach(image => {
+                if (image.dataset.dayImageId === imageId) {
+                    image.src = url;
+                    image.closest(".day-entry-image-thumb")?.classList.remove("is-error");
+                }
+            });
         }
 
         function startEdit(el) {
@@ -1742,6 +1858,7 @@
         function updateDaySummary() {
             if (!daySummaryDate || !daySummaryList) return;
             if (!selectedDate) {
+                setDayImagePreviewSignature("");
                 daySummaryDate.textContent = "";
                 daySummaryList.innerHTML = "";
                 return;
@@ -1754,9 +1871,16 @@
             daySummaryDate.textContent = formatDayLabel(selectedDate);
 
             if (dayRows.length === 0) {
+                setDayImagePreviewSignature("");
                 daySummaryList.innerHTML = "";
                 return;
             }
+
+            const previewEntries = dayRows
+                .map(row => [row.uid, normalizeTicketImages(row.images).map(image => image.id)])
+                .filter(([, imageIds]) => imageIds.length > 0);
+            const previewSignature = previewEntries.length ? JSON.stringify([selectedDate, previewEntries]) : "";
+            setDayImagePreviewSignature(previewSignature);
 
             daySummaryList.innerHTML = dayRows.map(r => {
                 const invest = Number(r.amount) || 0;
@@ -1781,11 +1905,23 @@
                                 <div>買主</div>
                                 <div class="ms-val">${escapeHtml(buyer)}</div>
                             </div>
-                            ${images.length ? `<button class="day-entry-images" type="button" data-uid="${r.uid}">買い目画像 ${images.length}枚</button>` : ""}
+                            ${images.length ? `
+                                <div class="day-entry-images">
+                                    ${images.map((image, index) => {
+                                        const previewUrl = dayImagePreviewUrls.get(image.id);
+                                        return `
+                                            <button class="day-entry-image-thumb" type="button" data-uid="${r.uid}" data-image-index="${index}" aria-label="買い目画像${index + 1}を拡大">
+                                                <img data-day-image-id="${image.id}" alt="買い目画像${index + 1}" loading="lazy"${previewUrl ? ` src="${previewUrl}"` : ""}>
+                                            </button>
+                                        `;
+                                    }).join("")}
+                                </div>
+                            ` : ""}
                         </div>
                     </div>
                 `;
             }).join("");
+            observeDayImagePreviews();
         }
 
         function renderCalendar() {
@@ -2146,6 +2282,13 @@
             ticketImageViewerImage.removeAttribute("src");
             ticketImageViewerTitle.textContent = `${ticketImageViewer.dataset.label || "買い目画像"}　${viewerImageIndex + 1}/${viewerImages.length}　${image.name}`;
 
+            const previewUrl = dayImagePreviewUrls.get(image.id);
+            if (previewUrl) {
+                ticketImageViewerImage.src = previewUrl;
+                ticketImageViewerImage.alt = image.name;
+                return;
+            }
+
             try {
                 const response = await imageApiRequest(`/images/${encodeURIComponent(image.id)}`);
                 const blob = await response.blob();
@@ -2384,10 +2527,10 @@
         });
 
         daySummaryList.addEventListener("click", e => {
-            const imageButton = e.target.closest(".day-entry-images");
+            const imageButton = e.target.closest(".day-entry-image-thumb");
             if (imageButton) {
                 const imageRow = rows.find(r => String(r.uid) === String(imageButton.dataset.uid));
-                if (imageRow) openTicketImageViewer(imageRow.images, `${formatDayLabel(imageRow.date)}・${imageRow.buyer || "上田"}`);
+                if (imageRow) openTicketImageViewer(imageRow.images, `${formatDayLabel(imageRow.date)}・${imageRow.buyer || "上田"}`, Number(imageButton.dataset.imageIndex) || 0);
                 return;
             }
 
