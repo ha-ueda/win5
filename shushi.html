@@ -991,6 +991,7 @@
             z-index: 1;
             min-height: 28px;
             width: 28px;
+            height: 28px;
             padding: 0;
             background: rgba(255, 255, 255, .94);
             color: #111;
@@ -999,6 +1000,7 @@
         }
 
         .ticket-image-remove {
+            box-sizing: border-box;
             flex: 0 0 auto;
             min-height: 36px;
             padding: 0 10px;
@@ -1007,6 +1009,10 @@
             background: #fff;
             color: #333;
             font-size: 14px;
+            line-height: 1;
+            text-align: center;
+            -webkit-appearance: none;
+            appearance: none;
             cursor: pointer;
         }
 
@@ -1068,15 +1074,22 @@
         }
 
         .ticket-image-viewer-button {
+            box-sizing: border-box;
             flex: 0 0 auto;
+            width: 40px;
+            height: 40px;
             min-width: 40px;
             min-height: 40px;
-            padding: 6px 12px;
+            padding: 0;
             border: 1px solid rgba(255, 255, 255, .35);
             border-radius: 8px;
-            background: rgba(255, 255, 255, .12);
+            background: #333;
             color: #fff;
             font-size: 16px;
+            line-height: 1;
+            text-align: center;
+            -webkit-appearance: none;
+            appearance: none;
             cursor: pointer;
         }
 
@@ -1500,6 +1513,12 @@
         ticketImageViewer.addEventListener("click", e => {
             if (e.target === ticketImageViewer) closeTicketImageViewer();
         });
+        ticketImageViewer.addEventListener("wheel", e => {
+            if (ticketImageViewer.classList.contains("show")) e.preventDefault();
+        }, { passive: false });
+        ticketImageViewer.addEventListener("touchmove", e => {
+            if (ticketImageViewer.classList.contains("show")) e.preventDefault();
+        }, { passive: false });
         imageTokenForm.addEventListener("submit", e => {
             e.preventDefault();
             const token = imageTokenInput.value.trim();
