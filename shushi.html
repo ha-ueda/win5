@@ -211,7 +211,6 @@
             font-size: 11px;
         }
 
-        .ticket-image-button:active,
         .ticket-image-upload:active {
             transform: scale(.98);
         }
@@ -953,11 +952,8 @@
             min-width: 0;
         }
 
-        .ticket-image-item:not(.is-pending) {
-            flex: 1 1 100%;
-        }
-
-        .ticket-image-item.is-pending {
+        .ticket-image-item.is-pending,
+        .ticket-image-item.is-saved {
             position: relative;
             flex: 0 0 80px;
             width: 80px;
@@ -968,6 +964,18 @@
             background: #f6f6f6;
         }
 
+        .ticket-image-preview {
+            position: absolute;
+            inset: 0;
+            display: block;
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            cursor: pointer;
+        }
+
         .ticket-image-thumbnail {
             display: block;
             width: 100%;
@@ -975,10 +983,12 @@
             object-fit: contain;
         }
 
-        .ticket-image-item.is-pending .ticket-image-remove {
+        .ticket-image-item.is-pending .ticket-image-remove,
+        .ticket-image-item.is-saved .ticket-image-remove {
             position: absolute;
             top: 4px;
             right: 4px;
+            z-index: 1;
             min-height: 28px;
             width: 28px;
             padding: 0;
@@ -988,17 +998,6 @@
             line-height: 1;
         }
 
-        .ticket-image-name {
-            min-width: 0;
-            flex: 1 1 auto;
-            overflow: hidden;
-            color: #555;
-            font-size: 14px;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .ticket-image-button,
         .ticket-image-remove {
             flex: 0 0 auto;
             min-height: 36px;
@@ -1042,7 +1041,7 @@
         .ticket-image-viewer-top {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-end;
             gap: 12px;
             min-width: 0;
         }
@@ -1053,14 +1052,6 @@
             justify-content: space-between;
             gap: 12px;
             min-height: 0;
-        }
-
-        .ticket-image-viewer-title {
-            overflow: hidden;
-            color: #fff;
-            font-size: 14px;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
         .ticket-image-viewer-stage img {
@@ -1087,6 +1078,79 @@
             color: #fff;
             font-size: 16px;
             cursor: pointer;
+        }
+
+        .image-token-dialog {
+            width: min(420px, calc(100vw - 32px));
+            max-width: calc(100vw - 32px);
+            max-height: calc(100vh - 32px);
+            margin: auto;
+            padding: 0;
+            overflow: auto;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            background: #fff;
+            color: #333;
+            box-shadow: 0 18px 48px rgba(0, 0, 0, .24);
+        }
+
+        .image-token-dialog::backdrop {
+            background: rgba(0, 0, 0, .55);
+        }
+
+        .image-token-form {
+            display: grid;
+            gap: 14px;
+            padding: 22px;
+        }
+
+        .image-token-heading {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .image-token-description {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .image-token-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .image-token-input {
+            width: 100%;
+            min-height: 46px;
+            font-size: 16px;
+        }
+
+        .image-token-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .image-token-cancel,
+        .image-token-submit {
+            min-height: 42px;
+            padding: 0 16px;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .image-token-cancel {
+            border: 1px solid #d5d5d5;
+            background: #fff;
+            color: #333;
+        }
+
+        .image-token-submit {
+            padding: 0 20px;
         }
 
         @media (max-width: 640px) {
@@ -1333,7 +1397,6 @@
     <div class="ticket-image-viewer" id="ticketImageViewer" aria-hidden="true">
         <div class="ticket-image-viewer-content" role="dialog" aria-modal="true" aria-label="買い目画像">
             <div class="ticket-image-viewer-top">
-                <div class="ticket-image-viewer-title" id="ticketImageViewerTitle"></div>
                 <button class="ticket-image-viewer-button" id="ticketImageViewerClose" type="button" aria-label="閉じる">×</button>
             </div>
             <div class="ticket-image-viewer-stage">
@@ -1343,6 +1406,19 @@
             </div>
         </div>
     </div>
+
+    <dialog class="image-token-dialog" id="imageTokenDialog" aria-labelledby="imageTokenHeading">
+        <form class="image-token-form" id="imageTokenForm" autocomplete="on">
+            <h2 class="image-token-heading" id="imageTokenHeading">画像アクセスキー</h2>
+            <p class="image-token-description">入力したキーはこのブラウザーに保存し、次回以降の画像取得に使用します。</p>
+            <label class="image-token-label" for="imageTokenInput">アクセスキー</label>
+            <input class="image-token-input" id="imageTokenInput" type="password" name="password" autocomplete="current-password" required>
+            <div class="image-token-actions">
+                <button class="image-token-cancel" id="imageTokenCancel" type="button">キャンセル</button>
+                <button class="btn image-token-submit" type="submit">接続</button>
+            </div>
+        </form>
+    </dialog>
 
     <div class="page-end-actions">
         <button class="fab-edit" id="fabEdit" type="button" onclick="openEditorFromFab()">✎</button>
@@ -1364,12 +1440,19 @@
         let viewerImageIndex = 0;
         let viewerImageObjectUrl = "";
         let viewerLoadToken = 0;
+        let imageTokenPromise = null;
+        let imageTokenResolve = null;
+        let imageTokenReject = null;
         let dayImagePreviewUrls = new Map();
         let dayImagePreviewRequests = new Map();
         let dayImagePreviewObserver = null;
         let dayImagePreviewSignature = "";
         let dayImagePreviewGeneration = 0;
         let dayImagePreviewErrorGeneration = -1;
+        let editorImagePreviewUrls = new Map();
+        let editorImagePreviewRequests = new Map();
+        let editorImagePreviewGeneration = 0;
+        let editorImagePreviewErrorGeneration = -1;
 
         const calGrid = document.getElementById("calGrid");
         const monthTitle = document.getElementById("monthTitle");
@@ -1389,8 +1472,10 @@
         const editorImageStatus = document.getElementById("editorImageStatus");
         const editorImageList = document.getElementById("editorImageList");
         const ticketImageViewer = document.getElementById("ticketImageViewer");
-        const ticketImageViewerTitle = document.getElementById("ticketImageViewerTitle");
         const ticketImageViewerImage = document.getElementById("ticketImageViewerImage");
+        const imageTokenDialog = document.getElementById("imageTokenDialog");
+        const imageTokenForm = document.getElementById("imageTokenForm");
+        const imageTokenInput = document.getElementById("imageTokenInput");
         const buyerBtns = Array.from(document.querySelectorAll(".buyer-btn"));
         const fabEdit = document.getElementById("fabEdit");
         const yearFilter = document.getElementById("yearFilter");
@@ -1415,7 +1500,21 @@
         ticketImageViewer.addEventListener("click", e => {
             if (e.target === ticketImageViewer) closeTicketImageViewer();
         });
+        imageTokenForm.addEventListener("submit", e => {
+            e.preventDefault();
+            const token = imageTokenInput.value.trim();
+            if (token) finishImageTokenPrompt(token);
+        });
+        document.getElementById("imageTokenCancel").addEventListener("click", () => finishImageTokenPrompt());
+        imageTokenDialog.addEventListener("cancel", e => {
+            e.preventDefault();
+            finishImageTokenPrompt();
+        });
+        imageTokenDialog.addEventListener("click", e => {
+            if (e.target === imageTokenDialog) finishImageTokenPrompt();
+        });
         document.addEventListener("keydown", e => {
+            if (imageTokenDialog.open) return;
             if (!ticketImageViewer.classList.contains("show")) return;
             if (e.key === "Escape") closeTicketImageViewer();
             if (e.key === "ArrowLeft") moveViewerImage(-1);
@@ -1491,34 +1590,56 @@
 
         function getImageApiToken() {
             let token = localStorage.getItem(IMAGE_TOKEN_STORAGE_KEY) || "";
-            if (!token) {
-                token = window.prompt("画像Workerに設定したアクセスキーを入力してください") || "";
-                token = token.trim();
-                if (token) localStorage.setItem(IMAGE_TOKEN_STORAGE_KEY, token);
+            if (token) return Promise.resolve(token);
+            if (imageTokenPromise) return imageTokenPromise;
+
+            imageTokenInput.value = "";
+            imageTokenPromise = new Promise((resolve, reject) => {
+                imageTokenResolve = resolve;
+                imageTokenReject = reject;
+            });
+            imageTokenDialog.showModal();
+            requestAnimationFrame(() => imageTokenInput.focus());
+            return imageTokenPromise;
+        }
+
+        function finishImageTokenPrompt(token = "") {
+            if (!imageTokenPromise) return;
+            const resolve = imageTokenResolve;
+            const reject = imageTokenReject;
+            imageTokenPromise = null;
+            imageTokenResolve = null;
+            imageTokenReject = null;
+            if (imageTokenDialog.open) imageTokenDialog.close();
+
+            if (token) {
+                localStorage.setItem(IMAGE_TOKEN_STORAGE_KEY, token);
+                resolve(token);
+            } else {
+                imageTokenInput.value = "";
+                reject(new Error("アクセスキー未入力"));
             }
-            if (!token) throw new Error("画像用アクセスキーが必要です");
-            return token;
         }
 
         async function imageApiRequest(path, options = {}) {
-            const token = getImageApiToken();
+            const token = await getImageApiToken();
             const headers = new Headers(options.headers || {});
             headers.set("Authorization", `Bearer ${token}`);
             const response = await fetch(`${IMAGE_API_URL}${path}`, { ...options, headers });
 
             if (response.status === 401) {
                 localStorage.removeItem(IMAGE_TOKEN_STORAGE_KEY);
-                throw new Error("画像用アクセスキーが正しくありません。もう一度お試しください");
+                throw new Error("アクセスキー不正");
             }
 
             if (!response.ok) {
-                let message = "画像の処理に失敗しました";
+                let message = "画像処理失敗";
                 try {
                     const data = await response.clone().json();
                     if (data && data.error === "image service is not configured") {
-                        message = "画像WorkerのR2設定が完了していません";
+                        message = "画像保存先未設定";
                     } else if (data && data.error === "unsupported image type") {
-                        message = "この画像形式には対応していません";
+                        message = "非対応画像形式";
                     }
                 } catch { }
                 throw new Error(message);
@@ -1527,8 +1648,13 @@
         }
 
         function imageErrorMessage(error) {
-            if (error instanceof TypeError) return "画像Workerに接続できません。URLとデプロイ状態を確認してください";
-            return error?.message || "画像の処理に失敗しました";
+            if (error instanceof TypeError) return "画像Worker接続失敗";
+            const message = String(error?.message || "");
+            if (message.includes("アクセスキー")) return message.includes("未入力") ? "アクセスキー未入力" : "アクセスキー不正";
+            if (message.includes("R2") || message.includes("保存先")) return "画像保存先未設定";
+            if (message.includes("unsupported image type") || message.includes("画像形式")) return "非対応画像形式";
+            if (message.includes("画像ID") || message.includes("画像登録")) return "画像登録失敗";
+            return "画像処理失敗";
         }
 
         function setDayImagePreviewSignature(signature) {
@@ -2037,7 +2163,7 @@
 
         function setEditorBuyer(b) {
             if (imageUploadInProgress || editorSaveInProgress) {
-                showToast(imageUploadInProgress ? "画像のアップロードが終わるまでお待ちください" : "保存が終わるまでお待ちください");
+                showToast(imageUploadInProgress ? "画像処理中です" : "保存中です");
                 return;
             }
             const nextBuyer = b || "上田";
@@ -2084,12 +2210,13 @@
 
         async function closeEditor({ discardUploads = true, force = false } = {}) {
             if (!force && (imageUploadInProgress || editorSaveInProgress)) {
-                showToast(imageUploadInProgress ? "画像のアップロードが終わるまでお待ちください" : "保存が終わるまでお待ちください");
+                showToast(imageUploadInProgress ? "画像処理中です" : "保存中です");
                 return;
             }
             if (discardUploads) await discardPendingEditorUploads();
             editorImageDraft = [];
             clearPendingEditorImages();
+            clearEditorImagePreviews();
             if (editorImageInput) editorImageInput.value = "";
             renderEditorImages();
             if (editorOverlay) {
@@ -2101,6 +2228,7 @@
 
         function loadEditorState() {
             clearPendingEditorImages();
+            clearEditorImagePreviews();
             if (editorImageInput) editorImageInput.value = "";
             const row = editingUid != null
                 ? rows.find(r => String(r.uid) === String(editingUid))
@@ -2122,13 +2250,17 @@
 
         function renderEditorImages() {
             if (!editorImageList) return;
-            const savedImages = editorImageDraft.map((image, index) => `
-                <div class="ticket-image-item">
-                    <span class="ticket-image-name">${escapeHtml(image.name)}</span>
-                    <button class="ticket-image-button" type="button" data-image-action="view" data-image-index="${index}">表示</button>
-                    <button class="ticket-image-remove" type="button" data-image-action="remove" data-image-index="${index}">削除</button>
-                </div>
-            `);
+            const savedImages = editorImageDraft.map((image, index) => {
+                const previewUrl = editorImagePreviewUrls.get(image.id) || dayImagePreviewUrls.get(image.id);
+                return `
+                    <div class="ticket-image-item is-saved">
+                        <button class="ticket-image-preview" type="button" data-image-action="view" data-image-index="${index}" aria-label="買い目画像を表示">
+                            <img class="ticket-image-thumbnail" data-editor-image-id="${image.id}" alt="" loading="lazy"${previewUrl ? ` src="${previewUrl}"` : ""}>
+                        </button>
+                        <button class="ticket-image-remove" type="button" aria-label="保存済みの画像を削除" data-image-action="remove" data-image-index="${index}">×</button>
+                    </div>
+                `;
+            });
             const pendingImages = editorPendingImageFiles.map((pending, index) => `
                 <div class="ticket-image-item is-pending">
                     <img class="ticket-image-thumbnail" src="${escapeHtml(pending.previewUrl)}" alt="">
@@ -2136,6 +2268,63 @@
                 </div>
             `);
             editorImageList.innerHTML = [...savedImages, ...pendingImages].join("");
+            const generation = editorImagePreviewGeneration;
+            editorImageList.querySelectorAll("img[data-editor-image-id]:not([src])").forEach(image => {
+                void loadEditorImagePreview(image, generation);
+            });
+        }
+
+        function clearEditorImagePreviews() {
+            editorImagePreviewGeneration++;
+            editorImagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
+            editorImagePreviewUrls.clear();
+            editorImagePreviewRequests.clear();
+            editorImagePreviewErrorGeneration = -1;
+        }
+
+        async function loadEditorImagePreview(imageElement, generation) {
+            if (generation !== editorImagePreviewGeneration) return;
+            const imageId = imageElement.dataset.editorImageId;
+            if (!imageId) return;
+
+            const cachedUrl = editorImagePreviewUrls.get(imageId) || dayImagePreviewUrls.get(imageId);
+            if (cachedUrl) {
+                imageElement.src = cachedUrl;
+                return;
+            }
+
+            let request = editorImagePreviewRequests.get(imageId);
+            if (!request) {
+                request = (async () => {
+                    const response = await imageApiRequest(`/images/${encodeURIComponent(imageId)}`);
+                    const blob = await response.blob();
+                    if (generation !== editorImagePreviewGeneration) return "";
+                    const url = URL.createObjectURL(blob);
+                    editorImagePreviewUrls.set(imageId, url);
+                    return url;
+                })();
+                editorImagePreviewRequests.set(imageId, request);
+            }
+
+            try {
+                const url = await request;
+                if (!url || generation !== editorImagePreviewGeneration) return;
+                editorImageList.querySelectorAll("img[data-editor-image-id]").forEach(image => {
+                    if (image.dataset.editorImageId === imageId) image.src = url;
+                });
+            } catch (error) {
+                if (generation === editorImagePreviewGeneration) {
+                    editorImageList.querySelectorAll("img[data-editor-image-id]").forEach(image => {
+                        if (image.dataset.editorImageId === imageId) image.classList.add("is-error");
+                    });
+                    if (editorImagePreviewErrorGeneration !== generation) {
+                        editorImagePreviewErrorGeneration = generation;
+                        showToast(imageErrorMessage(error), { type: "error" });
+                    }
+                }
+            } finally {
+                if (generation === editorImagePreviewGeneration) editorImagePreviewRequests.delete(imageId);
+            }
         }
 
         function clearPendingEditorImages() {
@@ -2155,7 +2344,7 @@
                 const extension = file.name.split(".").pop().toLowerCase();
                 const supportedByExtension = ["avif", "bmp", "gif", "heic", "heif", "jpeg", "jpg", "png", "tif", "tiff", "webp"].includes(extension);
                 if ((!file.type.startsWith("image/") && !supportedByExtension) || file.type === "image/svg+xml") {
-                    showToast(`${file.name}: 画像ファイルを選択してください`);
+                    showToast("非対応画像形式");
                     continue;
                 }
                 editorPendingImageFiles.push({ file, previewUrl: URL.createObjectURL(file) });
@@ -2189,7 +2378,7 @@
                         body: file
                     });
                     const data = await response.json();
-                    if (!data?.id) throw new Error("画像Workerから画像IDが返されませんでした");
+                    if (!data?.id) throw new Error("画像登録失敗");
 
                     const image = {
                         id: String(data.id),
@@ -2234,7 +2423,7 @@
             if (!image) return;
 
             if (button.dataset.imageAction === "view") {
-                openTicketImageViewer(editorImageDraft, `${formatDayLabel(editorDate)}・${editorBuyer}`, index);
+                openTicketImageViewer(editorImageDraft, index);
             } else if (button.dataset.imageAction === "remove") {
                 editorImageDraft.splice(index, 1);
                 renderEditorImages();
@@ -2247,7 +2436,7 @@
             if (!ids.length) return;
             const results = await Promise.allSettled(ids.map(id => imageApiRequest(`/images/${encodeURIComponent(id)}`, { method: "DELETE" })));
             if (results.some(result => result.status === "rejected")) {
-                showToast("未保存の画像を削除できませんでした", { type: "error" });
+                showToast("画像削除失敗", { type: "error" });
             }
         }
 
@@ -2256,20 +2445,19 @@
             if (!ids.length) return true;
             const results = await Promise.allSettled(ids.map(id => imageApiRequest(`/images/${encodeURIComponent(id)}`, { method: "DELETE" })));
             const ok = results.every(result => result.status === "fulfilled");
-            if (!ok) showToast("記録は保存されましたが、一部画像を削除できませんでした", { type: "error" });
+            if (!ok) showToast("記録保存済・画像削除失敗", { type: "error" });
             return ok;
         }
 
-        function openTicketImageViewer(images, label = "", startIndex = 0) {
+        function openTicketImageViewer(images, startIndex = 0) {
             viewerImages = normalizeTicketImages(images);
             if (!viewerImages.length) {
-                showToast("表示できる画像がありません");
+                showToast("画像なし");
                 return;
             }
             viewerImageIndex = Math.max(0, Math.min(startIndex, viewerImages.length - 1));
             ticketImageViewer.classList.add("show");
             ticketImageViewer.setAttribute("aria-hidden", "false");
-            ticketImageViewer.dataset.label = label;
             void renderViewerImage();
         }
 
@@ -2280,7 +2468,6 @@
             if (viewerImageObjectUrl) URL.revokeObjectURL(viewerImageObjectUrl);
             viewerImageObjectUrl = "";
             ticketImageViewerImage.removeAttribute("src");
-            ticketImageViewerTitle.textContent = `${ticketImageViewer.dataset.label || "買い目画像"}　${viewerImageIndex + 1}/${viewerImages.length}　${image.name}`;
 
             const previewUrl = dayImagePreviewUrls.get(image.id);
             if (previewUrl) {
@@ -2332,7 +2519,7 @@
         async function saveEditor() {
             if (!editorDate) return;
             if (imageUploadInProgress || editorSaveInProgress) {
-                showToast(imageUploadInProgress ? "画像のアップロードが終わるまでお待ちください" : "保存中です。しばらくお待ちください");
+                showToast(imageUploadInProgress ? "画像処理中です" : "保存中です");
                 return;
             }
             editorSaveInProgress = true;
@@ -2401,7 +2588,7 @@
 
         async function deleteEditor() {
             if (imageUploadInProgress || editorSaveInProgress) {
-                showToast(imageUploadInProgress ? "画像のアップロードが終わるまでお待ちください" : "保存が終わるまでお待ちください");
+                showToast(imageUploadInProgress ? "画像処理中です" : "保存中です");
                 return;
             }
             const row = editingUid != null
@@ -2530,7 +2717,7 @@
             const imageButton = e.target.closest(".day-entry-image-thumb");
             if (imageButton) {
                 const imageRow = rows.find(r => String(r.uid) === String(imageButton.dataset.uid));
-                if (imageRow) openTicketImageViewer(imageRow.images, `${formatDayLabel(imageRow.date)}・${imageRow.buyer || "上田"}`, Number(imageButton.dataset.imageIndex) || 0);
+                if (imageRow) openTicketImageViewer(imageRow.images, Number(imageButton.dataset.imageIndex) || 0);
                 return;
             }
 
