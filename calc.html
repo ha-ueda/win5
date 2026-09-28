@@ -43,7 +43,7 @@
             overflow-x: auto;
             width: 100%;
             margin-bottom: 8px;
-            font-size: 14px;
+            font-size: 16px;
         }
 
         .top-bar-right > * {
@@ -132,7 +132,7 @@
             align-items: flex-start;
             gap: 8px;
             margin: 10px 0;
-            font-size: 16px;
+            font-size: 14px;
             overflow: visible;
             height: auto;
             transform: none;
@@ -1466,7 +1466,7 @@
             background: transparent;
             color: #666;
             font: inherit;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 700;
             text-align: center;
             cursor: pointer;
@@ -2025,7 +2025,7 @@
         const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
         const STORAGE_KEY = 'win5_state_v9';
         const STORAGE_KEY_OLD = 'win5_state_v8';
-        const BG_RULE_SELECTION_VERSION = 10;
+        const BG_RULE_SELECTION_VERSION = 11;
         const WIN5_API = "https://win5.cooopew.workers.dev/";
         const BG_COLOR_TABLE_V1 = [
             "#b3d1ff", "#ffc800", "#96c78c", "#e0b3ff", "#afdfe4", "#c8ad9d",
@@ -2180,6 +2180,18 @@
                 match: row => isBackgroundRuleTarget(row) && isOneYearZeroWin(row, "trainer")
             },
             {
+                key: "jockeyVenueWins0FiveYears",
+                label: "5年間で競馬場成績が0勝の騎手",
+                color: BG_RULE_COLOR_PALETTE[3],
+                match: row => isBackgroundRuleTarget(row) && isVenueZeroWin(row, "jockey")
+            },
+            {
+                key: "trainerVenueWins0FiveYears",
+                label: "5年間で競馬場成績が0勝の調教師",
+                color: BG_RULE_COLOR_PALETTE[4],
+                match: row => isBackgroundRuleTarget(row) && isVenueZeroWin(row, "trainer")
+            },
+            {
                 key: "jockeyPreviousWin5Win",
                 label: "前回勝利騎手",
                 getColor: row => getJockeyPreviousWin5Color(row),
@@ -2201,7 +2213,7 @@
             },
             {
                 key: "jockeyNoDailyMultiWin5",
-                label: "1日2勝以上しない騎手",
+                label: "5年間で1日2勝以上しない騎手",
                 getColor: row => getJockeyColor(row),
                 swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
                 colorEditable: false,
@@ -2211,7 +2223,7 @@
             },
             {
                 key: "trainerNoDailyMultiWin5",
-                label: "1日2勝以上しない調教師",
+                label: "5年間で1日2勝以上しない調教師",
                 getColor: row => getTrainerColor(row),
                 swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
                 colorEditable: false,
@@ -2589,6 +2601,8 @@
         async function ensureBackgroundRuleStats(activeRules) {
             const needsJockeySurfaceStats = activeRules.some(rule => rule.key === "jockeyWins0Prob3");
             const needsTrainerSurfaceStats = activeRules.some(rule => rule.key === "trainerWins0Prob3");
+            const needsJockeyVenueStats = activeRules.some(rule => rule.key === "jockeyVenueWins0FiveYears");
+            const needsTrainerVenueStats = activeRules.some(rule => rule.key === "trainerVenueWins0FiveYears");
             const needsJockeyPreviousWin5Win = activeRules.some(rule => rule.key === "jockeyPreviousWin5Win");
             const needsTrainerPreviousWin5Win = activeRules.some(rule => rule.key === "trainerPreviousWin5Win");
             const needsJockeyNoDailyMultiWin5 = activeRules.some(rule => rule.key === "jockeyNoDailyMultiWin5");
@@ -2596,6 +2610,9 @@
             const jobs = [];
             if (needsJockeySurfaceStats || needsTrainerSurfaceStats) {
                 jobs.push(fetchAndApplyBackgroundSurfaceStats());
+            }
+            if (needsJockeyVenueStats || needsTrainerVenueStats) {
+                jobs.push(fetchAndApplyBackgroundVenueStats());
             }
             if (needsJockeyPreviousWin5Win || needsTrainerPreviousWin5Win) {
                 jobs.push(fetchPreviousWin5Persons());
@@ -3731,9 +3748,14 @@
                         })
                         .filter(key => valid.has(key));
                     selectedBgRuleKeys = new Set(migratedKeys);
-                    if (state.bgRuleSelectionVersion !== BG_RULE_SELECTION_VERSION) {
+                    const savedBgRuleVersion = Number(state.bgRuleSelectionVersion || 0);
+                    if (savedBgRuleVersion < 10) {
                         selectedBgRuleKeys.add("jockeyWins0Prob3");
                         selectedBgRuleKeys.add("trainerWins0Prob3");
+                    }
+                    if (savedBgRuleVersion < BG_RULE_SELECTION_VERSION) {
+                        selectedBgRuleKeys.add("jockeyVenueWins0FiveYears");
+                        selectedBgRuleKeys.add("trainerVenueWins0FiveYears");
                     }
                 }
                 if (state.bgRuleColors && typeof state.bgRuleColors === "object") {
@@ -3744,7 +3766,7 @@
                     // 0勝条件の旧デフォルト色（4番・5番）だけを新しい
                     // デフォルト色（2番・3番）へ移行する。ユーザーが
                     // 任意に変更した色は保持する。
-                    if (state.bgRuleSelectionVersion !== BG_RULE_SELECTION_VERSION) {
+                    if (Number(state.bgRuleSelectionVersion || 0) < 10) {
                         if (state.bgRuleColors.jockeyWins0Prob3 === BG_RULE_COLOR_PALETTE[3]) {
                             bgRuleColors.jockeyWins0Prob3 = BG_RULE_COLOR_PALETTE[1];
                         }
@@ -5820,21 +5842,21 @@
             return requestPromise;
         }
 
-        async function fetchAndApplyBackgroundSurfaceStats() {
+        async function fetchAndApplyBackgroundStats(years, modes, jockeyDatasetKey, trainerDatasetKey) {
             const raceInfo = window.raceInfo || [];
             const raceCourses = window.raceCourses || [];
-            const keysPerRace = getStatsKeysForModes([], raceInfo, raceCourses);
+            const keysPerRace = getStatsKeysForModes(modes, raceInfo, raceCourses);
             const validKeys = [...new Set(keysPerRace.filter(key => key))];
             document.querySelectorAll('.custom-select').forEach(sel => {
-                sel.dataset.jstatsSurface1 = "";
-                sel.dataset.tstatsSurface1 = "";
+                sel.dataset[jockeyDatasetKey] = "";
+                sel.dataset[trainerDatasetKey] = "";
             });
             if (validKeys.length === 0) return;
 
             try {
                 const cacheKey = JSON.stringify({
                     mode: "combo",
-                    years: "1",
+                    years: String(years),
                     person: "both",
                     q: validKeys.join(",")
                 });
@@ -5842,7 +5864,7 @@
                 if (!json) {
                     const u = new URL("stats", WIN5_API);
                     u.searchParams.set("mode", "combo");
-                    u.searchParams.set("years", "1");
+                    u.searchParams.set("years", String(years));
                     u.searchParams.set("person", "both");
                     u.searchParams.set("q", validKeys.join(","));
                     const res = await fetch(u.toString(), { cache: "no-store" });
@@ -5851,9 +5873,9 @@
                 }
                 if (!json.ok || !json.stats?.jockey || !json.stats?.trainer) return;
 
-                for (const { person, datasetKey, personIdKey, personNameKeyName, statsByKey } of [
-                    { person: "jockey", datasetKey: "jstatsSurface1", personIdKey: "jid", personNameKeyName: "jockey", statsByKey: json.stats.jockey },
-                    { person: "trainer", datasetKey: "tstatsSurface1", personIdKey: "tid", personNameKeyName: "trainer", statsByKey: json.stats.trainer },
+                for (const { person, datasetKey, personIdKey, nameField, statsByKey } of [
+                    { person: "jockey", datasetKey: jockeyDatasetKey, personIdKey: "jid", nameField: "jockey", statsByKey: json.stats.jockey },
+                    { person: "trainer", datasetKey: trainerDatasetKey, personIdKey: "tid", nameField: "trainer", statsByKey: json.stats.trainer },
                 ]) {
                     for (let r = 0; r < TOTAL_RACES; r++) {
                         const key = keysPerRace[r];
@@ -5863,7 +5885,7 @@
                         document.querySelectorAll(`.custom-select[data-race="${r + 1}"]`).forEach(sel => {
                             if (sel.classList.contains("is-empty") || sel.classList.contains("is-scratched")) return;
                             const id = (sel.dataset[personIdKey] || "").trim();
-                            const name = (sel.dataset[personNameKeyName] || "").trim();
+                            const name = (sel.dataset[nameField] || "").trim();
                             const nameKey = personStatsNameKey(person, name);
                             if (!id && !nameKey) {
                                 sel.dataset[datasetKey] = "";
@@ -5875,12 +5897,25 @@
                     }
                 }
             } catch (e) {
-                console.warn("fetchAndApplyBackgroundSurfaceStats:", e);
+                console.warn("fetchAndApplyBackgroundStats:", e);
             }
+        }
+
+        async function fetchAndApplyBackgroundSurfaceStats() {
+            return fetchAndApplyBackgroundStats("1", [], "jstatsSurface1", "tstatsSurface1");
+        }
+
+        async function fetchAndApplyBackgroundVenueStats() {
+            return fetchAndApplyBackgroundStats("5", ["venue"], "jstatsVenue5", "tstatsVenue5");
         }
 
         function isOneYearZeroWin(row, person = "jockey") {
             const statsKey = person === "trainer" ? "tstatsSurface1" : "jstatsSurface1";
+            return isWinsAtMost(row?.dataset?.[statsKey], 0);
+        }
+
+        function isVenueZeroWin(row, person = "jockey") {
+            const statsKey = person === "trainer" ? "tstatsVenue5" : "jstatsVenue5";
             return isWinsAtMost(row?.dataset?.[statsKey], 0);
         }
 
