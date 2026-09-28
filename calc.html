@@ -2230,17 +2230,14 @@
         ensureUniqueBgRuleColors();
         let jockeyPreviousWin5WinIds = null;
         let jockeyPreviousWin5WinIdsDate = "";
-        let jockeyPreviousWin5WinIdsPromise = null;
-        let jockeyPreviousWin5WinIdsPromiseDate = "";
         let trainerPreviousWin5WinIds = null;
         let trainerPreviousWin5WinIdsDate = "";
-        let trainerPreviousWin5WinIdsPromise = null;
-        let trainerPreviousWin5WinIdsPromiseDate = "";
+        let previousWin5PersonsPromise = null;
+        let previousWin5PersonsPromiseDate = "";
 
         let jockeyDailyMultiWinIds5Years = null;
-        let jockeyDailyMultiWinIds5YearsPromise = null;
         let trainerDailyMultiWinIds5Years = null;
-        let trainerDailyMultiWinIds5YearsPromise = null;
+        let dailyMultiWinPersonsPromise = null;
         const statsFetchCache = new Map();
         const modeBtn = document.getElementById("modeToggle");
 
@@ -2597,28 +2594,15 @@
             const needsJockeyNoDailyMultiWin5 = activeRules.some(rule => rule.key === "jockeyNoDailyMultiWin5");
             const needsTrainerNoDailyMultiWin5 = activeRules.some(rule => rule.key === "trainerNoDailyMultiWin5");
             const jobs = [];
-            if (needsJockeySurfaceStats) {
-                jobs.push(fetchAndApplyJockeyStats("jockey", {
-                    updateDisplay: false,
-                    years: "1",
-                    modes: [],
-                    datasetKey: "jstatsSurface1",
-                    save: false
-                }));
+            if (needsJockeySurfaceStats || needsTrainerSurfaceStats) {
+                jobs.push(fetchAndApplyBackgroundSurfaceStats());
             }
-            if (needsTrainerSurfaceStats) {
-                jobs.push(fetchAndApplyJockeyStats("trainer", {
-                    updateDisplay: false,
-                    years: "1",
-                    modes: [],
-                    datasetKey: "tstatsSurface1",
-                    save: false
-                }));
+            if (needsJockeyPreviousWin5Win || needsTrainerPreviousWin5Win) {
+                jobs.push(fetchPreviousWin5Persons());
             }
-            if (needsJockeyPreviousWin5Win) jobs.push(fetchJockeyPreviousWin5WinIds());
-            if (needsTrainerPreviousWin5Win) jobs.push(fetchTrainerPreviousWin5WinIds());
-            if (needsJockeyNoDailyMultiWin5) jobs.push(fetchJockeyDailyMultiWinIds5Years());
-            if (needsTrainerNoDailyMultiWin5) jobs.push(fetchTrainerDailyMultiWinIds5Years());
+            if (needsJockeyNoDailyMultiWin5 || needsTrainerNoDailyMultiWin5) {
+                jobs.push(fetchDailyMultiWinPersons5Years());
+            }
             await Promise.all(jobs);
         }
 
@@ -4830,8 +4814,6 @@
 
                 const missing = collectMissingLoadedData();
                 if (missing.length) {
-                    const detail = missing.slice(0, 3).join(" / ");
-                    const more = missing.length > 3 ? ` ほか${missing.length - 3}件` : "";
                     showToast("一部データが未取得です");
                 } else {
                     showToast("取得しました");
@@ -5770,126 +5752,131 @@
             return count >= 2;
         }
 
-        async function fetchJockeyDailyMultiWinIds5Years() {
-            if (jockeyDailyMultiWinIds5Years) return;
-            if (jockeyDailyMultiWinIds5YearsPromise) return jockeyDailyMultiWinIds5YearsPromise;
-            jockeyDailyMultiWinIds5YearsPromise = (async () => {
-            try {
-                const u = new URL("daily-multi-win-persons", WIN5_API);
-                u.searchParams.set("person", "jockey");
-                u.searchParams.set("years", "5");
-                u.searchParams.set("winsMin", "2");
-                const res = await fetch(u.toString(), { cache: "no-store" });
-                const json = await res.json();
-                if (!json.ok || !Array.isArray(json.ids)) return;
-                jockeyDailyMultiWinIds5Years = new Set(json.ids.map(id => String(id)));
-            } catch (e) {
-                console.warn("fetchJockeyDailyMultiWinIds5Years:", e);
-            } finally {
-                jockeyDailyMultiWinIds5YearsPromise = null;
-            }
+        async function fetchDailyMultiWinPersons5Years() {
+            if (jockeyDailyMultiWinIds5Years && trainerDailyMultiWinIds5Years) return;
+            if (dailyMultiWinPersonsPromise) return dailyMultiWinPersonsPromise;
+            dailyMultiWinPersonsPromise = (async () => {
+                try {
+                    const u = new URL("daily-multi-win-persons", WIN5_API);
+                    u.searchParams.set("person", "both");
+                    u.searchParams.set("years", "5");
+                    u.searchParams.set("winsMin", "2");
+                    const res = await fetch(u.toString(), { cache: "no-store" });
+                    const json = await res.json();
+                    if (!json.ok || !Array.isArray(json.persons?.jockey) || !Array.isArray(json.persons?.trainer)) return;
+                    jockeyDailyMultiWinIds5Years = new Set(json.persons.jockey.map(id => String(id)));
+                    trainerDailyMultiWinIds5Years = new Set(json.persons.trainer.map(id => String(id)));
+                } catch (e) {
+                    console.warn("fetchDailyMultiWinPersons5Years:", e);
+                } finally {
+                    dailyMultiWinPersonsPromise = null;
+                }
             })();
-            return jockeyDailyMultiWinIds5YearsPromise;
+            return dailyMultiWinPersonsPromise;
         }
 
-        async function fetchTrainerDailyMultiWinIds5Years() {
-            if (trainerDailyMultiWinIds5Years) return;
-            if (trainerDailyMultiWinIds5YearsPromise) return trainerDailyMultiWinIds5YearsPromise;
-            trainerDailyMultiWinIds5YearsPromise = (async () => {
-            try {
-                const u = new URL("daily-multi-win-persons", WIN5_API);
-                u.searchParams.set("person", "trainer");
-                u.searchParams.set("years", "5");
-                u.searchParams.set("winsMin", "2");
-                const res = await fetch(u.toString(), { cache: "no-store" });
-                const json = await res.json();
-                if (!json.ok || !Array.isArray(json.ids)) return;
-                trainerDailyMultiWinIds5Years = new Set(json.ids.map(id => String(id)));
-            } catch (e) {
-                console.warn("fetchTrainerDailyMultiWinIds5Years:", e);
-            } finally {
-                trainerDailyMultiWinIds5YearsPromise = null;
-            }
-            })();
-            return trainerDailyMultiWinIds5YearsPromise;
-        }
-
-        async function fetchJockeyPreviousWin5WinIds() {
+        async function fetchPreviousWin5Persons() {
             const sourceDate = String(window.win5SourceDate || "").trim();
-            if (jockeyPreviousWin5WinIds && jockeyPreviousWin5WinIdsDate === sourceDate) return;
-            if (jockeyPreviousWin5WinIdsPromise) {
-                const pending = jockeyPreviousWin5WinIdsPromise;
-                const pendingDate = jockeyPreviousWin5WinIdsPromiseDate;
+            if (jockeyPreviousWin5WinIds && trainerPreviousWin5WinIds
+                && jockeyPreviousWin5WinIdsDate === sourceDate
+                && trainerPreviousWin5WinIdsDate === sourceDate) return;
+            if (previousWin5PersonsPromise) {
+                const pending = previousWin5PersonsPromise;
+                const pendingDate = previousWin5PersonsPromiseDate;
                 await pending;
-                if (jockeyPreviousWin5WinIds && jockeyPreviousWin5WinIdsDate === sourceDate) return;
+                if (jockeyPreviousWin5WinIds && trainerPreviousWin5WinIds
+                    && jockeyPreviousWin5WinIdsDate === sourceDate
+                    && trainerPreviousWin5WinIdsDate === sourceDate) return;
                 if (pendingDate === sourceDate) return;
-                return fetchJockeyPreviousWin5WinIds();
+                return fetchPreviousWin5Persons();
             }
             let requestPromise;
             requestPromise = Promise.resolve().then(async () => {
-            try {
-                const u = new URL("recent-win-persons", WIN5_API);
-                u.searchParams.set("person", "jockey");
-                u.searchParams.set("period", "previous-win5");
-                u.searchParams.set("winsMin", "1");
-                if (sourceDate) u.searchParams.set("date", sourceDate);
-                const res = await fetch(u.toString(), { cache: "no-store" });
-                const json = await res.json();
-                if (!json.ok || !Array.isArray(json.ids)) return;
-                if (String(window.win5SourceDate || "").trim() !== sourceDate) return;
-                jockeyPreviousWin5WinIds = new Set(json.ids.map(id => String(id)));
-                jockeyPreviousWin5WinIdsDate = sourceDate;
-            } catch (e) {
-                console.warn("fetchJockeyPreviousWin5WinIds:", e);
-            } finally {
-                if (jockeyPreviousWin5WinIdsPromise === requestPromise) {
-                    jockeyPreviousWin5WinIdsPromise = null;
-                    jockeyPreviousWin5WinIdsPromiseDate = "";
+                try {
+                    const u = new URL("recent-win-persons", WIN5_API);
+                    u.searchParams.set("person", "both");
+                    u.searchParams.set("period", "previous-win5");
+                    u.searchParams.set("winsMin", "1");
+                    if (sourceDate) u.searchParams.set("date", sourceDate);
+                    const res = await fetch(u.toString(), { cache: "no-store" });
+                    const json = await res.json();
+                    if (!json.ok || !Array.isArray(json.persons?.jockey) || !Array.isArray(json.persons?.trainer)) return;
+                    if (String(window.win5SourceDate || "").trim() !== sourceDate) return;
+                    jockeyPreviousWin5WinIds = new Set(json.persons.jockey.map(id => String(id)));
+                    jockeyPreviousWin5WinIdsDate = sourceDate;
+                    trainerPreviousWin5WinIds = new Set(json.persons.trainer.map(id => String(id)));
+                    trainerPreviousWin5WinIdsDate = sourceDate;
+                } catch (e) {
+                    console.warn("fetchPreviousWin5Persons:", e);
+                } finally {
+                    if (previousWin5PersonsPromise === requestPromise) {
+                        previousWin5PersonsPromise = null;
+                        previousWin5PersonsPromiseDate = "";
+                    }
                 }
-            }
             });
-            jockeyPreviousWin5WinIdsPromise = requestPromise;
-            jockeyPreviousWin5WinIdsPromiseDate = sourceDate;
+            previousWin5PersonsPromise = requestPromise;
+            previousWin5PersonsPromiseDate = sourceDate;
             return requestPromise;
         }
 
-        async function fetchTrainerPreviousWin5WinIds() {
-            const sourceDate = String(window.win5SourceDate || "").trim();
-            if (trainerPreviousWin5WinIds && trainerPreviousWin5WinIdsDate === sourceDate) return;
-            if (trainerPreviousWin5WinIdsPromise) {
-                const pending = trainerPreviousWin5WinIdsPromise;
-                const pendingDate = trainerPreviousWin5WinIdsPromiseDate;
-                await pending;
-                if (trainerPreviousWin5WinIds && trainerPreviousWin5WinIdsDate === sourceDate) return;
-                if (pendingDate === sourceDate) return;
-                return fetchTrainerPreviousWin5WinIds();
-            }
-            let requestPromise;
-            requestPromise = Promise.resolve().then(async () => {
-            try {
-                const u = new URL("recent-win-persons", WIN5_API);
-                u.searchParams.set("person", "trainer");
-                u.searchParams.set("period", "previous-win5");
-                u.searchParams.set("winsMin", "1");
-                if (sourceDate) u.searchParams.set("date", sourceDate);
-                const res = await fetch(u.toString(), { cache: "no-store" });
-                const json = await res.json();
-                if (!json.ok || !Array.isArray(json.ids)) return;
-                if (String(window.win5SourceDate || "").trim() !== sourceDate) return;
-                trainerPreviousWin5WinIds = new Set(json.ids.map(id => String(id)));
-                trainerPreviousWin5WinIdsDate = sourceDate;
-            } catch (e) {
-                console.warn("fetchTrainerPreviousWin5WinIds:", e);
-            } finally {
-                if (trainerPreviousWin5WinIdsPromise === requestPromise) {
-                    trainerPreviousWin5WinIdsPromise = null;
-                    trainerPreviousWin5WinIdsPromiseDate = "";
-                }
-            }
+        async function fetchAndApplyBackgroundSurfaceStats() {
+            const raceInfo = window.raceInfo || [];
+            const raceCourses = window.raceCourses || [];
+            const keysPerRace = getStatsKeysForModes([], raceInfo, raceCourses);
+            const validKeys = [...new Set(keysPerRace.filter(key => key))];
+            document.querySelectorAll('.custom-select').forEach(sel => {
+                sel.dataset.jstatsSurface1 = "";
+                sel.dataset.tstatsSurface1 = "";
             });
-            trainerPreviousWin5WinIdsPromise = requestPromise;
-            trainerPreviousWin5WinIdsPromiseDate = sourceDate;
-            return requestPromise;
+            if (validKeys.length === 0) return;
+
+            try {
+                const cacheKey = JSON.stringify({
+                    mode: "combo",
+                    years: "1",
+                    person: "both",
+                    q: validKeys.join(",")
+                });
+                let json = statsFetchCache.get(cacheKey);
+                if (!json) {
+                    const u = new URL("stats", WIN5_API);
+                    u.searchParams.set("mode", "combo");
+                    u.searchParams.set("years", "1");
+                    u.searchParams.set("person", "both");
+                    u.searchParams.set("q", validKeys.join(","));
+                    const res = await fetch(u.toString(), { cache: "no-store" });
+                    json = await res.json();
+                    if (json.ok && json.stats?.jockey && json.stats?.trainer) statsFetchCache.set(cacheKey, json);
+                }
+                if (!json.ok || !json.stats?.jockey || !json.stats?.trainer) return;
+
+                for (const { person, datasetKey, personIdKey, personNameKeyName, statsByKey } of [
+                    { person: "jockey", datasetKey: "jstatsSurface1", personIdKey: "jid", personNameKeyName: "jockey", statsByKey: json.stats.jockey },
+                    { person: "trainer", datasetKey: "tstatsSurface1", personIdKey: "tid", personNameKeyName: "trainer", statsByKey: json.stats.trainer },
+                ]) {
+                    for (let r = 0; r < TOTAL_RACES; r++) {
+                        const key = keysPerRace[r];
+                        if (!key) continue;
+                        const statsMap = statsByKey[key];
+                        if (!statsMap) continue;
+                        document.querySelectorAll(`.custom-select[data-race="${r + 1}"]`).forEach(sel => {
+                            if (sel.classList.contains("is-empty") || sel.classList.contains("is-scratched")) return;
+                            const id = (sel.dataset[personIdKey] || "").trim();
+                            const name = (sel.dataset[personNameKeyName] || "").trim();
+                            const nameKey = personStatsNameKey(person, name);
+                            if (!id && !nameKey) {
+                                sel.dataset[datasetKey] = "";
+                                return;
+                            }
+                            const stats = (id && statsMap[id]) || (nameKey && statsMap[nameKey]) || [0, 0, 0, 0];
+                            sel.dataset[datasetKey] = `(${stats[0]}-${stats[1]}-${stats[2]}-${stats[3]})`;
+                        });
+                    }
+                }
+            } catch (e) {
+                console.warn("fetchAndApplyBackgroundSurfaceStats:", e);
+            }
         }
 
         function isOneYearZeroWin(row, person = "jockey") {
