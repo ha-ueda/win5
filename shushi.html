@@ -1517,7 +1517,7 @@
             if (ticketImageViewer.classList.contains("show")) e.preventDefault();
         }, { passive: false });
         ticketImageViewer.addEventListener("touchmove", e => {
-            if (ticketImageViewer.classList.contains("show")) e.preventDefault();
+            if (ticketImageViewer.classList.contains("show") && e.touches.length < 2) e.preventDefault();
         }, { passive: false });
         imageTokenForm.addEventListener("submit", e => {
             e.preventDefault();
