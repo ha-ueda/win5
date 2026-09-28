@@ -452,35 +452,6 @@
             padding: 2px 0;
         }
 
-        .bg-rule-info-panel {
-            margin-bottom: 2px;
-        }
-
-        .bg-rule-info-list li {
-            display: grid;
-            grid-template-columns: 9em 1em minmax(0, 1fr);
-            column-gap: 0;
-            align-items: start;
-            padding: 3px 0;
-        }
-
-        .bg-rule-info-list {
-            padding-left: 0;
-        }
-
-        .bg-rule-info-list strong {
-            color: #333;
-            white-space: nowrap;
-        }
-
-        .bg-rule-info-colon {
-            color: #333;
-        }
-
-        .bg-rule-info-description {
-            min-width: 0;
-        }
-
         .mark-profile-info-panel {
             margin-bottom: 12px;
         }
@@ -621,12 +592,6 @@
             font-size: 14px;
             color: #333;
             line-height: 1.3;
-        }
-
-        .bg-rule-prob {
-            font-size: 12px;
-            color: #666;
-            line-height: 1.25;
         }
 
         .bg-rule-switch {
@@ -1958,21 +1923,8 @@
     <div id="bgRuleModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="条件背景">
         <div class="modal-card bg-rule-modal-card" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <div class="modal-title">
-                    <span class="stats-title-wrap">
-                        <span>条件背景</span>
-                        <button id="bgRuleInfoBtn" class="stats-info-btn" type="button" aria-label="条件背景の仕様" aria-controls="bgRuleInfoPanel" aria-expanded="false">？</button>
-                    </span>
-                </div>
+                <div class="modal-title">条件背景</div>
                 <button class="modal-close-btn" onclick="closeBgRuleModal()" aria-label="閉じる">&times;</button>
-            </div>
-            <div id="bgRuleInfoPanel" class="stats-info-panel bg-rule-info-panel">
-                <ul class="stats-info-list bg-rule-info-list">
-                    <li><strong>人気紐</strong><span class="bg-rule-info-colon">：</span><span class="bg-rule-info-description">単勝オッズが10倍未満かつ◎以外が対象。</span></li>
-                    <li><strong>1年間で0勝</strong><span class="bg-rule-info-colon">：</span><span class="bg-rule-info-description">1年間の勝利数が0勝かつ最低出走数以上が対象。最低出走数は5年間の発生率が0%の値を計算。</span></li>
-                    <li><strong>前回勝利</strong><span class="bg-rule-info-colon">：</span><span class="bg-rule-info-description">前回のWIN5で勝利かつ◎以外が対象。</span></li>
-                    <li><strong>1日2勝以上しない</strong><span class="bg-rule-info-colon">：</span><span class="bg-rule-info-description">5年間で1日2勝以上したことない人が対象。</span></li>
-                </ul>
             </div>
             <div id="bgRuleList" class="bg-rule-list"></div>
             <div class="bg-rule-actions">
@@ -2099,8 +2051,6 @@
             return `${color} ${start}%, ${color} ${end}%`;
         }).join(", ")})`;
         const RULE_BG_COLOR = BG_RULE_COLOR_PALETTE[0];
-        const BG_PROBABILITY_TARGET = 3;
-        const BG_RULE_DATA_VERSION = 10;
 
         // JRA結果ページでは外国人騎手などのIDリンクが省略される
         // 場合があるため、成績APIの名前フォールバックキーと同じ形式で
@@ -2204,16 +2154,11 @@
                 row?.dataset?.[person === "trainer" ? "tid" : "jid"] || "",
             ).trim();
         }
-        // 最低出走数はWorkerがrecordsから動的に計算した値だけを使用する。
-        // API/KVから取得できない場合は空のままにして、旧固定値で誤判定しない。
-        let jockeyWinsProbabilityTables = {};
-        let trainerWinsProbabilityTables = {};
-        const winsProbabilityThresholdReady = new Map();
+        // 1年間0勝条件は、出走数にかかわらず勝利数だけで判定する。
         const BACKGROUND_RULES = [
             {
                 key: "redOdds",
                 label: "人気紐",
-                probabilityLabel: "",
                 color: RULE_BG_COLOR,
                 match: row => {
                     const mark = (row.querySelector(".selected")?.textContent || "").trim();
@@ -2225,21 +2170,18 @@
             {
                 key: "jockeyWins0Prob3",
                 label: "1年間で0勝の騎手",
-                probabilityLabel: "-",
                 color: BG_RULE_COLOR_PALETTE[1],
-                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "jockey", 0)
+                match: row => isBackgroundRuleTarget(row) && isOneYearZeroWin(row, "jockey")
             },
             {
                 key: "trainerWins0Prob3",
                 label: "1年間で0勝の調教師",
-                probabilityLabel: "-",
                 color: BG_RULE_COLOR_PALETTE[2],
-                match: row => isBackgroundRuleTarget(row) && isWinsProb3Band(row, "trainer", 0)
+                match: row => isBackgroundRuleTarget(row) && isOneYearZeroWin(row, "trainer")
             },
             {
                 key: "jockeyPreviousWin5Win",
                 label: "前回勝利騎手",
-                probabilityLabel: "-",
                 getColor: row => getJockeyPreviousWin5Color(row),
                 swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
                 colorEditable: false,
@@ -2250,7 +2192,6 @@
             {
                 key: "trainerPreviousWin5Win",
                 label: "前回勝利調教師",
-                probabilityLabel: "-",
                 getColor: row => getTrainerPreviousWin5Color(row),
                 swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
                 colorEditable: false,
@@ -2261,7 +2202,6 @@
             {
                 key: "jockeyNoDailyMultiWin5",
                 label: "1日2勝以上しない騎手",
-                probabilityLabel: "-",
                 getColor: row => getJockeyColor(row),
                 swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
                 colorEditable: false,
@@ -2272,7 +2212,6 @@
             {
                 key: "trainerNoDailyMultiWin5",
                 label: "1日2勝以上しない調教師",
-                probabilityLabel: "-",
                 getColor: row => getTrainerColor(row),
                 swatchBackground: AUTO_RULE_SWATCH_BACKGROUND,
                 colorEditable: false,
@@ -2302,7 +2241,6 @@
         let jockeyDailyMultiWinIds5YearsPromise = null;
         let trainerDailyMultiWinIds5Years = null;
         let trainerDailyMultiWinIds5YearsPromise = null;
-        let backgroundRuleProbabilitiesPromise = null;
         const statsFetchCache = new Map();
         const modeBtn = document.getElementById("modeToggle");
 
@@ -2652,17 +2590,8 @@
         }
 
         async function ensureBackgroundRuleStats(activeRules) {
-            const jockeyWinsMaxes = new Set();
-            const trainerWinsMaxes = new Set();
-            activeRules.forEach(rule => {
-                const match = /^(jockey|trainer)Wins(\d+)Prob3$/.exec(rule.key || "");
-                if (!match) return;
-                const winsMax = Number(match[2]);
-                if (match[1] === "jockey") jockeyWinsMaxes.add(winsMax);
-                else trainerWinsMaxes.add(winsMax);
-            });
-            const needsJockeySurfaceStats = jockeyWinsMaxes.size > 0;
-            const needsTrainerSurfaceStats = trainerWinsMaxes.size > 0;
+            const needsJockeySurfaceStats = activeRules.some(rule => rule.key === "jockeyWins0Prob3");
+            const needsTrainerSurfaceStats = activeRules.some(rule => rule.key === "trainerWins0Prob3");
             const needsJockeyPreviousWin5Win = activeRules.some(rule => rule.key === "jockeyPreviousWin5Win");
             const needsTrainerPreviousWin5Win = activeRules.some(rule => rule.key === "trainerPreviousWin5Win");
             const needsJockeyNoDailyMultiWin5 = activeRules.some(rule => rule.key === "jockeyNoDailyMultiWin5");
@@ -2677,16 +2606,6 @@
                     save: false
                 }));
             }
-            const winsMaxes = new Set([...jockeyWinsMaxes, ...trainerWinsMaxes]);
-            winsMaxes.forEach(winsMax => {
-                if (jockeyWinsMaxes.has(winsMax) && trainerWinsMaxes.has(winsMax)) {
-                    jobs.push(fetchWinsProbabilityThresholds("all", winsMax));
-                } else if (jockeyWinsMaxes.has(winsMax)) {
-                    jobs.push(fetchWinsProbabilityThresholds("jockey", winsMax));
-                } else {
-                    jobs.push(fetchWinsProbabilityThresholds("trainer", winsMax));
-                }
-            });
             if (needsTrainerSurfaceStats) {
                 jobs.push(fetchAndApplyJockeyStats("trainer", {
                     updateDisplay: false,
@@ -2701,72 +2620,6 @@
             if (needsJockeyNoDailyMultiWin5) jobs.push(fetchJockeyDailyMultiWinIds5Years());
             if (needsTrainerNoDailyMultiWin5) jobs.push(fetchTrainerDailyMultiWinIds5Years());
             await Promise.all(jobs);
-        }
-
-        function formatRuleProbability(value) {
-            if (value === null || value === undefined || value === "") return "-";
-            const n = Number(value);
-            if (!Number.isFinite(n)) return "-";
-            return `${n.toFixed(2)}%`;
-        }
-
-        function formatSurfaceProbability(row) {
-            const probability = formatRuleProbability(row?.probability);
-            const starts = Number(row?.starts);
-            return Number.isFinite(starts) && starts > 0 ? `${probability}(${starts}走)` : probability;
-        }
-
-        function applyBackgroundRuleProbabilityPayload(payload) {
-            const rules = payload?.rules;
-            if (!rules || typeof rules !== "object") return;
-            const byKey = new Map(BACKGROUND_RULES.map(rule => [rule.key, rule]));
-
-            [
-                ["jockeyWins0Prob3", "jockey"],
-                ["trainerWins0Prob3", "trainer"],
-            ].forEach(([key]) => {
-                const rule = byKey.get(key);
-                if (!rule) return;
-                const data = rules[key];
-                if (!data || typeof data !== "object") return;
-                rule.probabilityLabel = `芝${formatSurfaceProbability(data?.surfaces?.["芝"])} / ダ${formatSurfaceProbability(data?.surfaces?.["ダ"])}`;
-            });
-            [
-                "jockeyPreviousWin5Win",
-                "trainerPreviousWin5Win",
-                "jockeyNoDailyMultiWin5",
-                "trainerNoDailyMultiWin5",
-            ].forEach(key => {
-                const rule = byKey.get(key);
-                if (!rule) return;
-                const data = rules[key];
-                rule.probabilityLabel = formatRuleProbability(data?.probability);
-            });
-            const redOdds = byKey.get("redOdds");
-            if (redOdds) {
-                const probability = formatRuleProbability(rules.redOdds?.probability);
-                redOdds.probabilityLabel = probability === "-" ? "" : probability;
-            }
-        }
-
-        async function fetchBackgroundRuleProbabilities() {
-            if (backgroundRuleProbabilitiesPromise) return backgroundRuleProbabilitiesPromise;
-            backgroundRuleProbabilitiesPromise = (async () => {
-                try {
-                    const u = new URL("background-rule-probabilities", WIN5_API);
-                    const res = await fetch(u.toString(), { cache: "no-store" });
-                    const json = await res.json();
-                    if (json.ok && Number(json.version) === BG_RULE_DATA_VERSION) {
-                        applyBackgroundRuleProbabilityPayload(json);
-                        renderBgRuleList();
-                    }
-                } catch (e) {
-                    console.warn("fetchBackgroundRuleProbabilities:", e);
-                } finally {
-                    backgroundRuleProbabilitiesPromise = null;
-                }
-            })();
-            return backgroundRuleProbabilitiesPromise;
         }
 
         async function applySelectedBackgroundRules() {
@@ -2798,7 +2651,6 @@
                     setRowBackground(row, matchedColors, "rule");
                     box.dataset.bgRuleDetails = JSON.stringify(matchedRules.map((rule, index) => ({
                         label: getBgRuleDetailLabel(rule, row),
-                        probability: rule.probabilityLabel || "",
                         color: matchedColors[index] || ""
                     })));
                 });
@@ -2820,7 +2672,6 @@
                     <span class="bg-rule-swatch"></span>
                     <span class="bg-rule-text">
                         <span class="bg-rule-label"></span>
-                        <span class="bg-rule-prob"></span>
                     </span>
                     <button class="bg-rule-switch" type="button" aria-label="${rule.label}を切り替え"></button>
                 `;
@@ -2837,8 +2688,6 @@
                 }
                 const label = item.querySelector(".bg-rule-label");
                 if (label) label.textContent = rule.label;
-                const probability = item.querySelector(".bg-rule-prob");
-                if (probability) probability.textContent = rule.probabilityLabel || "";
                 const switchBtn = item.querySelector(".bg-rule-switch");
                 if (switchBtn) {
                     switchBtn.setAttribute("aria-pressed", String(selectedBgRuleKeys.has(rule.key)));
@@ -2856,8 +2705,6 @@
 
         function openBgRuleModal() {
             renderBgRuleList();
-            fetchBackgroundRuleProbabilities();
-            closeBgRuleInfo();
             const modal = document.getElementById("bgRuleModal");
             if (!modal) return;
             lockBodyScroll();
@@ -2865,7 +2712,6 @@
         }
 
         function closeBgRuleModal() {
-            closeBgRuleInfo();
             const modal = document.getElementById("bgRuleModal");
             if (!modal) return;
             modal.style.display = "none";
@@ -3137,7 +2983,6 @@
             const matchedRules = getActiveMatchingBgRules(rowEl);
             return matchedRules.map((rule, index) => ({
                 label: getBgRuleDetailLabel(rule, rowEl),
-                probability: rule.probabilityLabel || "",
                 color: colors[index] || getBgRuleColor(rule, rowEl)
             }));
         }
@@ -3170,7 +3015,6 @@
         function getCurrentMatchingBgRuleDetails(rowEl) {
             return getActiveMatchingBgRules(rowEl).map(rule => ({
                 label: getBgRuleDetailLabel(rule, rowEl),
-                probability: rule.probabilityLabel || "",
                 color: getBgRuleColor(rule, rowEl)
             }));
         }
@@ -3181,7 +3025,6 @@
                 .filter(isFixedColorRule)
                 .map(rule => ({
                     label: getBgRuleDetailLabel(rule),
-                    probability: rule.probabilityLabel || "",
                     color: getBgRuleColor(rule)
                 }));
 
@@ -3208,7 +3051,6 @@
                         .forEach(row => {
                             details.push({
                                 label: getBgRuleDetailLabel(rule, row),
-                                probability: rule.probabilityLabel || "",
                                 color: getBgRuleColor(rule, row)
                             });
                         });
@@ -3265,7 +3107,6 @@
 
                     details.push({
                         label: "条件背景",
-                        probability: "",
                         color
                     });
                 });
@@ -3286,7 +3127,6 @@
 
                 details.push({
                     label: "個別背景",
-                    probability: "",
                     color
                 });
             });
@@ -5759,8 +5599,6 @@
         const statsPopLabel = document.getElementById("statsPopLabel");
         const statsInfoBtn = document.getElementById("statsInfoBtn");
         const statsInfoPanel = document.getElementById("statsInfoPanel");
-        const bgRuleInfoBtn = document.getElementById("bgRuleInfoBtn");
-        const bgRuleInfoPanel = document.getElementById("bgRuleInfoPanel");
         const markProfileInfoBtn = document.getElementById("markProfileInfoBtn");
         const allStatsOptions = [...statsToggleEl.querySelectorAll(".sort-option")];
         const allYearsOptions = [...yearsToggleEl.querySelectorAll(".sort-option")];
@@ -5828,22 +5666,8 @@
             statsInfoBtn?.setAttribute("aria-expanded", String(open));
         }
 
-        function closeBgRuleInfo() {
-            bgRuleInfoPanel?.classList.remove("open");
-            bgRuleInfoBtn?.setAttribute("aria-expanded", "false");
-        }
-
-        function toggleBgRuleInfo(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const open = !bgRuleInfoPanel?.classList.contains("open");
-            bgRuleInfoPanel?.classList.toggle("open", open);
-            bgRuleInfoBtn?.setAttribute("aria-expanded", String(open));
-        }
-
         statsPopBtn.addEventListener("click", openStatsModal);
         statsInfoBtn?.addEventListener("click", toggleStatsInfo);
-        bgRuleInfoBtn?.addEventListener("click", toggleBgRuleInfo);
         markProfileInfoBtn?.addEventListener("click", toggleMarkProfileInfo);
         statsModal.addEventListener("click", closeStatsModal);
         document.addEventListener("keydown", (e) => {
@@ -5858,6 +5682,7 @@
 
         function hasAnyMark(row) {
             const mark = (row?.querySelector(".selected")?.textContent || "").trim();
+            // Condition backgrounds include favorites as well as the two string marks.
             return mark === "◎" || isHimoMark(mark);
         }
 
@@ -5871,14 +5696,10 @@
             return backgroundRuleTargetAll || hasAnyMark(row);
         }
 
-        // 前回勝利条件は、本命（◎）を背景色の対象から外し、
-        // 印が付いている場合は紐（✓・無）だけを対象にする。
+        // 前回勝利条件も共通の印フィルターを使い、◎・✓・無を対象にする。
         // 印が一つもない状態では、既存仕様どおり全馬を対象にする。
         function isPreviousWinBackgroundRuleTarget(row) {
-            if (!isBackgroundRuleTarget(row)) return false;
-            if (backgroundRuleTargetAll) return true;
-            const mark = (row?.querySelector(".selected")?.textContent || "").trim();
-            return isHimoMark(mark);
+            return isBackgroundRuleTarget(row);
         }
 
         function parseStatsRecord(stats) {
@@ -5947,142 +5768,6 @@
                 if (String(key).startsWith(prefix)) count++;
             });
             return count >= 2;
-        }
-
-        function getProbabilityThresholdStarts(table, targetProbability) {
-            if (!Array.isArray(table) || !table.length) return null;
-            let best = null;
-            for (const item of table) {
-                const starts = Number(item?.starts);
-                const probability = Number(item?.probability);
-                if (!Number.isFinite(starts) || !Number.isFinite(probability)) continue;
-                if (probability > targetProbability) continue;
-                const diff = targetProbability - probability;
-                if (!best || diff < best.diff || (diff === best.diff && starts < best.starts)) {
-                    best = { starts, probability, diff };
-                }
-            }
-            return best;
-        }
-
-        function getWinsProbabilityTable(person, winsMax = 0) {
-            const tables = person === "trainer" ? trainerWinsProbabilityTables : jockeyWinsProbabilityTables;
-            return tables[winsMax] || {};
-        }
-
-        function winsProbabilityThresholdKey(person, winsMax) {
-            return `${person === "trainer" ? "trainer" : "jockey"}:${Number(winsMax)}`;
-        }
-
-        function clearWinsProbabilityTable(person, winsMax) {
-            const tables = person === "trainer" ? trainerWinsProbabilityTables : jockeyWinsProbabilityTables;
-            tables[winsMax] = {};
-            winsProbabilityThresholdReady.set(winsProbabilityThresholdKey(person, winsMax), false);
-            updateWinsProbabilityRuleLabel(person, winsMax, null);
-        }
-
-        function setWinsProbabilityTable(person, winsMax, table) {
-            const tables = person === "trainer" ? trainerWinsProbabilityTables : jockeyWinsProbabilityTables;
-            tables[winsMax] = { ...table };
-            winsProbabilityThresholdReady.set(winsProbabilityThresholdKey(person, winsMax), true);
-        }
-
-        function getWinsProbabilityThreshold(surface, person, winsMax = 0) {
-            if (!winsProbabilityThresholdReady.get(winsProbabilityThresholdKey(person, winsMax))) return null;
-            const targetProbability = Number(winsMax) === 0 ? 0 : BG_PROBABILITY_TARGET;
-            return getProbabilityThresholdStarts(getWinsProbabilityTable(person, winsMax)[surface], targetProbability);
-        }
-
-        function updateWinsProbabilityRuleLabel(person, winsMax, thresholds) {
-            const key = `${person}Wins${winsMax}Prob3`;
-            const rule = BACKGROUND_RULES.find(item => item.key === key);
-            if (!rule) return;
-            rule.probabilityLabel = `芝${formatSurfaceProbability(thresholds?.["芝"]?.best)} / ダ${formatSurfaceProbability(thresholds?.["ダ"]?.best)}`;
-        }
-
-        function applyProbabilityThresholdPayload(person, winsMax, thresholds) {
-            if (!thresholds) {
-                clearWinsProbabilityTable(person, winsMax);
-                return false;
-            }
-            const nextTable = {};
-            for (const surface of ["芝", "ダ"]) {
-                const rows = thresholds[surface]?.rows;
-                if (Array.isArray(rows) && rows.length) {
-                    const normalizedRows = rows.map(row => ({
-                        starts: Number(row.starts),
-                        probability: Number(row.probability)
-                    })).filter(row => Number.isFinite(row.starts)
-                        && row.starts > 0
-                        && Number.isFinite(row.probability));
-                    if (normalizedRows.length) nextTable[surface] = normalizedRows;
-                }
-            }
-            // 片面だけの値では判定せず、芝・ダート両方が揃った payload のみ採用する。
-            if (!nextTable["芝"] || !nextTable["ダ"]) {
-                clearWinsProbabilityTable(person, winsMax);
-                return false;
-            }
-            setWinsProbabilityTable(person, winsMax, nextTable);
-            updateWinsProbabilityRuleLabel(person, winsMax, thresholds);
-            return true;
-        }
-
-        async function fetchWinsProbabilityThresholds(person = "jockey", winsMax = 0) {
-            const normalizedPerson = person === "all" ? "all" : (person === "trainer" ? "trainer" : "jockey");
-            const parsedWinsMax = Number(winsMax);
-            const normalizedWinsMax = Number.isFinite(parsedWinsMax)
-                ? Math.max(0, Math.min(99, Math.trunc(parsedWinsMax)))
-                : 0;
-            try {
-                const u = new URL("probability-thresholds", WIN5_API);
-                u.searchParams.set("person", normalizedPerson);
-                u.searchParams.set("winsMax", String(normalizedWinsMax));
-                u.searchParams.set("target", String(normalizedWinsMax === 0 ? 0 : BG_PROBABILITY_TARGET));
-                u.searchParams.set("step", "1");
-                const res = await fetch(u.toString(), { cache: "no-store" });
-                const json = await res.json();
-                if (!json.ok || !json.thresholds) {
-                    if (normalizedPerson === "all") {
-                        clearWinsProbabilityTable("jockey", normalizedWinsMax);
-                        clearWinsProbabilityTable("trainer", normalizedWinsMax);
-                    } else {
-                        clearWinsProbabilityTable(normalizedPerson, normalizedWinsMax);
-                    }
-                    return false;
-                }
-                if (normalizedWinsMax === 0
-                    && Number(json.version) !== BG_RULE_DATA_VERSION) {
-                    if (normalizedPerson === "all") {
-                        clearWinsProbabilityTable("jockey", normalizedWinsMax);
-                        clearWinsProbabilityTable("trainer", normalizedWinsMax);
-                    } else {
-                        clearWinsProbabilityTable(normalizedPerson, normalizedWinsMax);
-                    }
-                    return false;
-                }
-
-                if (normalizedPerson === "all") {
-                    const jockeyReady = applyProbabilityThresholdPayload(
-                        "jockey", normalizedWinsMax, json.thresholds.jockey,
-                    );
-                    const trainerReady = applyProbabilityThresholdPayload(
-                        "trainer", normalizedWinsMax, json.thresholds.trainer,
-                    );
-                    return jockeyReady && trainerReady;
-                }
-
-                return applyProbabilityThresholdPayload(normalizedPerson, normalizedWinsMax, json.thresholds);
-            } catch (e) {
-                console.warn("fetchWinsProbabilityThresholds:", e);
-                if (normalizedPerson === "all") {
-                    clearWinsProbabilityTable("jockey", normalizedWinsMax);
-                    clearWinsProbabilityTable("trainer", normalizedWinsMax);
-                } else {
-                    clearWinsProbabilityTable(normalizedPerson, normalizedWinsMax);
-                }
-                return false;
-            }
         }
 
         async function fetchJockeyDailyMultiWinIds5Years() {
@@ -6207,13 +5892,9 @@
             return requestPromise;
         }
 
-        function isWinsProb3Band(row, person = "jockey", winsMax = 0) {
+        function isOneYearZeroWin(row, person = "jockey") {
             const statsKey = person === "trainer" ? "tstatsSurface1" : "jstatsSurface1";
-            const stats = parseStatsRecord(row?.dataset?.[statsKey]);
-            if (!stats || stats.wins > winsMax) return false;
-            const surface = getRaceSurface(row);
-            const threshold = getWinsProbabilityThreshold(surface, person, winsMax);
-            return !!threshold && stats.starts >= threshold.starts;
+            return isWinsAtMost(row?.dataset?.[statsKey], 0);
         }
 
         function isJockeyWithoutDailyMultiWin5Years(row) {
