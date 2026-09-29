@@ -1029,6 +1029,8 @@
             justify-content: center;
             padding: 24px;
             background: rgba(0, 0, 0, .88);
+            touch-action: none;
+            overscroll-behavior: none;
         }
 
         .ticket-image-viewer.show {
@@ -1060,9 +1062,21 @@
             min-height: 0;
         }
 
+        .ticket-image-viewer-image-viewport {
+            display: flex;
+            flex: 1 1 auto;
+            align-self: stretch;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            min-height: 0;
+            overflow: hidden;
+            touch-action: none;
+        }
+
         .ticket-image-viewer-stage img {
             display: block;
-            flex: 1 1 auto;
+            flex: 0 0 auto;
             min-width: 0;
             max-width: 100%;
             max-height: 100%;
@@ -1071,6 +1085,14 @@
             object-fit: contain;
             justify-self: center;
             align-self: center;
+            transform-origin: center center;
+            touch-action: none;
+            will-change: transform;
+            cursor: zoom-in;
+        }
+
+        .ticket-image-viewer.is-zoomed .ticket-image-viewer-stage img {
+            cursor: grab;
         }
 
         .ticket-image-viewer-button {
@@ -1414,7 +1436,9 @@
             </div>
             <div class="ticket-image-viewer-stage">
                 <button class="ticket-image-viewer-button" id="ticketImageViewerPrev" type="button" aria-label="前の画像">‹</button>
-                <img id="ticketImageViewerImage" alt="買い目画像">
+                <div class="ticket-image-viewer-image-viewport" id="ticketImageViewerImageViewport">
+                    <img id="ticketImageViewerImage" alt="買い目画像">
+                </div>
                 <button class="ticket-image-viewer-button" id="ticketImageViewerNext" type="button" aria-label="次の画像">›</button>
             </div>
         </div>
@@ -1453,6 +1477,11 @@
         let viewerImageIndex = 0;
         let viewerImageObjectUrl = "";
         let viewerLoadToken = 0;
+        let viewerImageScale = 1;
+        let viewerImageOffsetX = 0;
+        let viewerImageOffsetY = 0;
+        let viewerTouchStartedOnImage = false;
+        let viewerTouchGesture = null;
         let imageTokenPromise = null;
         let imageTokenResolve = null;
         let imageTokenReject = null;
@@ -1513,12 +1542,11 @@
         ticketImageViewer.addEventListener("click", e => {
             if (e.target === ticketImageViewer) closeTicketImageViewer();
         });
-        ticketImageViewer.addEventListener("wheel", e => {
-            if (ticketImageViewer.classList.contains("show")) e.preventDefault();
-        }, { passive: false });
-        ticketImageViewer.addEventListener("touchmove", e => {
-            if (ticketImageViewer.classList.contains("show") && e.touches.length < 2) e.preventDefault();
-        }, { passive: false });
+        ticketImageViewer.addEventListener("wheel", handleViewerWheel, { passive: false });
+        ticketImageViewer.addEventListener("touchstart", handleViewerTouchStart, { passive: false });
+        ticketImageViewer.addEventListener("touchmove", handleViewerTouchMove, { passive: false });
+        ticketImageViewer.addEventListener("touchend", handleViewerTouchEnd, { passive: false });
+        ticketImageViewer.addEventListener("touchcancel", handleViewerTouchCancel, { passive: false });
         imageTokenForm.addEventListener("submit", e => {
             e.preventDefault();
             const token = imageTokenInput.value.trim();
@@ -2475,6 +2503,7 @@
                 return;
             }
             viewerImageIndex = Math.max(0, Math.min(startIndex, viewerImages.length - 1));
+            resetViewerImageTransform();
             ticketImageViewer.classList.add("show");
             ticketImageViewer.setAttribute("aria-hidden", "false");
             void renderViewerImage();
@@ -2484,6 +2513,7 @@
             const token = ++viewerLoadToken;
             const image = viewerImages[viewerImageIndex];
             if (!image) return;
+            resetViewerImageTransform();
             if (viewerImageObjectUrl) URL.revokeObjectURL(viewerImageObjectUrl);
             viewerImageObjectUrl = "";
             ticketImageViewerImage.removeAttribute("src");
@@ -2513,8 +2543,171 @@
             void renderViewerImage();
         }
 
+        function resetViewerImageTransform() {
+            viewerImageScale = 1;
+            viewerImageOffsetX = 0;
+            viewerImageOffsetY = 0;
+            viewerTouchStartedOnImage = false;
+            viewerTouchGesture = null;
+            ticketImageViewerImage.style.transform = "";
+            ticketImageViewer.classList.remove("is-zoomed");
+        }
+
+        function applyViewerImageTransform() {
+            if (viewerImageScale <= 1) {
+                resetViewerImageTransform();
+                return;
+            }
+            ticketImageViewerImage.style.transform = `translate3d(${viewerImageOffsetX}px, ${viewerImageOffsetY}px, 0) scale(${viewerImageScale})`;
+            ticketImageViewer.classList.add("is-zoomed");
+        }
+
+        function clampViewerImageScale(scale) {
+            return Math.max(1, Math.min(4, scale));
+        }
+
+        function zoomViewerImageAt(scale, clientX, clientY) {
+            const imageWidth = ticketImageViewerImage.offsetWidth;
+            const imageHeight = ticketImageViewerImage.offsetHeight;
+            if (!imageWidth || !imageHeight) return;
+
+            const nextScale = clampViewerImageScale(scale);
+            if (nextScale <= 1) {
+                resetViewerImageTransform();
+                return;
+            }
+
+            const rect = ticketImageViewerImage.getBoundingClientRect();
+            const baseCenterX = rect.left - viewerImageOffsetX + imageWidth * viewerImageScale / 2;
+            const baseCenterY = rect.top - viewerImageOffsetY + imageHeight * viewerImageScale / 2;
+            const imagePointX = (clientX - baseCenterX - viewerImageOffsetX) / viewerImageScale;
+            const imagePointY = (clientY - baseCenterY - viewerImageOffsetY) / viewerImageScale;
+
+            viewerImageOffsetX = clientX - baseCenterX - imagePointX * nextScale;
+            viewerImageOffsetY = clientY - baseCenterY - imagePointY * nextScale;
+            viewerImageScale = nextScale;
+            applyViewerImageTransform();
+        }
+
+        function viewerTouchMidpoint(first, second) {
+            return {
+                x: (first.clientX + second.clientX) / 2,
+                y: (first.clientY + second.clientY) / 2
+            };
+        }
+
+        function startViewerPinch(touches) {
+            if (touches.length < 2) return;
+            const first = touches[0];
+            const second = touches[1];
+            const midpoint = viewerTouchMidpoint(first, second);
+            const dx = second.clientX - first.clientX;
+            const dy = second.clientY - first.clientY;
+            const imageWidth = ticketImageViewerImage.offsetWidth;
+            const imageHeight = ticketImageViewerImage.offsetHeight;
+            if (!imageWidth || !imageHeight) return;
+
+            const rect = ticketImageViewerImage.getBoundingClientRect();
+            const baseCenterX = rect.left - viewerImageOffsetX + imageWidth * viewerImageScale / 2;
+            const baseCenterY = rect.top - viewerImageOffsetY + imageHeight * viewerImageScale / 2;
+            viewerTouchGesture = {
+                type: "pinch",
+                startDistance: Math.max(1, Math.hypot(dx, dy)),
+                startScale: viewerImageScale,
+                baseCenterX,
+                baseCenterY,
+                imagePointX: (midpoint.x - baseCenterX - viewerImageOffsetX) / viewerImageScale,
+                imagePointY: (midpoint.y - baseCenterY - viewerImageOffsetY) / viewerImageScale
+            };
+        }
+
+        function startViewerPan(touch) {
+            viewerTouchGesture = {
+                type: "pan",
+                startX: touch.clientX,
+                startY: touch.clientY,
+                offsetX: viewerImageOffsetX,
+                offsetY: viewerImageOffsetY
+            };
+        }
+
+        function handleViewerWheel(event) {
+            if (!ticketImageViewer.classList.contains("show")) return;
+            if (event.target === ticketImageViewerImage && event.ctrlKey) {
+                zoomViewerImageAt(viewerImageScale * Math.exp(-event.deltaY * 0.01), event.clientX, event.clientY);
+            }
+            event.preventDefault();
+        }
+
+        function handleViewerTouchStart(event) {
+            if (!ticketImageViewer.classList.contains("show")) return;
+            if (event.target === ticketImageViewerImage) viewerTouchStartedOnImage = true;
+            if (!viewerTouchStartedOnImage) return;
+
+            if (event.touches.length >= 2) {
+                startViewerPinch(event.touches);
+            } else if (event.touches.length === 1 && viewerImageScale > 1) {
+                startViewerPan(event.touches[0]);
+            }
+        }
+
+        function handleViewerTouchMove(event) {
+            if (!ticketImageViewer.classList.contains("show")) return;
+            if (viewerTouchStartedOnImage && event.touches.length >= 2) {
+                if (viewerTouchGesture?.type !== "pinch") {
+                    startViewerPinch(event.touches);
+                } else {
+                    const first = event.touches[0];
+                    const second = event.touches[1];
+                    const midpoint = viewerTouchMidpoint(first, second);
+                    const distance = Math.hypot(second.clientX - first.clientX, second.clientY - first.clientY);
+                    const nextScale = clampViewerImageScale(viewerTouchGesture.startScale * distance / viewerTouchGesture.startDistance);
+                    if (nextScale <= 1) {
+                        viewerImageScale = 1;
+                        viewerImageOffsetX = 0;
+                        viewerImageOffsetY = 0;
+                        ticketImageViewerImage.style.transform = "";
+                        ticketImageViewer.classList.remove("is-zoomed");
+                    } else {
+                        viewerImageScale = nextScale;
+                        viewerImageOffsetX = midpoint.x - viewerTouchGesture.baseCenterX - viewerTouchGesture.imagePointX * nextScale;
+                        viewerImageOffsetY = midpoint.y - viewerTouchGesture.baseCenterY - viewerTouchGesture.imagePointY * nextScale;
+                        applyViewerImageTransform();
+                    }
+                }
+            } else if (viewerTouchStartedOnImage && event.touches.length === 1 && viewerImageScale > 1) {
+                const touch = event.touches[0];
+                if (viewerTouchGesture?.type !== "pan") startViewerPan(touch);
+                if (viewerTouchGesture?.type === "pan") {
+                    viewerImageOffsetX = viewerTouchGesture.offsetX + touch.clientX - viewerTouchGesture.startX;
+                    viewerImageOffsetY = viewerTouchGesture.offsetY + touch.clientY - viewerTouchGesture.startY;
+                    applyViewerImageTransform();
+                }
+            }
+            event.preventDefault();
+        }
+
+        function handleViewerTouchEnd(event) {
+            if (!viewerTouchStartedOnImage) return;
+            if (event.touches.length >= 2) {
+                startViewerPinch(event.touches);
+            } else if (event.touches.length === 1) {
+                if (viewerImageScale > 1) startViewerPan(event.touches[0]);
+                else viewerTouchGesture = null;
+            } else {
+                viewerTouchStartedOnImage = false;
+                viewerTouchGesture = null;
+            }
+        }
+
+        function handleViewerTouchCancel() {
+            viewerTouchStartedOnImage = false;
+            viewerTouchGesture = null;
+        }
+
         function closeTicketImageViewer() {
             viewerLoadToken++;
+            resetViewerImageTransform();
             ticketImageViewer.classList.remove("show");
             ticketImageViewer.setAttribute("aria-hidden", "true");
             ticketImageViewerImage.removeAttribute("src");
