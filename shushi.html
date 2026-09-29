@@ -1670,10 +1670,21 @@
             });
         }
 
+        function normalizeRecordDate(value) {
+            const date = String(value ?? "");
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return "";
+            const parsed = new Date(`${date}T00:00:00.000Z`);
+            return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === date ? date : "";
+        }
+
+        function isValidTicketImageId(value) {
+            return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value ?? ""));
+        }
+
         function normalizeTicketImages(images) {
             if (!Array.isArray(images)) return [];
             return images
-                .filter(image => image && /^[0-9a-f-]{36}$/i.test(String(image.id || "")))
+                .filter(image => image && isValidTicketImageId(image.id))
                 .map(image => ({
                     id: String(image.id),
                     name: String(image.name || "買い目画像"),
@@ -1960,7 +1971,18 @@
             const saved = localStorage.getItem("shushi_year_filter") || "all";
             const current = yearFilter.value || saved || "all";
 
-            yearFilter.innerHTML = `<option value="all">全期間</option>` + years.map(y => `<option value="${y}">${y}年</option>`).join("");
+            yearFilter.replaceChildren();
+            const allOption = document.createElement("option");
+            allOption.value = "all";
+            allOption.textContent = "全期間";
+            yearFilter.append(allOption);
+            years.forEach(year => {
+                if (!/^\d{4}$/.test(year)) return;
+                const option = document.createElement("option");
+                option.value = year;
+                option.textContent = `${year}年`;
+                yearFilter.append(option);
+            });
             yearFilter.value = (current !== "all" && years.includes(current)) ? current : "all";
         }
 
@@ -2145,7 +2167,7 @@
                                         const previewUrl = dayImagePreviewUrls.get(image.id);
                                         return `
                                             <button class="day-entry-image-thumb" type="button" data-uid="${r.uid}" data-image-index="${index}" aria-label="買い目画像${index + 1}を拡大">
-                                                <img data-day-image-id="${image.id}" alt="買い目画像${index + 1}" loading="lazy"${previewUrl ? ` src="${previewUrl}"` : ""}>
+                                                <img data-day-image-id="${escapeHtml(image.id)}" alt="買い目画像${index + 1}" loading="lazy"${previewUrl ? ` src="${escapeHtml(previewUrl)}"` : ""}>
                                             </button>
                                         `;
                                     }).join("")}
@@ -2237,7 +2259,7 @@
 
                 return `
                             <div class="entry-row" data-uid="${r.uid}">
-                                <input class="entry-date" type="date" value="${r.date}">
+                                <input class="entry-date" type="date" value="${escapeHtml(r.date)}">
                                 <input class="entry-amount" type="text" inputmode="numeric" value="${amount}">
                                 <input class="entry-payout" type="text" inputmode="numeric" value="${payout}">
                                 <select class="entry-buyer">
@@ -2363,7 +2385,7 @@
                 return `
                     <div class="ticket-image-item is-saved">
                         <button class="ticket-image-preview" type="button" data-image-action="view" data-image-index="${index}" aria-label="買い目画像を表示">
-                            <img class="ticket-image-thumbnail" data-editor-image-id="${image.id}" alt="" loading="lazy"${previewUrl ? ` src="${previewUrl}"` : ""}>
+                            <img class="ticket-image-thumbnail" data-editor-image-id="${escapeHtml(image.id)}" alt="" loading="lazy"${previewUrl ? ` src="${escapeHtml(previewUrl)}"` : ""}>
                         </button>
                         <button class="ticket-image-remove" type="button" aria-label="保存済みの画像を削除" data-image-action="remove" data-image-index="${index}"><svg class="ticket-image-remove-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7 17 17M17 7 7 17" /></svg></button>
                     </div>
@@ -2486,7 +2508,7 @@
                         body: file
                     });
                     const data = await response.json();
-                    if (!data?.id) throw new Error("画像登録失敗");
+                    if (!isValidTicketImageId(data?.id)) throw new Error("画像登録失敗");
 
                     const image = {
                         id: String(data.id),
@@ -2976,7 +2998,7 @@
                 uidSeq = 1;
                 rows = (Array.isArray(data) ? data : []).map(r => ({
                     uid: uidSeq++,
-                    date: r.date || "",
+                    date: normalizeRecordDate(r.date),
                     amount: r.amount ?? "",
                     payout: r.payout ?? "",
                     buyer: r.buyer || "上田",
