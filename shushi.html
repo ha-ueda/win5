@@ -1085,10 +1085,16 @@
             touch-action: none;
             will-change: transform;
             cursor: zoom-in;
+            user-select: none;
+            -webkit-user-drag: none;
         }
 
         .ticket-image-viewer.is-zoomed .ticket-image-viewer-stage img {
             cursor: grab;
+        }
+
+        .ticket-image-viewer.is-panning .ticket-image-viewer-stage img {
+            cursor: grabbing;
         }
 
         .ticket-image-viewer-button {
@@ -1470,7 +1476,7 @@
             <div class="ticket-image-viewer-stage">
                 <button class="ticket-image-viewer-button" id="ticketImageViewerPrev" type="button" aria-label="前の画像"><svg class="ticket-image-viewer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5" /></svg></button>
                 <div class="ticket-image-viewer-image-viewport" id="ticketImageViewerImageViewport">
-                    <img id="ticketImageViewerImage" alt="買い目画像">
+                    <img id="ticketImageViewerImage" alt="買い目画像" draggable="false">
                 </div>
                 <button class="ticket-image-viewer-button" id="ticketImageViewerNext" type="button" aria-label="次の画像"><svg class="ticket-image-viewer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5.5 6.5 6.5-6.5 6.5" /></svg></button>
             </div>
@@ -1513,6 +1519,7 @@
         let viewerImageScale = 1;
         let viewerImageOffsetX = 0;
         let viewerImageOffsetY = 0;
+        let viewerMousePan = null;
         let viewerTouchStartedOnImage = false;
         let viewerTouchGesture = null;
         let imageTokenPromise = null;
@@ -1548,6 +1555,7 @@
         const editorImageList = document.getElementById("editorImageList");
         const ticketImageViewer = document.getElementById("ticketImageViewer");
         const ticketImageViewerImage = document.getElementById("ticketImageViewerImage");
+        const ticketImageViewerImageViewport = document.getElementById("ticketImageViewerImageViewport");
         const imageTokenDialog = document.getElementById("imageTokenDialog");
         const imageTokenForm = document.getElementById("imageTokenForm");
         const imageTokenInput = document.getElementById("imageTokenInput");
@@ -1580,6 +1588,11 @@
         ticketImageViewer.addEventListener("touchmove", handleViewerTouchMove, { passive: false });
         ticketImageViewer.addEventListener("touchend", handleViewerTouchEnd, { passive: false });
         ticketImageViewer.addEventListener("touchcancel", handleViewerTouchCancel, { passive: false });
+        ticketImageViewerImage.addEventListener("pointerdown", handleViewerMousePanStart);
+        ticketImageViewerImage.addEventListener("pointermove", handleViewerMousePanMove);
+        ticketImageViewerImage.addEventListener("pointerup", handleViewerMousePanEnd);
+        ticketImageViewerImage.addEventListener("pointercancel", handleViewerMousePanEnd);
+        ticketImageViewerImage.addEventListener("lostpointercapture", handleViewerMousePanEnd);
         imageTokenForm.addEventListener("submit", e => {
             e.preventDefault();
             const token = imageTokenInput.value.trim();
@@ -2580,10 +2593,20 @@
             viewerImageScale = 1;
             viewerImageOffsetX = 0;
             viewerImageOffsetY = 0;
+            viewerMousePan = null;
             viewerTouchStartedOnImage = false;
             viewerTouchGesture = null;
             ticketImageViewerImage.style.transform = "";
-            ticketImageViewer.classList.remove("is-zoomed");
+            ticketImageViewer.classList.remove("is-zoomed", "is-panning");
+        }
+
+        function constrainViewerImageOffsets(offsetX, offsetY, scale = viewerImageScale) {
+            const maxOffsetX = Math.max(0, (ticketImageViewerImage.offsetWidth * scale - ticketImageViewerImageViewport.clientWidth) / 2);
+            const maxOffsetY = Math.max(0, (ticketImageViewerImage.offsetHeight * scale - ticketImageViewerImageViewport.clientHeight) / 2);
+            return {
+                x: Math.max(-maxOffsetX, Math.min(maxOffsetX, offsetX)),
+                y: Math.max(-maxOffsetY, Math.min(maxOffsetY, offsetY))
+            };
         }
 
         function applyViewerImageTransform() {
@@ -2591,6 +2614,9 @@
                 resetViewerImageTransform();
                 return;
             }
+            const offsets = constrainViewerImageOffsets(viewerImageOffsetX, viewerImageOffsetY);
+            viewerImageOffsetX = offsets.x;
+            viewerImageOffsetY = offsets.y;
             ticketImageViewerImage.style.transform = `translate3d(${viewerImageOffsetX}px, ${viewerImageOffsetY}px, 0) scale(${viewerImageScale})`;
             ticketImageViewer.classList.add("is-zoomed");
         }
@@ -2620,6 +2646,35 @@
             viewerImageOffsetY = clientY - baseCenterY - imagePointY * nextScale;
             viewerImageScale = nextScale;
             applyViewerImageTransform();
+        }
+
+        function handleViewerMousePanStart(event) {
+            if (!ticketImageViewer.classList.contains("show") || viewerImageScale <= 1) return;
+            if (event.pointerType !== "mouse" || event.button !== 0) return;
+            viewerMousePan = {
+                pointerId: event.pointerId,
+                startX: event.clientX,
+                startY: event.clientY,
+                offsetX: viewerImageOffsetX,
+                offsetY: viewerImageOffsetY
+            };
+            ticketImageViewer.classList.add("is-panning");
+            ticketImageViewerImage.setPointerCapture(event.pointerId);
+            event.preventDefault();
+        }
+
+        function handleViewerMousePanMove(event) {
+            if (!viewerMousePan || event.pointerId !== viewerMousePan.pointerId) return;
+            viewerImageOffsetX = viewerMousePan.offsetX + event.clientX - viewerMousePan.startX;
+            viewerImageOffsetY = viewerMousePan.offsetY + event.clientY - viewerMousePan.startY;
+            applyViewerImageTransform();
+            event.preventDefault();
+        }
+
+        function handleViewerMousePanEnd(event) {
+            if (!viewerMousePan || (event.pointerId != null && event.pointerId !== viewerMousePan.pointerId)) return;
+            viewerMousePan = null;
+            ticketImageViewer.classList.remove("is-panning");
         }
 
         function viewerTouchMidpoint(first, second) {
