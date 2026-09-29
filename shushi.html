@@ -1733,6 +1733,8 @@
                         message = "画像保存先未設定";
                     } else if (data && data.error === "unsupported image type") {
                         message = "非対応画像形式";
+                    } else if (data && data.error === "image too large") {
+                        message = "画像サイズ超過";
                     }
                 } catch { }
                 throw new Error(message);
