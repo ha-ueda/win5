@@ -1117,6 +1117,19 @@
             cursor: pointer;
         }
 
+        .ticket-image-viewer-icon {
+            display: block;
+            width: 22px;
+            height: 22px;
+            overflow: visible;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            pointer-events: none;
+        }
+
         .image-token-dialog {
             width: min(420px, calc(100vw - 32px));
             max-width: calc(100vw - 32px);
@@ -1434,14 +1447,14 @@
     <div class="ticket-image-viewer" id="ticketImageViewer" aria-hidden="true">
         <div class="ticket-image-viewer-content" role="dialog" aria-modal="true" aria-label="買い目画像">
             <div class="ticket-image-viewer-top">
-                <button class="ticket-image-viewer-button" id="ticketImageViewerClose" type="button" aria-label="閉じる">×</button>
+                <button class="ticket-image-viewer-button" id="ticketImageViewerClose" type="button" aria-label="閉じる"><svg class="ticket-image-viewer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7 17 17M17 7 7 17" /></svg></button>
             </div>
             <div class="ticket-image-viewer-stage">
-                <button class="ticket-image-viewer-button" id="ticketImageViewerPrev" type="button" aria-label="前の画像">‹</button>
+                <button class="ticket-image-viewer-button" id="ticketImageViewerPrev" type="button" aria-label="前の画像"><svg class="ticket-image-viewer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5 8 12l6.5 6.5" /></svg></button>
                 <div class="ticket-image-viewer-image-viewport" id="ticketImageViewerImageViewport">
                     <img id="ticketImageViewerImage" alt="買い目画像">
                 </div>
-                <button class="ticket-image-viewer-button" id="ticketImageViewerNext" type="button" aria-label="次の画像">›</button>
+                <button class="ticket-image-viewer-button" id="ticketImageViewerNext" type="button" aria-label="次の画像"><svg class="ticket-image-viewer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 5.5 6.5 6.5-6.5 6.5" /></svg></button>
             </div>
         </div>
     </div>
