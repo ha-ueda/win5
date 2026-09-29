@@ -1485,8 +1485,8 @@
 
     <dialog class="image-token-dialog" id="imageTokenDialog" aria-labelledby="imageTokenHeading">
         <form class="image-token-form" id="imageTokenForm" autocomplete="on">
-            <h2 class="image-token-heading" id="imageTokenHeading">画像アクセスキー</h2>
-            <p class="image-token-description">入力したキーはこのブラウザーに保存し、次回以降の画像取得に使用します。</p>
+            <h2 class="image-token-heading" id="imageTokenHeading">アクセスキー</h2>
+            <p class="image-token-description">入力したキーはこのブラウザーに保存し、次回以降のデータ・画像アクセスに使用します。</p>
             <label class="image-token-label" for="imageTokenInput">アクセスキー</label>
             <input class="image-token-input" id="imageTokenInput" type="password" name="password" autocomplete="current-password" required>
             <div class="image-token-actions">
@@ -1736,6 +1736,19 @@
                     }
                 } catch { }
                 throw new Error(message);
+            }
+            return response;
+        }
+
+        async function dataApiRequest(options = {}) {
+            const token = await getImageApiToken();
+            const headers = new Headers(options.headers || {});
+            headers.set("Authorization", `Bearer ${token}`);
+            const response = await fetch(API_URL, { ...options, headers });
+
+            if (response.status === 401) {
+                localStorage.removeItem(IMAGE_TOKEN_STORAGE_KEY);
+                throw new Error("アクセスキー不正");
             }
             return response;
         }
@@ -2954,7 +2967,8 @@
 
         async function loadData() {
             try {
-                const res = await fetch(API_URL);
+                const res = await dataApiRequest();
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
 
                 uidSeq = 1;
@@ -2976,7 +2990,7 @@
 
                 applyYearFilter();
             } catch (e) {
-                showToast("読み込みに失敗しました");
+                showToast(e?.message === "アクセスキー不正" ? "アクセスキー不正" : "読み込みに失敗しました");
                 const todayYm = todayJST().slice(0, 7);
                 setViewMonth(todayYm);
             }
@@ -2995,7 +3009,7 @@
             });
 
             try {
-                const res = await fetch(API_URL, {
+                const res = await dataApiRequest({
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
@@ -3003,8 +3017,8 @@
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 showToast(message);
                 return true;
-            } catch {
-                showToast("保存に失敗しました");
+            } catch (e) {
+                showToast(e?.message === "アクセスキー不正" ? "アクセスキー不正" : "保存に失敗しました");
                 return false;
             }
         }
