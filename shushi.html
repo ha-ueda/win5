@@ -732,16 +732,15 @@
         }
 
         .editor-close {
+            display: grid;
+            place-items: center;
             width: 50px;
             height: 50px;
             border-radius: 20px;
             background: #fff;
             border: 1px solid #e2e2e7;
-            font-size: 24px;
-            line-height: 1;
             cursor: pointer;
             color: #111;
-            -webkit-text-fill-color: #111;
             -webkit-appearance: none;
             appearance: none;
             -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
@@ -993,10 +992,10 @@
             width: 28px;
             height: 28px;
             padding: 0;
+            display: grid;
+            place-items: center;
             background: rgba(255, 255, 255, .94);
             color: #111;
-            font-size: 20px;
-            line-height: 1;
         }
 
         .ticket-image-remove {
@@ -1008,9 +1007,6 @@
             border-radius: 8px;
             background: #fff;
             color: #333;
-            font-size: 14px;
-            line-height: 1;
-            text-align: center;
             -webkit-appearance: none;
             appearance: none;
             cursor: pointer;
@@ -1128,6 +1124,28 @@
             stroke-linecap: round;
             stroke-linejoin: round;
             pointer-events: none;
+        }
+
+        .editor-close-icon,
+        .ticket-image-remove-icon {
+            display: block;
+            overflow: visible;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.4;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            pointer-events: none;
+        }
+
+        .editor-close-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .ticket-image-remove-icon {
+            width: 20px;
+            height: 20px;
         }
 
         .image-token-dialog {
@@ -1395,7 +1413,7 @@
     </div>
     <div class="editor-overlay" id="editorOverlay" aria-hidden="true">
         <div class="editor-top">
-            <button class="editor-close" type="button" onclick="closeEditor()">×</button>
+            <button class="editor-close" type="button" onclick="closeEditor()" aria-label="閉じる"><svg class="editor-close-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7 17 17M17 7 7 17" /></svg></button>
             <div class="editor-title" id="editorTitle"></div>
             <button class="editor-save" type="button" onclick="saveEditor()">保存</button>
         </div>
@@ -2319,14 +2337,14 @@
                         <button class="ticket-image-preview" type="button" data-image-action="view" data-image-index="${index}" aria-label="買い目画像を表示">
                             <img class="ticket-image-thumbnail" data-editor-image-id="${image.id}" alt="" loading="lazy"${previewUrl ? ` src="${previewUrl}"` : ""}>
                         </button>
-                        <button class="ticket-image-remove" type="button" aria-label="保存済みの画像を削除" data-image-action="remove" data-image-index="${index}">×</button>
+                        <button class="ticket-image-remove" type="button" aria-label="保存済みの画像を削除" data-image-action="remove" data-image-index="${index}"><svg class="ticket-image-remove-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7 17 17M17 7 7 17" /></svg></button>
                     </div>
                 `;
             });
             const pendingImages = editorPendingImageFiles.map((pending, index) => `
                 <div class="ticket-image-item is-pending">
                     <img class="ticket-image-thumbnail" src="${escapeHtml(pending.previewUrl)}" alt="">
-                    <button class="ticket-image-remove" type="button" aria-label="選択した画像を削除" data-image-action="remove-pending" data-image-index="${index}">×</button>
+                    <button class="ticket-image-remove" type="button" aria-label="選択した画像を削除" data-image-action="remove-pending" data-image-index="${index}"><svg class="ticket-image-remove-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7 17 17M17 7 7 17" /></svg></button>
                 </div>
             `);
             editorImageList.innerHTML = [...savedImages, ...pendingImages].join("");
