@@ -1506,7 +1506,7 @@
 
     <script>
         const API_URL = "https://shushi.cooopew.workers.dev/";
-        const IMAGE_API_URL = "https://shushi-images.cooopew.workers.dev";
+        const IMAGE_API_URL = API_URL.replace(/\/$/, "");
         const IMAGE_TOKEN_STORAGE_KEY = "shushi_image_api_token";
 
         let rows = [];
