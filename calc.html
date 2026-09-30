@@ -6126,7 +6126,7 @@
                 const leadingRank = displayName ? leadingPersonRank(sel, currentPerson) : null;
                 const rankLabel = Number.isInteger(leadingRank) ? (CIRCLES[leadingRank - 1] || String(leadingRank)) : "";
                 const isLeading = !!displayName && !!rankLabel;
-                nameEl.textContent = `${displayName}${rankLabel}`;
+                nameEl.textContent = `${rankLabel}${displayName}`;
                 nameEl.classList.toggle('is-leading', isLeading);
                 statsEl.textContent = formatPersonStatsDisplay(stats);
             });
