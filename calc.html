@@ -2022,7 +2022,11 @@
         const HORSE_MAX = 18;
         const MARKS = ["", "無", "✓", "◎"];
         const isHimoMark = (mark) => mark === "✓" || mark === "無";
-        const CIRCLES = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳'];
+        const CIRCLES = [
+            ...Array.from({ length: 20 }, (_, index) => String.fromCodePoint(0x2460 + index)),
+            ...Array.from({ length: 15 }, (_, index) => String.fromCodePoint(0x3251 + index)),
+            ...Array.from({ length: 15 }, (_, index) => String.fromCodePoint(0x32B1 + index)),
+        ];
         const STORAGE_KEY = 'win5_state_v9';
         const STORAGE_KEY_OLD = 'win5_state_v8';
         const BG_RULE_SELECTION_VERSION = 11;
