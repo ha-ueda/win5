@@ -4922,15 +4922,22 @@
             }
         }
 
-        async function loadWin5Tabs() {
+        async function loadWin5Tabs({ preserveSelection = false, showError = true } = {}) {
             try {
+                const select = document.getElementById("win5TabSelect");
+                const previousIndex = Number(select?.value);
+                const previousSelectedDate = preserveSelection
+                    && select?.value !== ""
+                    && Number.isInteger(previousIndex)
+                    ? String(window.win5AvailableTabs?.[previousIndex]?.date || "")
+                    : "";
                 const u = new URL("tabs", WIN5_API);
                 u.searchParams.set("_", String(Date.now()));
 
                 const res = await fetch(u.toString(), { cache: "no-store" });
                 const json = await res.json();
 
-                if (!json.ok) return;
+                if (!json.ok) return false;
 
                 if (!hasExistingData()) {
                     window.win5Source = json.source || "";
@@ -4938,18 +4945,25 @@
                 }
 
                 const tabs = json.tabs || [];
-                const current = json.activeTab ?? 0;
+                const activeIndex = Number(json.activeTab);
+                const current = Number.isInteger(activeIndex) && activeIndex >= 0 && activeIndex < tabs.length
+                    ? activeIndex
+                    : 0;
 
-                // 予想印モーダルの日付一覧でも、現在取得できるWIN5開催日を
-                // 保存履歴がなくても選択できるように保持しておく。
                 window.win5AvailableTabs = tabs.map((tab) => ({
                     href: String(tab?.href || ""),
                     label: String(tab?.label || ""),
-                    source: String(tab?.source || "")
+                    source: String(tab?.source || ""),
+                    date: String(tab?.href || "").match(/[?&]date=(20\d{6})/)?.[1] || ""
                 }));
+                window.win5TabsActiveDate = window.win5AvailableTabs[current]?.date || String(json.sourceDate || "");
 
-                const select = document.getElementById("win5TabSelect");
-                if (!select) return;
+                if (!select) return true;
+
+                const preservedIndex = preserveSelection && previousSelectedDate
+                    ? window.win5AvailableTabs.findIndex((tab) => tab.date === previousSelectedDate)
+                    : -1;
+                const selectedIndex = preservedIndex >= 0 ? preservedIndex : current;
 
                 select.innerHTML = "";
 
@@ -4957,24 +4971,25 @@
                     const op = document.createElement("option");
                     op.value = i;
                     op.textContent = t.label;
-                    if (i === current) op.selected = true;
+                    if (i === selectedIndex) op.selected = true;
                     select.appendChild(op);
                 });
 
                 if (document.getElementById("markProfileModal")?.style.display === "flex") {
-                    renderMarkProfileDateTabs(markProfilesCache);
+                    renderMarkProfileDateTabs();
                 }
+                return true;
             } catch (e) {
-                showToast("タブ取得に失敗しました");
+                if (showError) showToast("タブ取得に失敗しました");
+                return false;
             }
         }
 
         function getSelectedWin5TabDate() {
             const select = document.getElementById("win5TabSelect");
-            const index = Number(select?.value);
+            const index = select?.value === "" ? -1 : Number(select?.value);
             const tab = Number.isInteger(index) ? (window.win5AvailableTabs || [])[index] : null;
-            const match = String(tab?.href || "").match(/[?&]date=(20\d{6})/);
-            return match ? match[1] : String(window.win5SourceDate || "").trim();
+            return String(tab?.date || window.win5TabsActiveDate || window.win5SourceDate || "").trim();
         }
 
         let markProfilesCache = null;
@@ -5013,18 +5028,16 @@
             };
         }
 
-        function renderMarkProfileDateTabs(profiles = markProfilesCache) {
+        function renderMarkProfileDateTabs() {
             const container = document.getElementById("markProfileDateTabs");
             if (!container) return;
-            const activeDate = String(window.win5SourceDate || "").trim();
-            if (!markProfileSelectedDate) markProfileSelectedDate = activeDate;
-            const dates = new Set(Object.keys(profiles?.history || {}));
-            (window.win5AvailableTabs || []).forEach((tab) => {
-                const match = String(tab?.href || "").match(/[?&]date=(20\d{6})/);
-                if (match) dates.add(match[1]);
-            });
-            if (activeDate) dates.add(activeDate);
-            const ordered = [...dates].filter(date => /^20\d{6}$/.test(date)).sort((a, b) => a.localeCompare(b));
+            const ordered = [...new Set((window.win5AvailableTabs || [])
+                .map((tab) => String(tab?.date || "").trim())
+                .filter((date) => /^20\d{6}$/.test(date)))];
+            if (!ordered.includes(markProfileSelectedDate)) {
+                const selectedDate = getSelectedWin5TabDate();
+                markProfileSelectedDate = ordered.includes(selectedDate) ? selectedDate : (ordered[0] || "");
+            }
             container.replaceChildren();
             if (!ordered.length) return;
             ordered.forEach(date => {
@@ -5043,7 +5056,7 @@
                 button.replaceChildren(dateText, weekdayText);
                 button.addEventListener("click", () => {
                     markProfileSelectedDate = date;
-                    renderMarkProfileDateTabs(markProfilesCache);
+                    renderMarkProfileDateTabs();
                     syncMarkProfileSaveButton();
                     syncMarkProfileUpdatedAt();
                 });
@@ -5108,14 +5121,23 @@
             if (select && !select.value) select.value = "上田";
             syncMarkProfileSaveButton();
             syncMarkProfileUpdatedAt();
-            fetchMarkProfiles().then(profiles => {
-                renderMarkProfileDateTabs(profiles);
+            fetchMarkProfiles().then(() => {
+                renderMarkProfileDateTabs();
                 syncMarkProfileUpdatedAt();
                 syncMarkProfileSaveButton();
             }).catch(() => renderMarkProfileDateTabs());
             lockBodyScroll();
             modal.style.display = "flex";
             modal.onclick = () => closeMarkProfileModal();
+
+            loadWin5Tabs({ preserveSelection: true, showError: false }).then((loaded) => {
+                if (!loaded || modal.style.display !== "flex") return;
+                const selectedDate = getSelectedWin5TabDate();
+                if (selectedDate) markProfileSelectedDate = selectedDate;
+                renderMarkProfileDateTabs();
+                syncMarkProfileUpdatedAt();
+                syncMarkProfileSaveButton();
+            });
         }
 
         function closeMarkProfileModal() {
@@ -5402,7 +5424,7 @@
                 const json = await response.json();
                 if (!response.ok || !json?.ok) throw new Error(json?.error || `HTTP ${response.status}`);
                 markProfilesCache = normalizeClientMarkProfiles(json);
-                renderMarkProfileDateTabs(markProfilesCache);
+                renderMarkProfileDateTabs();
                 showToast("保存しました");
                 syncMarkProfileUpdatedAt();
             } catch (e) {
