@@ -4994,6 +4994,7 @@
 
         let markProfilesCache = null;
         let markProfilesFetchPromise = null;
+        let markProfilesVerified = false;
         let markProfileUpdatedAtRequestId = 0;
         let markPerformanceFetchPromise = null;
         let markProfileSelectedDate = "";
@@ -5010,7 +5011,12 @@
             const selectedDate = String(markProfileSelectedDate || activeDate).trim();
             const sameDate = !!activeDate && !!selectedDate && activeDate === selectedDate;
             saveButton.disabled = select?.value === "combined" || !hasMarks || !sameDate;
-            if (applyButton) applyButton.disabled = !sameDate;
+            const selectedProfile = select?.value || "上田";
+            const entries = selectedMarkProfileEntries(markProfilesCache, selectedDate, selectedProfile);
+            const hasSavedProfile = selectedProfile === "combined"
+                ? !!entries?.上田?.updatedAt && !!entries?.千葉?.updatedAt
+                : !!entries?.[selectedProfile]?.updatedAt;
+            if (applyButton) applyButton.disabled = !markProfilesVerified || !sameDate || !hasSavedProfile;
         }
 
         function formatMarkProfileDateLabel(value) {
@@ -5122,6 +5128,7 @@
             markProfileSelectedDate = getSelectedWin5TabDate();
             const select = document.getElementById("markProfileSelect");
             if (select && !select.value) select.value = "上田";
+            markProfilesVerified = false;
             syncMarkProfileSaveButton();
             const updatedAt = document.getElementById("markProfileUpdatedAt");
             if (updatedAt) updatedAt.textContent = "更新日を取得中…";
@@ -5132,6 +5139,7 @@
             }).catch(() => {
                 renderMarkProfileDateTabs();
                 if (updatedAt) updatedAt.textContent = "更新日を取得できません";
+                syncMarkProfileSaveButton();
             });
             lockBodyScroll();
             modal.style.display = "flex";
@@ -5226,6 +5234,7 @@
                     throw new Error(json?.error || `HTTP ${response.status}`);
                 }
                 markProfilesCache = normalizeClientMarkProfiles(json);
+                markProfilesVerified = true;
                 return markProfilesCache;
             })();
 
@@ -5431,9 +5440,11 @@
                 const json = await response.json();
                 if (!response.ok || !json?.ok) throw new Error(json?.error || `HTTP ${response.status}`);
                 markProfilesCache = normalizeClientMarkProfiles(json);
+                markProfilesVerified = true;
                 renderMarkProfileDateTabs();
                 showToast("保存しました");
                 syncMarkProfileUpdatedAt();
+                syncMarkProfileSaveButton();
             } catch (e) {
                 console.error("saveMarkProfile:", e);
                 showToast("保存に失敗しました", { type: "error" });
@@ -5452,7 +5463,7 @@
                 if (selected === "combined") {
                     const ueda = entries.上田;
                     const chiba = entries.千葉;
-                    if (!ueda.updatedAt || !chiba.updatedAt) {
+                    if (!ueda?.updatedAt || !chiba?.updatedAt) {
                         showToast("印を保存してください", { type: "error" });
                         return;
                     }
