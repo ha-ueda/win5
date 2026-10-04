@@ -5069,6 +5069,9 @@
             const historyProfiles = profiles?.history?.[selectedDate]?.profiles;
             if (profileName === "確定") return historyProfiles || {};
             if (historyProfiles) return historyProfiles;
+            if (selectedDate) {
+                return Object.fromEntries(MARK_PROFILE_NAMES.map(name => [name, { updatedAt: "" }]));
+            }
             return profiles?.profiles || {};
         }
 
@@ -5120,12 +5123,16 @@
             const select = document.getElementById("markProfileSelect");
             if (select && !select.value) select.value = "上田";
             syncMarkProfileSaveButton();
-            syncMarkProfileUpdatedAt();
-            fetchMarkProfiles().then(() => {
+            const updatedAt = document.getElementById("markProfileUpdatedAt");
+            if (updatedAt) updatedAt.textContent = "更新日を取得中…";
+            fetchMarkProfiles({ force: true }).then(() => {
                 renderMarkProfileDateTabs();
                 syncMarkProfileUpdatedAt();
                 syncMarkProfileSaveButton();
-            }).catch(() => renderMarkProfileDateTabs());
+            }).catch(() => {
+                renderMarkProfileDateTabs();
+                if (updatedAt) updatedAt.textContent = "更新日を取得できません";
+            });
             lockBodyScroll();
             modal.style.display = "flex";
             modal.onclick = () => closeMarkProfileModal();
