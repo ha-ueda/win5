@@ -465,14 +465,7 @@
             font-weight: 700;
         }
 
-        .mark-performance-start-date {
-            color: #777;
-            font-size: 12px;
-            font-weight: 400;
-            white-space: nowrap;
-        }
-
-        .mark-performance-list {
+.mark-performance-list {
             display: grid;
             gap: 8px;
             color: #555;
@@ -801,9 +794,9 @@
             box-shadow: inset 0 0 0 1px #ec5754 !important;
         }
 
-        .custom-select.has-mark td.col-mark,
-        .custom-select.has-mark td.col-info,
-        .custom-select.has-mark td.col-odds {
+        .custom-select.has-mark:not(.mark-no-row-highlight) td.col-mark,
+        .custom-select.has-mark:not(.mark-no-row-highlight) td.col-info,
+        .custom-select.has-mark:not(.mark-no-row-highlight) td.col-odds {
             background: #ffebed;
         }
 
@@ -1778,7 +1771,7 @@
                     </span>
                 </div>
                 <div class="fav-filter-line">
-                    <span class="fav-label">✓</span>
+                    <span class="fav-label">◯ ✓</span>
                     <span class="fav-win-range">
                         <select id="minHimo">
                             <option value="0" selected>0</option>
@@ -1801,7 +1794,7 @@
                     </span>
                 </div>
                 <div class="fav-filter-line">
-                    <span class="fav-label">無</span>
+                    <span class="fav-label">昇</span>
                     <span class="fav-win-range">
                         <select id="minNone">
                             <option value="0" selected>0</option>
@@ -1851,10 +1844,10 @@
 
             <div id="markProfileInfoPanel" class="stats-info-panel mark-profile-info-panel">
                 <div class="mark-performance-heading">
-                    <span>これまでの成績</span>
-                    <span id="markPerformanceStartDate" class="mark-performance-start-date"></span>
+                    <span>本命の的中率</span>
                 </div>
                 <div id="markPerformanceList" class="mark-performance-list">読み込み中…</div>
+                <div id="markPerformanceStartDate" class="mark-performance-meta"></div>
             </div>
 
             <div id="markProfileDateTabs" class="mark-profile-date-tabs" role="tablist" aria-label="開催日"></div>
@@ -2020,8 +2013,8 @@
 
         const TOTAL_RACES = 5;
         const HORSE_MAX = 18;
-        const MARKS = ["", "無", "✓", "◎"];
-        const isHimoMark = (mark) => mark === "✓" || mark === "無";
+        const MARKS = ["", "無", "✓", "◯", "◎"];
+        const isHimoMark = (mark) => mark === "✓" || mark === "◯" || mark === "無" || mark === "昇";
         const CIRCLES = [
             ...Array.from({ length: 20 }, (_, index) => String.fromCodePoint(0x2460 + index)),
             ...Array.from({ length: 15 }, (_, index) => String.fromCodePoint(0x3251 + index)),
@@ -3200,7 +3193,9 @@
             rowEl.classList.toggle("has-mark", !!hasMark);
             const box = rowEl.querySelector(".selected");
             if (!box) return;
-            if (hasMark) box.classList.add("is-marked");
+            const isNoMark = !!hasMark && box.textContent.trim() === "無";
+            rowEl.classList.toggle("mark-no-row-highlight", isNoMark);
+            if (hasMark && !isNoMark) box.classList.add("is-marked");
             else box.classList.remove("is-marked");
         }
 
@@ -3973,8 +3968,8 @@
                 const num = Number(sel.dataset.horse);
                 colorMap[num] = bg;
                 if (v === "◎") favs.push(num);
-                if (v === "✓") checks.push(num);
-                if (v === "無") none.push(num);
+                if (v === "✓" || v === "◯") checks.push(num);
+                if (v === "昇") none.push(num);
             });
             const all = [...new Set([...favs, ...checks, ...none])];
             return { fav: favs, check: checks, none, horse: all, colorMap };
@@ -4999,7 +4994,7 @@
         let markPerformanceFetchPromise = null;
         let markProfileSelectedDate = "";
         const MARK_PROFILE_NAMES = ["上田", "千葉", "確定"];
-        const PROFILE_MARK_VALUES = new Set(MARKS);
+        const PROFILE_MARK_VALUES = new Set([...MARKS, "昇"]);
 
         function syncMarkProfileSaveButton() {
             const select = document.getElementById("markProfileSelect");
@@ -5247,9 +5242,9 @@
 
         function formatMarkPerformanceValue(value, mark) {
             const stats = value?.marks?.[mark];
-            if (!stats || !Number(stats.marked)) return `${mark} -`;
+            if (!stats || !Number(stats.marked)) return "-";
             const rate = Number.isFinite(Number(stats.rate)) ? `${Number(stats.rate).toFixed(1)}%` : "-";
-            return `${mark} ${rate}（${Number(stats.hits) || 0}/${Number(stats.marked) || 0}）`;
+            return `${rate}（${Number(stats.hits) || 0}/${Number(stats.marked) || 0}）`;
         }
 
         function formatMarkPerformanceDate(value) {
@@ -5262,14 +5257,18 @@
             const list = document.getElementById("markPerformanceList");
             if (!list) return;
             const profiles = payload?.profiles || {};
-            const startDate = Object.values(profiles)
+            const summary = payload?.summary || {};
+            const fallbackStartDate = Object.values(profiles)
                 .map(value => String(value?.startDate || "").trim())
                 .filter(value => /^20\d{6}$/.test(value))
                 .sort()[0] || "";
+            const startDate = String(summary.startDate || fallbackStartDate).trim();
+            const fallbackProfile = Object.values(profiles).find(value => String(value?.startDate || "").trim() === startDate) || {};
+            const races = Number.isFinite(Number(summary.races)) ? Number(summary.races) : (Number(fallbackProfile.races) || 0);
             const startDateEl = document.getElementById("markPerformanceStartDate");
             if (startDateEl) {
                 startDateEl.textContent = startDate
-                    ? `集計開始：${formatMarkPerformanceDate(startDate)}`
+                    ? `集計開始：${formatMarkPerformanceDate(startDate)}（計${races}レース）`
                     : "";
             }
             list.replaceChildren();
@@ -5283,20 +5282,13 @@
                 const body = document.createElement("div");
                 const values = document.createElement("div");
                 values.className = "mark-performance-values";
-                ["◎", "✓", "無"].forEach(mark => {
+                ["◎"].forEach(mark => {
                     const item = document.createElement("span");
                     item.className = "mark-performance-value";
                     item.textContent = formatMarkPerformanceValue(value, mark);
                     values.appendChild(item);
                 });
-                const meta = document.createElement("div");
-                meta.className = "mark-performance-meta";
-                const days = Number(value.days) || 0;
-                const races = Number(value.races) || 0;
-                meta.textContent = days > 0
-                    ? `集計：${days}開催・${races}レース`
-                    : "集計対象なし";
-                body.append(values, meta);
+                body.append(values);
                 row.append(title, body);
                 list.appendChild(row);
             });
@@ -5387,10 +5379,13 @@
         function combineMarkProfiles(ueda, chiba, raceIndex, horseIndex) {
             const first = getProfileMark(ueda, raceIndex, horseIndex);
             const second = getProfileMark(chiba, raceIndex, horseIndex);
-            if (first === "◎" || second === "◎") return "◎";
-            if (first === "✓" || second === "✓") return "✓";
-            if (first === "無" && second === "無") return "無";
-            return "";
+            if (first === "◯" && second === "◯") return "◎";
+            if (first === "無" && second === "無") return "昇";
+            const priority = { "": 0, "無": 1, "昇": 1, "✓": 2, "◯": 3, "◎": 4 };
+            const firstPriority = priority[first] || 0;
+            const secondPriority = priority[second] || 0;
+            if (firstPriority === secondPriority && (first === "昇" || second === "昇")) return "昇";
+            return firstPriority >= secondPriority ? first : second;
         }
 
         function hasExistingMarks() {
@@ -5730,7 +5725,7 @@
 
         function hasAnyMark(row) {
             const mark = (row?.querySelector(".selected")?.textContent || "").trim();
-            // Condition backgrounds include favorites as well as the two string marks.
+            // Condition backgrounds include favorites and every non-empty mark.
             return mark === "◎" || isHimoMark(mark);
         }
 
@@ -5744,7 +5739,7 @@
             return backgroundRuleTargetAll || hasAnyMark(row);
         }
 
-        // 前回勝利条件も共通の印フィルターを使い、◎・✓・無を対象にする。
+        // 前回勝利条件も共通の印フィルターを使い、空欄以外を対象にする。
         // 印が一つもない状態では、既存仕様どおり全馬を対象にする。
         function isPreviousWinBackgroundRuleTarget(row) {
             return isBackgroundRuleTarget(row);
