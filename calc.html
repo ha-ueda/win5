@@ -339,6 +339,7 @@
 
         #sortToggle .sort-option {
             min-height: 44px;
+            transition: none;
         }
 
         .sort-option:first-child {
@@ -2905,7 +2906,7 @@
                 return cmp * dir;
             });
 
-            for (const r of rows) tbody.appendChild(r);
+            tbody.replaceChildren(...rows);
             updateSortUI(card, key, dir);
         }
 
