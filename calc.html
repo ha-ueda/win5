@@ -472,6 +472,15 @@
             font-variant-numeric: tabular-nums;
         }
 
+        .mark-performance-list-header {
+            display: grid;
+            grid-template-columns: 4em minmax(0, 1fr);
+            gap: 8px;
+            padding-bottom: 4px;
+            color: #333;
+            font-weight: 700;
+        }
+
         .mark-performance-profile {
             display: grid;
             grid-template-columns: 4em minmax(0, 1fr);
@@ -481,8 +490,8 @@
             border-top: 1px solid #e5e5e5;
         }
 
-        .mark-performance-profile:first-child {
-            border-top: 0;
+        .mark-performance-list-header + .mark-performance-profile {
+            border-top-color: #b8b8b8;
         }
 
         .mark-performance-name {
@@ -490,20 +499,31 @@
             font-weight: 700;
         }
 
-        .mark-performance-values {
-            display: flex;
-            flex-wrap: wrap;
+.mark-performance-values {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 4px 10px;
         }
 
         .mark-performance-value {
             white-space: nowrap;
+            text-align: left;
         }
 
-        .mark-performance-meta {
-            margin-top: 3px;
-            color: #777;
-            font-size: 11px;
+        .mark-performance-list-header .mark-performance-value {
+            width: 6em;
+            justify-self: start;
+            text-align: center;
+        }
+
+        .mark-performance-rate-number {
+            display: inline-block;
+            width: 5ch;
+            text-align: right;
+        }
+
+        .mark-performance-count {
+            margin-left: 0.35em;
         }
 
         .stats-modal-row {
@@ -1856,10 +1876,9 @@
 
             <div id="markProfileInfoPanel" class="stats-info-panel mark-profile-info-panel">
                 <div class="mark-performance-heading">
-                    <span>本命の的中率</span>
+                    <span id="markPerformanceHeadingText">集計中…</span>
                 </div>
                 <div id="markPerformanceList" class="mark-performance-list">読み込み中…</div>
-                <div id="markPerformanceStartDate" class="mark-performance-meta"></div>
             </div>
 
             <div id="markProfileDateTabs" class="mark-profile-date-tabs" role="tablist" aria-label="開催日"></div>
@@ -5275,9 +5294,13 @@
 
         function formatMarkPerformanceValue(value, mark) {
             const stats = value?.marks?.[mark];
-            if (!stats || !Number(stats.marked)) return "-";
-            const rate = Number.isFinite(Number(stats.rate)) ? `${Number(stats.rate).toFixed(1)}%` : "-";
-            return `${rate}（${Number(stats.hits) || 0}/${Number(stats.marked) || 0}）`;
+            if (!stats || !Number(stats.marked)) return { rate: "-", percent: "", count: "" };
+            const rate = Number.isFinite(Number(stats.rate)) ? Number(stats.rate).toFixed(1) : "-";
+            return {
+                rate,
+                percent: rate === "-" ? "" : "%",
+                count: `（${Number(stats.hits) || 0}/${Number(stats.marked) || 0}）`,
+            };
         }
 
         function formatMarkPerformanceDate(value) {
@@ -5298,13 +5321,24 @@
             const startDate = String(summary.startDate || fallbackStartDate).trim();
             const fallbackProfile = Object.values(profiles).find(value => String(value?.startDate || "").trim() === startDate) || {};
             const races = Number.isFinite(Number(summary.races)) ? Number(summary.races) : (Number(fallbackProfile.races) || 0);
-            const startDateEl = document.getElementById("markPerformanceStartDate");
-            if (startDateEl) {
-                startDateEl.textContent = startDate
-                    ? `集計開始：${formatMarkPerformanceDate(startDate)}（計${races}レース）`
-                    : "";
-            }
+            const heading = document.getElementById("markPerformanceHeadingText");
+            if (heading) heading.textContent = startDate
+                ? `${formatMarkPerformanceDate(startDate)}以降の的中率（計${races}レース）`
+                : "的中率";
             list.replaceChildren();
+            const header = document.createElement("div");
+            header.className = "mark-performance-list-header";
+            const headerName = document.createElement("div");
+            const headerValues = document.createElement("div");
+            headerValues.className = "mark-performance-values";
+            ["◎", "✓"].forEach(mark => {
+                const item = document.createElement("span");
+                item.className = "mark-performance-value";
+                item.textContent = mark;
+                headerValues.appendChild(item);
+            });
+            header.append(headerName, headerValues);
+            list.appendChild(header);
             [["上田", "上田"], ["千葉", "千葉"], ["確定", "確定"]].forEach(([profileKey, displayName]) => {
                 const value = profiles[profileKey] || {};
                 const row = document.createElement("div");
@@ -5315,10 +5349,22 @@
                 const body = document.createElement("div");
                 const values = document.createElement("div");
                 values.className = "mark-performance-values";
-                ["◎"].forEach(mark => {
+                ["◎", "✓"].forEach(mark => {
                     const item = document.createElement("span");
                     item.className = "mark-performance-value";
-                    item.textContent = formatMarkPerformanceValue(value, mark);
+                    const formatted = formatMarkPerformanceValue(value, mark);
+                    const rate = document.createElement("span");
+                    rate.className = "mark-performance-rate-number";
+                    rate.textContent = formatted.rate;
+                    const percent = document.createElement("span");
+                    percent.textContent = formatted.percent;
+                    item.append(rate, percent);
+                    if (formatted.count) {
+                        const count = document.createElement("span");
+                        count.className = "mark-performance-count";
+                        count.textContent = formatted.count;
+                        item.appendChild(count);
+                    }
                     values.appendChild(item);
                 });
                 body.append(values);
