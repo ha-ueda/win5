@@ -2159,6 +2159,7 @@
                 color: RULE_BG_COLOR,
                 match: row => {
                     const mark = (row.querySelector(".selected")?.textContent || "").trim();
+                    if (mark === "無") return false;
                     if (!backgroundRuleTargetAll && !isHimoMark(mark)) return false;
                     const odds = parseNum(row.dataset.odds);
                     return odds !== null && odds > 0 && odds < 10;
@@ -5725,7 +5726,7 @@
 
         function hasAnyMark(row) {
             const mark = (row?.querySelector(".selected")?.textContent || "").trim();
-            // Condition backgrounds include favorites and every non-empty mark.
+            // 「無」も印ありとして判定モードには反映するが、条件背景の対象からは除外する。
             return mark === "◎" || isHimoMark(mark);
         }
 
@@ -5736,6 +5737,8 @@
 
         function isBackgroundRuleTarget(row) {
             if (!row || row.classList.contains("is-empty") || row.classList.contains("is-scratched")) return false;
+            const mark = (row.querySelector(".selected")?.textContent || "").trim();
+            if (mark === "無") return false;
             return backgroundRuleTargetAll || hasAnyMark(row);
         }
 
