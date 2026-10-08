@@ -508,11 +508,11 @@
         .mark-performance-value {
             white-space: nowrap;
             text-align: left;
+            width: max-content;
+            justify-self: start;
         }
 
         .mark-performance-list-header .mark-performance-value {
-            width: 6em;
-            justify-self: start;
             text-align: center;
         }
 
@@ -5309,6 +5309,26 @@
             return `${text.slice(0, 4)}/${text.slice(4, 6)}/${text.slice(6, 8)}`;
         }
 
+        function alignMarkPerformanceHeaders(list) {
+            const headers = list.querySelectorAll(".mark-performance-list-header .mark-performance-value");
+            const rows = list.querySelectorAll(".mark-performance-profile");
+            headers.forEach((header, index) => {
+                header.style.width = "";
+                header.style.transform = "";
+                const centers = Array.from(rows)
+                    .map(row => row.querySelectorAll(".mark-performance-value")[index])
+                    .filter(value => value && value.textContent.trim() !== "-")
+                    .map(value => {
+                        const rect = value.getBoundingClientRect();
+                        return rect.left + rect.width / 2;
+                    });
+                if (!centers.length) return;
+                const headerRect = header.getBoundingClientRect();
+                const targetCenter = centers.reduce((sum, center) => sum + center, 0) / centers.length;
+                header.style.transform = `translateX(${targetCenter - (headerRect.left + headerRect.width / 2)}px)`;
+            });
+        }
+
         function renderMarkPerformance(payload) {
             const list = document.getElementById("markPerformanceList");
             if (!list) return;
@@ -5371,6 +5391,7 @@
                 row.append(title, body);
                 list.appendChild(row);
             });
+            alignMarkPerformanceHeaders(list);
         }
 
         async function fetchMarkPerformance({ force = false } = {}) {
