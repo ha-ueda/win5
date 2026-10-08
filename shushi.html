@@ -1025,9 +1025,7 @@
             inset: 0;
             z-index: 2147483000;
             display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
+            padding: 0;
             background: rgba(0, 0, 0, .88);
             touch-action: none;
             overscroll-behavior: none;
@@ -1038,15 +1036,19 @@
         }
 
         .ticket-image-viewer-content {
-            display: grid;
-            grid-template-rows: auto minmax(0, 1fr);
-            width: min(100%, 900px);
-            height: min(100%, 900px);
-            gap: 12px;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            max-height: none;
             color: #fff;
         }
 
         .ticket-image-viewer-top {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 2;
             display: flex;
             align-items: center;
             justify-content: flex-end;
@@ -1055,23 +1057,36 @@
         }
 
         .ticket-image-viewer-stage {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            min-height: 0;
+            position: absolute;
+            inset: 0;
         }
 
         .ticket-image-viewer-image-viewport {
+            position: absolute;
+            inset: 0;
             display: flex;
-            flex: 1 1 auto;
-            align-self: stretch;
             align-items: center;
             justify-content: center;
             min-width: 0;
             min-height: 0;
             overflow: hidden;
             touch-action: none;
+        }
+
+        #ticketImageViewerPrev,
+        #ticketImageViewerNext {
+            position: absolute;
+            top: 50%;
+            z-index: 2;
+            transform: translateY(-50%);
+        }
+
+        #ticketImageViewerPrev {
+            left: 12px;
+        }
+
+        #ticketImageViewerNext {
+            right: 12px;
         }
 
         .ticket-image-viewer-stage img {
@@ -1229,16 +1244,6 @@
 
         .image-token-submit {
             padding: 0 20px;
-        }
-
-        @media (max-width: 640px) {
-            .ticket-image-viewer {
-                padding: 12px;
-            }
-
-            .ticket-image-viewer-content {
-                height: 100%;
-            }
         }
 
         @media (max-width: 760px) {
