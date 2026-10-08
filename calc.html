@@ -5055,7 +5055,7 @@
             const weekday = weekdays[date.getUTCDay()];
             const weekdayClass = weekday === "土" ? "saturday" : (weekday === "日" ? "sunday" : "");
             return {
-                date: `${Number(text.slice(4, 6))}/${Number(text.slice(6, 8))}`,
+                date: `${text.slice(4, 6)}/${text.slice(6, 8)}`,
                 weekday,
                 weekdayClass,
             };
