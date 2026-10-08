@@ -773,6 +773,7 @@
         }
 
         .mark-box {
+            position: relative;
             display: block;
             width: 40px;
             height: 36px;
@@ -788,15 +789,26 @@
             text-align: center;
         }
 
+        .mark-box[data-mark-owner]:not([data-mark-owner=""])::after {
+            position: absolute;
+            right: 3px;
+            bottom: 3px;
+            font-size: 8px;
+            font-weight: 700;
+            line-height: 1;
+            content: attr(data-mark-owner);
+            pointer-events: none;
+        }
+
         .mark-box.is-marked {
             background-color: #ec5754 !important;
             color: #fff !important;
             box-shadow: inset 0 0 0 1px #ec5754 !important;
         }
 
-        .custom-select.has-mark:not(.mark-no-row-highlight) td.col-mark,
-        .custom-select.has-mark:not(.mark-no-row-highlight) td.col-info,
-        .custom-select.has-mark:not(.mark-no-row-highlight) td.col-odds {
+        .custom-select.has-mark td.col-mark,
+        .custom-select.has-mark td.col-info,
+        .custom-select.has-mark td.col-odds {
             background: #ffebed;
         }
 
@@ -1794,7 +1806,7 @@
                     </span>
                 </div>
                 <div class="fav-filter-line">
-                    <span class="fav-label">昇</span>
+                    <span class="fav-label">無</span>
                     <span class="fav-win-range">
                         <select id="minNone">
                             <option value="0" selected>0</option>
@@ -2014,7 +2026,16 @@
         const TOTAL_RACES = 5;
         const HORSE_MAX = 18;
         const MARKS = ["", "無", "✓", "◯", "◎"];
-        const isHimoMark = (mark) => mark === "✓" || mark === "◯" || mark === "無" || mark === "昇";
+        const isHimoMark = (mark) => mark === "✓" || mark === "◯" || mark === "無";
+        function getEffectiveMark(box) {
+            if (!box || box.dataset.markAsBlank === "true") return "";
+            return String(box.textContent || "").trim();
+        }
+        function clearMarkAttribution(box) {
+            if (!box) return;
+            delete box.dataset.markOwner;
+            delete box.dataset.markAsBlank;
+        }
         const CIRCLES = [
             ...Array.from({ length: 20 }, (_, index) => String.fromCodePoint(0x2460 + index)),
             ...Array.from({ length: 15 }, (_, index) => String.fromCodePoint(0x3251 + index)),
@@ -2158,8 +2179,7 @@
                 label: "人気紐",
                 color: RULE_BG_COLOR,
                 match: row => {
-                    const mark = (row.querySelector(".selected")?.textContent || "").trim();
-                    if (mark === "無") return false;
+                    const mark = getEffectiveMark(row.querySelector(".selected"));
                     if (!backgroundRuleTargetAll && !isHimoMark(mark)) return false;
                     const odds = parseNum(row.dataset.odds);
                     return odds !== null && odds > 0 && odds < 10;
@@ -2780,6 +2800,7 @@
             const box = getMarkBox(sel);
             if (box) {
                 box.textContent = "";
+                clearMarkAttribution(box);
                 box.dataset.bg = "none";
                 box.dataset.bgSource = "";
                 box.dataset.manualBg = "";
@@ -3194,9 +3215,7 @@
             rowEl.classList.toggle("has-mark", !!hasMark);
             const box = rowEl.querySelector(".selected");
             if (!box) return;
-            const isNoMark = !!hasMark && box.textContent.trim() === "無";
-            rowEl.classList.toggle("mark-no-row-highlight", isNoMark);
-            if (hasMark && !isNoMark) box.classList.add("is-marked");
+            if (hasMark) box.classList.add("is-marked");
             else box.classList.remove("is-marked");
         }
 
@@ -3397,8 +3416,9 @@
 
             const cycleMark = () => {
                 if (rowEl.classList.contains("is-scratched")) return;
-                const cur = MARKS.indexOf(selected.textContent);
+                const cur = MARKS.indexOf(String(selected.textContent || "").trim());
                 selected.textContent = MARKS[(cur + 1) % MARKS.length];
+                clearMarkAttribution(selected);
                 applyMarkBackground(rowEl, selected.textContent !== "");
                 saveState();
             };
@@ -3646,6 +3666,8 @@
 
                     state.races[`r${r}`][sel.dataset.horse] = {
                         mark: (box?.textContent || "").trim(),
+                        markOwner: (box?.dataset.markOwner || "").trim(),
+                        markAsBlank: box?.dataset.markAsBlank === "true",
                         bg: (box?.dataset.bg || "none").trim(),
                         bgSource: (box?.dataset.bgSource || "").trim(),
                         manualBg: (box?.dataset.manualBg || "").trim(),
@@ -3793,11 +3815,16 @@
                         const oEl = sel.querySelector('.odds-top');
                         const pEl = sel.querySelector('.odds-bottom');
                         const noEl = sel.querySelector('td.col-no');
-                        const m = (val.mark || "").toString();
+                        const storedMark = String(val.mark || "").trim();
+                        const m = storedMark === "昇" ? "無" : storedMark;
                         const b = (val.bg || "none").toString();
 
                         if (box) {
                             box.textContent = m;
+                            if (val.markOwner) box.dataset.markOwner = String(val.markOwner).trim();
+                            else delete box.dataset.markOwner;
+                            if (val.markAsBlank === true) box.dataset.markAsBlank = "true";
+                            else delete box.dataset.markAsBlank;
                             box.dataset.bg = b;
                             box.dataset.bgSource = (val.bgSource || "").toString();
                             const source = (val.bgSource || "").toString();
@@ -3806,7 +3833,7 @@
                             box.dataset.bgRuleDetails = (val.bgRuleDetails || "").toString();
                         }
 
-                        applyMarkBackground(sel, !!m);
+                        applyMarkBackground(sel, !!getEffectiveMark(box));
                         syncEffectiveRowBackground(sel);
                         const name = val.name;
                         if (name === null) {
@@ -3833,6 +3860,7 @@
                             sel.dataset.status = "";
                             if (box) {
                                 box.textContent = "";
+                                clearMarkAttribution(box);
                                 box.dataset.bg = "none";
                                 box.dataset.bgSource = "";
                                 box.dataset.manualBg = "";
@@ -3886,6 +3914,7 @@
                 const box = sel.querySelector(".selected");
                 if (box) {
                     box.textContent = "";
+                    clearMarkAttribution(box);
                     box.dataset.bg = "none";
                     box.dataset.bgSource = "";
                     box.dataset.manualBg = "";
@@ -3931,6 +3960,7 @@
 
                 if (box) {
                     box.textContent = "";
+                    clearMarkAttribution(box);
                     box.dataset.bg = "none";
                     box.dataset.bgSource = "";
                     box.dataset.manualBg = "";
@@ -3962,7 +3992,7 @@
                 if (sel.classList.contains("is-empty")) return;
                 if (sel.classList.contains("is-scratched")) return;
                 const box = sel.querySelector('.selected');
-                const v = (box?.textContent || "").trim();
+                const v = getEffectiveMark(box);
 
                 let bg = (box?.dataset.bg || "none").trim();
 
@@ -3970,7 +4000,7 @@
                 colorMap[num] = bg;
                 if (v === "◎") favs.push(num);
                 if (v === "✓" || v === "◯") checks.push(num);
-                if (v === "昇") none.push(num);
+                if (v === "無") none.push(num);
             });
             const all = [...new Set([...favs, ...checks, ...none])];
             return { fav: favs, check: checks, none, horse: all, colorMap };
@@ -4709,6 +4739,7 @@
 
                         if (box) {
                             box.textContent = "";
+                            clearMarkAttribution(box);
                             box.dataset.bg = "none";
                             box.dataset.bgSource = "";
                             box.dataset.manualBg = "";
@@ -4995,7 +5026,7 @@
         let markPerformanceFetchPromise = null;
         let markProfileSelectedDate = "";
         const MARK_PROFILE_NAMES = ["上田", "千葉", "確定"];
-        const PROFILE_MARK_VALUES = new Set([...MARKS, "昇"]);
+        const PROFILE_MARK_VALUES = new Set(MARKS);
 
         function syncMarkProfileSaveButton() {
             const select = document.getElementById("markProfileSelect");
@@ -5166,7 +5197,8 @@
             const marks = Array.from({ length: TOTAL_RACES }, (_, raceIndex) => {
                 const raceMarks = Array.isArray(marksSource[raceIndex]) ? marksSource[raceIndex] : [];
                 return Array.from({ length: HORSE_MAX }, (_, horseIndex) => {
-                    const mark = String(raceMarks[horseIndex] || "").trim();
+                    const storedMark = String(raceMarks[horseIndex] || "").trim();
+                    const mark = storedMark === "昇" ? "無" : storedMark;
                     return PROFILE_MARK_VALUES.has(mark) ? mark : "";
                 });
             });
@@ -5347,7 +5379,7 @@
                 if (!Number.isInteger(race) || race < 1 || race > TOTAL_RACES
                     || !Number.isInteger(horse) || horse < 1 || horse > HORSE_MAX) return;
                 if (sel.classList.contains("is-empty") || sel.classList.contains("is-scratched")) return;
-                const mark = String(sel.querySelector(".selected")?.textContent || "").trim();
+                const mark = getEffectiveMark(sel.querySelector(".selected"));
                 marks[race - 1][horse - 1] = PROFILE_MARK_VALUES.has(mark) ? mark : "";
                 const umaban = String(sel.dataset.umaban || horse).replace(/[^0-9]/g, "").trim();
                 umabans[race - 1][horse - 1] = /^\d{1,2}$/.test(umaban) ? String(Number(umaban)) : String(horse);
@@ -5374,24 +5406,26 @@
 
         function getProfileMark(profile, currentRaceIndex, horseIndex) {
             const sourceRace = profileRaceIndex(profile, currentRaceIndex);
-            return String(profile?.marks?.[sourceRace]?.[horseIndex] || "").trim();
+            const mark = String(profile?.marks?.[sourceRace]?.[horseIndex] || "").trim();
+            return mark === "昇" ? "無" : mark;
         }
 
         function combineMarkProfiles(ueda, chiba, raceIndex, horseIndex) {
             const first = getProfileMark(ueda, raceIndex, horseIndex);
             const second = getProfileMark(chiba, raceIndex, horseIndex);
-            if (first === "◯" && second === "◯") return "◎";
-            if (first === "無" && second === "無") return "昇";
-            const priority = { "": 0, "無": 1, "昇": 1, "✓": 2, "◯": 3, "◎": 4 };
+            if (first === "無" && second === "") return { mark: "無", owner: "上", asBlank: true };
+            if (first === "" && second === "無") return { mark: "無", owner: "千", asBlank: true };
+            if (first === "無" && second === "無") return { mark: "無", owner: "", asBlank: false };
+            if (first === "◯" && second === "◯") return { mark: "◎", owner: "", asBlank: false };
+            const priority = { "": 0, "無": 1, "✓": 2, "◯": 3, "◎": 4 };
             const firstPriority = priority[first] || 0;
             const secondPriority = priority[second] || 0;
-            if (firstPriority === secondPriority && (first === "昇" || second === "昇")) return "昇";
-            return firstPriority >= secondPriority ? first : second;
+            return { mark: firstPriority >= secondPriority ? first : second, owner: "", asBlank: false };
         }
 
         function hasExistingMarks() {
             return Array.from(document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)")).some(sel => {
-                const mark = String(sel.querySelector(".selected")?.textContent || "").trim();
+                const mark = getEffectiveMark(sel.querySelector(".selected"));
                 return PROFILE_MARK_VALUES.has(mark) && !!mark;
             });
         }
@@ -5404,13 +5438,17 @@
                 if (!Number.isInteger(race) || race < 1 || race > TOTAL_RACES
                     || !Number.isInteger(horse) || horse < 1 || horse > HORSE_MAX
                     || sel.classList.contains("is-empty") || sel.classList.contains("is-scratched")) return;
-                const mark = combined
+                const result = combined
                     ? combineMarkProfiles(first, second, race - 1, horse - 1)
-                    : getProfileMark(first, race - 1, horse - 1);
+                    : { mark: getProfileMark(first, race - 1, horse - 1), owner: "", asBlank: false };
                 const box = sel.querySelector(".selected");
                 if (!box) return;
-                box.textContent = mark;
-                applyMarkBackground(sel, !!mark);
+                box.textContent = result.mark;
+                if (result.owner) box.dataset.markOwner = result.owner;
+                else delete box.dataset.markOwner;
+                if (result.asBlank) box.dataset.markAsBlank = "true";
+                else delete box.dataset.markAsBlank;
+                applyMarkBackground(sel, !!getEffectiveMark(box));
             });
             saveState();
         }
@@ -5508,6 +5546,7 @@
                 const box = sel.querySelector('.selected');
                 if (box) {
                     box.textContent = "";
+                    clearMarkAttribution(box);
                     box.dataset.bg = "none";
                     box.dataset.bgSource = "";
                     box.dataset.manualBg = "";
@@ -5725,8 +5764,7 @@
         }
 
         function hasAnyMark(row) {
-            const mark = (row?.querySelector(".selected")?.textContent || "").trim();
-            // 「無」も印ありとして判定モードには反映するが、条件背景の対象からは除外する。
+            const mark = getEffectiveMark(row?.querySelector(".selected"));
             return mark === "◎" || isHimoMark(mark);
         }
 
@@ -5737,8 +5775,6 @@
 
         function isBackgroundRuleTarget(row) {
             if (!row || row.classList.contains("is-empty") || row.classList.contains("is-scratched")) return false;
-            const mark = (row.querySelector(".selected")?.textContent || "").trim();
-            if (mark === "無") return false;
             return backgroundRuleTargetAll || hasAnyMark(row);
         }
 
