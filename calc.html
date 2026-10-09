@@ -1463,29 +1463,22 @@
             height: 40px;
             min-height: 40px;
             box-sizing: border-box;
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(var(--mark-profile-date-count, 1), minmax(0, 1fr));
             gap: 0;
-            overflow-x: auto;
+            overflow: hidden;
             padding: 0;
             border-bottom: 1px solid #d4d7dc;
             margin-bottom: 10px;
-            -webkit-overflow-scrolling: touch;
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        .mark-profile-date-tabs::-webkit-scrollbar {
-            display: none;
-            width: 0;
-            height: 0;
         }
 
         .mark-profile-date-tab {
-            flex: 0 0 50%;
+            width: 100%;
             min-width: 0;
             height: 40px;
             min-height: 0;
-            padding: 0 12px;
+            padding: 0 4px;
+            box-sizing: border-box;
             border: 0;
             border-radius: 0;
             background: transparent;
@@ -1499,10 +1492,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        .mark-profile-date-tab:only-child {
-            flex-basis: 100%;
         }
 
         .mark-profile-date-tab.active {
@@ -5086,6 +5075,7 @@
             const ordered = [...new Set((window.win5AvailableTabs || [])
                 .map((tab) => String(tab?.date || "").trim())
                 .filter((date) => /^20\d{6}$/.test(date)))];
+            container.style.setProperty("--mark-profile-date-count", String(Math.max(ordered.length, 1)));
             if (!ordered.includes(markProfileSelectedDate)) {
                 const selectedDate = getSelectedWin5TabDate();
                 markProfileSelectedDate = ordered.includes(selectedDate) ? selectedDate : (ordered[0] || "");
