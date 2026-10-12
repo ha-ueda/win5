@@ -391,6 +391,23 @@
             font-family: inherit;
         }
 
+        .toggle-container .race-clear,
+        .toggle-container .stats-pop-btn {
+            border-radius: 6px;
+        }
+
+        .toggle-container #sortToggle .sort-option {
+            border-radius: 0;
+        }
+
+        .toggle-container #sortToggle .sort-option:first-child {
+            border-radius: 6px 0 0 6px;
+        }
+
+        .toggle-container #sortToggle .sort-option:last-child {
+            border-radius: 0 6px 6px 0;
+        }
+
         .stats-modal-card {
             width: min(420px, 100%);
         }
@@ -1278,7 +1295,7 @@
             min-width: 0;
             padding: 10px 12px;
             border: 1px solid #cfcfcf;
-            border-radius: 8px;
+            border-radius: 6px;
             background: #fafafa;
         }
 
