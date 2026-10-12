@@ -3424,7 +3424,7 @@
 
             const cycleMark = () => {
                 if (rowEl.classList.contains("is-scratched")) return;
-                const cur = MARKS.indexOf(String(selected.textContent || "").trim());
+                const cur = MARKS.indexOf(getEffectiveMark(selected));
                 selected.textContent = MARKS[(cur + 1) % MARKS.length];
                 clearMarkAttribution(selected);
                 applyMarkBackground(rowEl, selected.textContent !== "");
