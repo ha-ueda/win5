@@ -2183,11 +2183,6 @@
             return rowPersonLookupKeys(row, person).some(key => personSet.has(key));
         }
 
-        function rowsSharePerson(first, second, person) {
-            const firstKeys = new Set(rowPersonLookupKeys(first, person));
-            return rowPersonLookupKeys(second, person).some(key => firstKeys.has(key));
-        }
-
         function rowPersonColorKey(row, person) {
             const nameKey = personStatsNameKey(
                 person,
@@ -2294,6 +2289,9 @@
         let trainerDailyMultiWinIds5Years = null;
         let dailyMultiWinPersonsPromise = null;
         const statsFetchCache = new Map();
+        const statsFetchInFlight = new Map();
+        const statsApplyRequests = new Map();
+        let backgroundRuleEvaluation = null;
         const modeBtn = document.getElementById("modeToggle");
 
         function resetPreviousWin5Caches() {
@@ -2670,26 +2668,13 @@
             clearAppliedRuleBackgrounds();
             const activeRules = BACKGROUND_RULES.filter(rule => isEnabledBackgroundRule(rule) && selectedBgRuleKeys.has(rule.key));
             await ensureBackgroundRuleStats(activeRules);
-            if (activeRules.length > 0) {
-                const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)'));
-                refreshBackgroundRuleTargetMode(rows);
-                const ruleRaceCounts = new Map(activeRules.map(rule => [rule.key, new Set()]));
-                rows.forEach(row => {
-                    const race = String(row.dataset.race || "").trim();
-                    if (!race) return;
-                    activeRules.forEach(rule => {
-                        if (!rule.match(row)) return;
-                        const raceKey = getBackgroundRuleRaceKey(rule, row);
-                        if (raceKey) ruleRaceCounts.get(rule.key)?.add(raceKey);
-                    });
-                });
-
-                rows.forEach(row => {
+            withBackgroundRuleEvaluation(evaluation => {
+                if (!activeRules.length) return;
+                const { matchesByRow } = evaluateBackgroundRules(activeRules);
+                evaluation.rows.forEach(row => {
                     const box = row.querySelector(".selected");
                     if (!box) return;
-                    const matchedRules = activeRules
-                        .filter(rule => matchesBackgroundRuleRaceThreshold(rule, ruleRaceCounts.get(rule.key), row))
-                        .filter(rule => rule.match(row));
+                    const matchedRules = matchesByRow.get(row);
                     const matchedColors = matchedRules.map(rule => getBgRuleColor(rule, row));
                     if (!matchedColors.length) return;
                     setRowBackground(row, matchedColors, "rule");
@@ -2698,7 +2683,7 @@
                         color: matchedColors[index] || ""
                     })));
                 });
-            }
+            });
             saveState();
             closeBgRuleModal();
         }
@@ -3025,11 +3010,10 @@
             const box = rowEl?.querySelector(".selected");
             if (!box || !getRuleBgColors(box).length) return [];
             const colors = getRuleBgColors(box);
-            const matchedRules = getActiveMatchingBgRules(rowEl);
-            return matchedRules.map((rule, index) => ({
+            return withBackgroundRuleEvaluation(() => getActiveMatchingBgRules(rowEl).map((rule, index) => ({
                 label: getBgRuleDetailLabel(rule, rowEl),
                 color: colors[index] || getBgRuleColor(rule, rowEl)
-            }));
+            })));
         }
 
         function getBgRuleDetailLabel(rule, rowEl) {
@@ -3038,75 +3022,53 @@
 
         function getActiveMatchingBgRules(rowEl) {
             if (!rowEl) return [];
-            const activeRules = BACKGROUND_RULES.filter(rule => isEnabledBackgroundRule(rule) && selectedBgRuleKeys.has(rule.key));
-            if (!activeRules.length) return [];
-            const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)'));
-            refreshBackgroundRuleTargetMode(rows);
-            const ruleRaceCounts = new Map(activeRules.map(rule => [rule.key, new Set()]));
-            rows.forEach(row => {
-                const race = String(row.dataset.race || "").trim();
-                if (!race) return;
-                activeRules.forEach(rule => {
-                    if (!rule.match(row)) return;
-                    const raceKey = getBackgroundRuleRaceKey(rule, row);
-                    if (raceKey) ruleRaceCounts.get(rule.key)?.add(raceKey);
-                });
+            return withBackgroundRuleEvaluation(() => {
+                const activeRules = BACKGROUND_RULES.filter(rule => isEnabledBackgroundRule(rule) && selectedBgRuleKeys.has(rule.key));
+                return evaluateBackgroundRules(activeRules).matchesByRow.get(rowEl) || [];
             });
-            return activeRules
-                .filter(rule => matchesBackgroundRuleRaceThreshold(rule, ruleRaceCounts.get(rule.key), rowEl))
-                .filter(rule => rule.match(rowEl));
         }
 
         function getCurrentMatchingBgRuleDetails(rowEl) {
-            return getActiveMatchingBgRules(rowEl).map(rule => ({
+            return withBackgroundRuleEvaluation(() => getActiveMatchingBgRules(rowEl).map(rule => ({
                 label: getBgRuleDetailLabel(rule, rowEl),
                 color: getBgRuleColor(rule, rowEl)
-            }));
+            })));
         }
 
         function getSelectedBgRuleDetailsByColor() {
-            const activeRules = BACKGROUND_RULES.filter(rule => isEnabledBackgroundRule(rule) && selectedBgRuleKeys.has(rule.key));
-            const details = activeRules
-                .filter(isFixedColorRule)
-                .map(rule => ({
-                    label: getBgRuleDetailLabel(rule),
-                    color: getBgRuleColor(rule)
-                }));
+            return withBackgroundRuleEvaluation(evaluation => {
+                const activeRules = BACKGROUND_RULES.filter(rule => isEnabledBackgroundRule(rule) && selectedBgRuleKeys.has(rule.key));
+                const details = activeRules
+                    .filter(isFixedColorRule)
+                    .map(rule => ({
+                        label: getBgRuleDetailLabel(rule),
+                        color: getBgRuleColor(rule)
+                    }));
 
-            const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)'));
-            refreshBackgroundRuleTargetMode(rows);
-            const ruleRaceCounts = new Map(activeRules.map(rule => [rule.key, new Set()]));
-            rows.forEach(row => {
-                const race = String(row.dataset.race || "").trim();
-                if (!race) return;
-                activeRules.forEach(rule => {
-                    if (!rule.match(row)) return;
-                    const raceKey = getBackgroundRuleRaceKey(rule, row);
-                    if (raceKey) ruleRaceCounts.get(rule.key)?.add(raceKey);
-                });
-            });
+                const { rows } = evaluation;
+                const { ruleRaceCounts, matchesByRow } = evaluateBackgroundRules(activeRules);
 
-            activeRules
-                .filter(rule => !isFixedColorRule(rule))
-                .filter(rule => hasBackgroundRuleRaceThreshold(rule, ruleRaceCounts.get(rule.key)))
-                .forEach(rule => {
-                    rows
-                        .filter(row => rule.match(row)
-                            && matchesBackgroundRuleRaceThreshold(rule, ruleRaceCounts.get(rule.key), row))
-                        .forEach(row => {
-                            details.push({
-                                label: getBgRuleDetailLabel(rule, row),
-                                color: getBgRuleColor(rule, row)
+                activeRules
+                    .filter(rule => !isFixedColorRule(rule))
+                    .filter(rule => hasBackgroundRuleRaceThreshold(rule, ruleRaceCounts.get(rule.key)))
+                    .forEach(rule => {
+                        rows
+                            .filter(row => matchesByRow.get(row).includes(rule))
+                            .forEach(row => {
+                                details.push({
+                                    label: getBgRuleDetailLabel(rule, row),
+                                    color: getBgRuleColor(rule, row)
+                                });
                             });
-                        });
-                });
+                    });
 
-            const seen = new Set();
-            return details.filter(item => {
-                const key = `${item.color}\n${item.label}`;
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
+                const seen = new Set();
+                return details.filter(item => {
+                    const key = `${item.color}\n${item.label}`;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
             });
         }
 
@@ -4042,8 +4004,7 @@
                         const blocks = window.__lastDisplayBlocks || [];
                         const ctx = window.__payoutCtx;
                         if (Number.isFinite(idx) && blocks[idx] && ctx) {
-                            const html = buildComboExpansion(blocks[idx], ctx.supportRates, ctx.sales);
-                            row.insertAdjacentHTML('afterend', html);
+                            renderComboExpansion(row, blocks[idx], ctx);
                         }
                     } else {
                         row.classList.remove('checked');
@@ -4054,6 +4015,93 @@
                     }
                 });
             });
+        }
+
+        function renderComboExpansion(row, block, ctx) {
+            const container = document.createElement('div');
+            container.innerHTML = buildComboExpansion(block, ctx.supportRates, ctx.sales);
+            const expansion = container.firstElementChild;
+            const previous = row.nextElementSibling;
+            if (previous?.classList.contains('combo-expansion')) previous.replaceWith(expansion);
+            else row.after(expansion);
+            return expansion;
+        }
+
+        function collectStableFirstPass(candidates, colorMaskTable, state) {
+            const n = candidates.length;
+            const order = Array.from({ length: n }, (_, i) => i)
+                .sort((a, b) => candidates[a].length - candidates[b].length);
+            const strides = new Array(n);
+            let stride = 1;
+            for (let depth = n - 1; depth >= 0; depth--) {
+                const race = order[depth];
+                strides[race] = stride;
+                stride *= candidates[race].length;
+            }
+            const remainingOrder = order.filter(race => race !== 0);
+            const path = new Array(n).fill(0);
+            const allowedCache = new Map();
+            const assignment = state.assignment++;
+            let firstRaceColors = 0n;
+            for (const mask of candidates[0]) {
+                firstRaceColors |= colorMaskTable[0][Math.log2(mask) | 0];
+            }
+
+            const visit = (depth, usedColors, rank) => {
+                if (depth === remainingOrder.length) {
+                    const relevantColors = usedColors & firstRaceColors;
+                    let allowed = allowedCache.get(relevantColors);
+                    if (!allowed) {
+                        let mask = 0;
+                        let first = -1;
+                        for (let i = 0; i < candidates[0].length; i++) {
+                            const bit = candidates[0][i];
+                            if (colorMaskTable[0][Math.log2(bit) | 0] & relevantColors) continue;
+                            mask |= bit;
+                            if (first < 0) first = i;
+                        }
+                        allowed = { mask, first };
+                        allowedCache.set(relevantColors, allowed);
+                    }
+                    if (!allowed.mask) return;
+
+                    // 旧圧縮処理の最初の段階（1レース目の集約）だけを先に行う。
+                    const key = path.slice(1).join(",");
+                    const firstRank = rank + allowed.first * strides[0];
+                    const entry = state.groups.get(key);
+                    if (!entry) {
+                        const block = path.slice();
+                        block[0] = allowed.mask;
+                        state.groups.set(key, { block, assignment, rank: firstRank });
+                    } else {
+                        entry.block[0] |= allowed.mask;
+                        if (entry.assignment === assignment && firstRank < entry.rank) entry.rank = firstRank;
+                    }
+                    return;
+                }
+                const race = remainingOrder[depth];
+                for (let i = 0; i < candidates[race].length; i++) {
+                    const bit = candidates[race][i];
+                    const colors = colorMaskTable[race][Math.log2(bit) | 0];
+                    if (colors & usedColors) continue;
+                    path[race] = bit;
+                    visit(depth + 1, usedColors | colors, rank + i * strides[race]);
+                }
+            };
+            visit(0, 0n, 0);
+        }
+
+        function finishStableFirstPass(state) {
+            // 候補数順DFSで最初に現れた位置を使い、旧方式の行順も再現する。
+            const entries = Array.from(state.groups.values())
+                .sort((a, b) => a.assignment - b.assignment || a.rank - b.rank);
+            const blocks = [];
+            let count = 0;
+            for (const entry of entries) {
+                for (let bits = entry.block[0] >>> 0; bits; bits &= bits - 1) count++;
+                blocks.push(entry.block);
+            }
+            return { count, blocks };
         }
 
         function calc() {
@@ -4098,59 +4146,6 @@
                 }
             }
 
-            function countCombosDFS(candidates) {
-                const n = candidates.length;
-
-                const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => candidates[a].length - candidates[b].length);
-
-                const revOrder = new Int8Array(n);
-                for (let i = 0; i < n; i++) revOrder[order[i]] = i;
-
-                const candColorMasks = new Array(n);
-                for (let r = 0; r < n; r++) {
-                    const arr = candidates[r];
-                    const masks = new Array(arr.length);
-                    for (let i = 0; i < arr.length; i++) {
-                        const bit = arr[i];
-                        const idx = Math.log2(bit) | 0;
-                        masks[i] = colorMaskTable[r][idx];
-                    }
-                    candColorMasks[r] = masks;
-                }
-
-                let count = 0;
-                const blocks = [];
-                const path = new Int32Array(n);
-
-                const dfs = (depth, usedColorMask) => {
-                    if (depth === n) {
-                        count++;
-                        const combo = new Array(n);
-                        for (let i = 0; i < n; i++) combo[i] = path[revOrder[i]];
-                        blocks.push(combo);
-                        return;
-                    }
-
-                    const raceIdx = order[depth];
-                    const arr = candidates[raceIdx];
-                    const colorMasks = candColorMasks[raceIdx];
-
-                    for (let k = 0; k < arr.length; k++) {
-                        const m = arr[k];
-                        const colorMask = colorMasks[k];
-
-                        if (colorMask && (usedColorMask & colorMask)) continue;
-
-                        path[depth] = m;
-                        const nextMask = colorMask ? (usedColorMask | colorMask) : usedColorMask;
-                        dfs(depth + 1, nextMask);
-                    }
-                };
-
-                dfs(0, 0n);
-                return { count, blocks };
-            }
-
             const supportRates = buildRaceSupportRates();
             const sales = window.win5Sales || null;
             let total = 0;
@@ -4181,7 +4176,7 @@
                 { masks: markMaskLists.check, range: readWinRange("minHimo", "maxHimo", 0, TOTAL_RACES) },
                 { masks: markMaskLists.none, range: readWinRange("minNone", "maxNone", 0, TOTAL_RACES) }
             ];
-            const blocks = [];
+            const firstPass = { groups: new Map(), assignment: 0 };
             const selectedMarkTypes = new Int8Array(TOTAL_RACES);
             const markWinCounts = new Int8Array(markRanges.length);
 
@@ -4198,7 +4193,7 @@
                         if (!candidateList.length) return;
                         candidates[race] = candidateList;
                     }
-                    blocks.push(...countCombosDFS(candidates).blocks);
+                    collectStableFirstPass(candidates, colorMaskTable, firstPass);
                     return;
                 }
 
@@ -4214,10 +4209,9 @@
             };
             enumerateMarkAssignments(0);
 
-            const count = blocks.length;
-            const displayBlocks = fullyMergeBlocksStableBit(blocks);
-
-            total = count;
+            const compatible = finishStableFirstPass(firstPass);
+            total = compatible.count;
+            const displayBlocks = fullyMergeBlocksStableBit(compatible.blocks);
 
             window.__lastDisplayBlocks = [];
             // Display all rows in one continuous list. vote.js performs the
@@ -4225,7 +4219,7 @@
             window.__lastBetPages = displayBlocks.length ? [displayBlocks] : [];
             window.__payoutCtx = { supportRates, sales };
             renderBetPageButtons();
-        renderComboPage();
+            renderComboPage();
 
             document.getElementById('result').innerHTML =
                 `買い目：<span style="color:#0078d4;">${total.toLocaleString()}</span> 組`;
@@ -4455,7 +4449,7 @@
             return Math.min(p, 600000000);
         }
 
-        function enumerateBlockBets(block) {
+        function* enumerateBlockBets(block) {
             const races = [];
             for (let r = 0; r < TOTAL_RACES; r++) {
                 const mask = block[r] >>> 0;
@@ -4465,15 +4459,16 @@
                 }
                 races.push(nums);
             }
-            let result = [[]];
-            for (const race of races) {
-                const next = [];
-                for (const combo of result) {
-                    for (const n of race) next.push([...combo, n]);
+            const total = races.reduce((product, race) => product * race.length, 1);
+            for (let index = 0; index < total; index++) {
+                let remainder = index;
+                const bet = new Array(TOTAL_RACES);
+                for (let r = TOTAL_RACES - 1; r >= 0; r--) {
+                    bet[r] = races[r][remainder % races[r].length];
+                    remainder = Math.floor(remainder / races[r].length);
                 }
-                result = next;
+                yield bet;
             }
-            return result;
         }
 
         function computeBetPayout(horses, supportRates, sales) {
@@ -4522,15 +4517,8 @@
         }
 
         function buildComboExpansion(block, supportRates, sales) {
-            const bets = enumerateBlockBets(block);
-            bets.sort((a, b) => {
-                for (let i = 0; i < a.length; i++) {
-                    if (a[i] !== b[i]) return a[i] - b[i];
-                }
-                return 0;
-            });
             const lines = ['<div class="combo-expansion">'];
-            for (const horses of bets) {
+            for (const horses of enumerateBlockBets(block)) {
                 const cells = horses
                     .map(n => `<span class="combo-bet-cell">${toCircleNumber(n)}</span>`)
                     .join('');
@@ -4835,6 +4823,7 @@
         }
 
         let win5DataFetchInFlight = null;
+        let win5DataLoadInFlight = null;
         let win5StatsApplyToken = 0;
 
         async function fetchWin5Json(url) {
@@ -4871,33 +4860,41 @@
         }
 
         async function loadWin5Data() {
+            if (win5DataLoadInFlight) return win5DataLoadInFlight;
+            win5DataLoadInFlight = Promise.resolve().then(async () => {
+                try {
+                    const json = await fetchSelectedWin5Data({ mode: "all" });
+                    if (!json.ok) {
+                        showToast("取得に失敗しました", { type: "error" });
+                        return;
+                    }
+
+                    const races = json.races || [];
+                    if (races.length === 0 || races.every(r => !r || !r.horses || r.horses.length === 0)) {
+                        showToast("レースデータがありません");
+                        return;
+                    }
+
+                    applyWin5Data(json);
+                    const statsApplyToken = ++win5StatsApplyToken;
+                    // レースデータの表示を成績取得で待たせず、成績は後から反映する。
+                    fetchAndApplyJockeyStats(currentPerson, { requestToken: statsApplyToken })
+                        .catch(e => console.warn("fetchAndApplyJockeyStats:", e));
+
+                    const missing = collectMissingLoadedData();
+                    if (missing.length) {
+                        showToast("一部データが未取得です");
+                    } else {
+                        showToast("取得しました");
+                    }
+                } catch (e) {
+                    showToast("取得に失敗しました");
+                }
+            });
             try {
-                const json = await fetchSelectedWin5Data({ mode: "all" });
-                if (!json.ok) {
-                    showToast("取得に失敗しました", { type: "error" });
-                    return;
-                }
-
-                const races = json.races || [];
-                if (races.length === 0 || races.every(r => !r || !r.horses || r.horses.length === 0)) {
-                    showToast("レースデータがありません");
-                    return;
-                }
-
-                applyWin5Data(json);
-                const statsApplyToken = ++win5StatsApplyToken;
-                // レースデータの表示を成績取得で待たせず、成績は後から反映する。
-                fetchAndApplyJockeyStats(currentPerson, { requestToken: statsApplyToken })
-                    .catch(e => console.warn("fetchAndApplyJockeyStats:", e));
-
-                const missing = collectMissingLoadedData();
-                if (missing.length) {
-                    showToast("一部データが未取得です");
-                } else {
-                    showToast("取得しました");
-                }
-            } catch (e) {
-                showToast("取得に失敗しました");
+                return await win5DataLoadInFlight;
+            } finally {
+                win5DataLoadInFlight = null;
             }
         }
 
@@ -5847,6 +5844,60 @@
             backgroundRuleTargetAll = !candidates.some(row => hasAnyMark(row));
         }
 
+        function withBackgroundRuleEvaluation(callback) {
+            if (backgroundRuleEvaluation) return callback(backgroundRuleEvaluation);
+            const rows = Array.from(document.querySelectorAll('.custom-select:not(.is-empty):not(.is-scratched)'));
+            refreshBackgroundRuleTargetMode(rows);
+            const people = new Map();
+            for (const person of ["jockey", "trainer"]) {
+                const keysByRow = new Map();
+                const racesByKey = new Map();
+                const previousRacesByKey = new Map();
+                const previousPeople = person === "jockey" ? jockeyPreviousWin5WinIds : trainerPreviousWin5WinIds;
+                for (const row of rows) {
+                    const keys = rowPersonLookupKeys(row, person);
+                    keysByRow.set(row, keys);
+                    if (!isBackgroundRuleTarget(row)) continue;
+                    const race = String(row.dataset.race || "").trim();
+                    if (!race) continue;
+                    const isPrevious = !!previousPeople && keys.some(key => previousPeople.has(key));
+                    for (const key of keys) {
+                        if (!racesByKey.has(key)) racesByKey.set(key, new Set());
+                        racesByKey.get(key).add(race);
+                        if (isPrevious) {
+                            if (!previousRacesByKey.has(key)) previousRacesByKey.set(key, new Set());
+                            previousRacesByKey.get(key).add(race);
+                        }
+                    }
+                }
+                people.set(person, { keysByRow, racesByKey, previousRacesByKey });
+            }
+            backgroundRuleEvaluation = { rows, people, personColors: null };
+            try {
+                return callback(backgroundRuleEvaluation);
+            } finally {
+                backgroundRuleEvaluation = null;
+            }
+        }
+
+        function evaluateBackgroundRules(activeRules) {
+            const { rows } = backgroundRuleEvaluation;
+            const ruleRaceCounts = new Map(activeRules.map(rule => [rule.key, new Set()]));
+            const matchesByRow = new Map();
+            for (const row of rows) {
+                const matches = activeRules.filter(rule => rule.match(row));
+                matchesByRow.set(row, matches);
+                for (const rule of matches) {
+                    const raceKey = getBackgroundRuleRaceKey(rule, row);
+                    if (raceKey) ruleRaceCounts.get(rule.key).add(raceKey);
+                }
+            }
+            for (const [row, matches] of matchesByRow) {
+                matchesByRow.set(row, matches.filter(rule => matchesBackgroundRuleRaceThreshold(rule, ruleRaceCounts.get(rule.key), row)));
+            }
+            return { ruleRaceCounts, matchesByRow };
+        }
+
         function isBackgroundRuleTarget(row) {
             if (!row || row.classList.contains("is-empty") || row.classList.contains("is-scratched")) return false;
             return backgroundRuleTargetAll || hasAnyMark(row);
@@ -5994,7 +6045,45 @@
             return requestPromise;
         }
 
+        async function fetchStatsJson(person, years, keys) {
+            const q = [...new Set(keys)].sort().join(",");
+            const cacheKey = JSON.stringify({ mode: "combo", years: String(years), person, q });
+            if (statsFetchCache.has(cacheKey)) return statsFetchCache.get(cacheKey);
+            if (statsFetchInFlight.has(cacheKey)) return statsFetchInFlight.get(cacheKey);
+            const pending = Promise.resolve().then(async () => {
+                const u = new URL("stats", WIN5_API);
+                u.searchParams.set("mode", "combo");
+                u.searchParams.set("years", String(years));
+                u.searchParams.set("person", person);
+                u.searchParams.set("q", q);
+                const res = await fetch(u.toString(), { cache: "no-store" });
+                const json = await res.json();
+                if (res.ok && json.ok && json.stats && (person !== "both" || (json.stats.jockey && json.stats.trainer))) {
+                    statsFetchCache.set(cacheKey, json);
+                }
+                return json;
+            });
+            statsFetchInFlight.set(cacheKey, pending);
+            try {
+                return await pending;
+            } finally {
+                if (statsFetchInFlight.get(cacheKey) === pending) statsFetchInFlight.delete(cacheKey);
+            }
+        }
+
+        function beginStatsApplication(datasetKeys) {
+            const request = {};
+            const sourceKey = () => JSON.stringify([
+                window.win5SourceDate, window.raceInfo, window.raceCourses, window.win5RaceIds
+            ]);
+            const sourceAtFetch = sourceKey();
+            datasetKeys.forEach(key => statsApplyRequests.set(key, request));
+            return () => sourceKey() === sourceAtFetch
+                && datasetKeys.every(key => statsApplyRequests.get(key) === request);
+        }
+
         async function fetchAndApplyBackgroundStats(years, modes, jockeyDatasetKey, trainerDatasetKey) {
+            const isCurrentRequest = beginStatsApplication([jockeyDatasetKey, trainerDatasetKey]);
             const raceInfo = window.raceInfo || [];
             const raceCourses = window.raceCourses || [];
             const keysPerRace = getStatsKeysForModes(modes, raceInfo, raceCourses);
@@ -6006,23 +6095,8 @@
             if (validKeys.length === 0) return;
 
             try {
-                const cacheKey = JSON.stringify({
-                    mode: "combo",
-                    years: String(years),
-                    person: "both",
-                    q: validKeys.join(",")
-                });
-                let json = statsFetchCache.get(cacheKey);
-                if (!json) {
-                    const u = new URL("stats", WIN5_API);
-                    u.searchParams.set("mode", "combo");
-                    u.searchParams.set("years", String(years));
-                    u.searchParams.set("person", "both");
-                    u.searchParams.set("q", validKeys.join(","));
-                    const res = await fetch(u.toString(), { cache: "no-store" });
-                    json = await res.json();
-                    if (json.ok && json.stats?.jockey && json.stats?.trainer) statsFetchCache.set(cacheKey, json);
-                }
+                const json = await fetchStatsJson("both", years, validKeys);
+                if (!isCurrentRequest()) return;
                 if (!json.ok || !json.stats?.jockey || !json.stats?.trainer) return;
 
                 for (const { person, datasetKey, personIdKey, nameField, statsByKey } of [
@@ -6091,54 +6165,35 @@
             return rowMatchesPersonSet(row, trainerPreviousWin5WinIds, "trainer");
         }
 
-        function getSelectedJockeyRaceCount(row) {
-            if (!rowPersonLookupKeys(row, "jockey").length) return 0;
-            const races = new Set();
-            document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
-                if (!isBackgroundRuleTarget(sel)) return;
-                if (!rowsSharePerson(row, sel, "jockey")) return;
-                const race = String(sel.dataset.race || "").trim();
-                if (race) races.add(race);
+        function getSelectedPersonRaceCount(row, person, previousOnly = false) {
+            return withBackgroundRuleEvaluation(evaluation => {
+                const data = evaluation.people.get(person);
+                const keys = data.keysByRow.get(row) || rowPersonLookupKeys(row, person);
+                const previousPeople = person === "jockey" ? jockeyPreviousWin5WinIds : trainerPreviousWin5WinIds;
+                if (previousOnly && !keys.some(key => previousPeople?.has(key))) return 0;
+                const index = previousOnly ? data.previousRacesByKey : data.racesByKey;
+                const races = new Set();
+                for (const key of keys) {
+                    for (const race of index.get(key) || []) races.add(race);
+                }
+                return races.size;
             });
-            return races.size;
+        }
+
+        function getSelectedJockeyRaceCount(row) {
+            return getSelectedPersonRaceCount(row, "jockey");
         }
 
         function getSelectedJockeyPreviousWin5WinnerRaceCount(row) {
-            if (!isJockeyPreviousWin5Winner(row)) return 0;
-            const races = new Set();
-            document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
-                if (!isBackgroundRuleTarget(sel)) return;
-                if (!rowsSharePerson(row, sel, "jockey")) return;
-                if (!isJockeyPreviousWin5Winner(sel)) return;
-                const race = String(sel.dataset.race || "").trim();
-                if (race) races.add(race);
-            });
-            return races.size;
+            return getSelectedPersonRaceCount(row, "jockey", true);
         }
 
         function getSelectedTrainerRaceCount(row) {
-            if (!rowPersonLookupKeys(row, "trainer").length) return 0;
-            const races = new Set();
-            document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
-                if (!isBackgroundRuleTarget(sel)) return;
-                if (!rowsSharePerson(row, sel, "trainer")) return;
-                const race = String(sel.dataset.race || "").trim();
-                if (race) races.add(race);
-            });
-            return races.size;
+            return getSelectedPersonRaceCount(row, "trainer");
         }
 
         function getSelectedTrainerPreviousWin5WinnerRaceCount(row) {
-            if (!isTrainerPreviousWin5Winner(row)) return 0;
-            const races = new Set();
-            document.querySelectorAll(".custom-select:not(.is-empty):not(.is-scratched)").forEach(sel => {
-                if (!isBackgroundRuleTarget(sel)) return;
-                if (!rowsSharePerson(row, sel, "trainer")) return;
-                if (!isTrainerPreviousWin5Winner(sel)) return;
-                const race = String(sel.dataset.race || "").trim();
-                if (race) races.add(race);
-            });
-            return races.size;
+            return getSelectedPersonRaceCount(row, "trainer", true);
         }
 
         function hashString(value) {
@@ -6185,57 +6240,67 @@
 
         function getPersonRuleColor(type, id) {
             const normalizedId = String(id || "").trim();
-            refreshBackgroundRuleTargetMode();
-            ensureUniqueBgRuleColors();
-            const fixedRuleColors = new Set(
-                BACKGROUND_RULES
-                    .filter(isFixedColorRule)
-                    .map(rule => bgRuleColors[rule.key])
-                    .filter(Boolean)
-            );
-            const availableColors = PERSON_RULE_COLOR_POOL.filter(color => !fixedRuleColors.has(color));
-            const baseColors = availableColors.length ? availableColors : PERSON_RULE_COLOR_POOL;
-            if (!normalizedId) return baseColors[0];
-
-            const keys = [...new Set(
-                Array.from(document.querySelectorAll(".custom-select"))
-                    .flatMap(sel => {
-                        if (!isBackgroundRuleTarget(sel)) return [];
-                        const items = [];
-                        const jid = rowPersonColorKey(sel, "jockey");
-                        const tid = rowPersonColorKey(sel, "trainer");
-                        if (jid && isJockeyWithoutDailyMultiWin5Years(sel) && getSelectedJockeyRaceCount(sel) >= 2) {
-                            items.push(`jockeyNoDaily:${jid}`);
-                        }
-                        if (tid && isTrainerWithoutDailyMultiWin5Years(sel) && getSelectedTrainerRaceCount(sel) >= 2) {
-                            items.push(`trainerNoDaily:${tid}`);
-                        }
-                        if (jid
-                            && isPreviousWinBackgroundRuleTarget(sel)
-                            && isJockeyPreviousWin5Winner(sel)
-                            && getSelectedJockeyPreviousWin5WinnerRaceCount(sel) >= 2) {
-                            items.push(`jockeyPrevious:${jid}`);
-                        }
-                        if (tid
-                            && isPreviousWinBackgroundRuleTarget(sel)
-                            && isTrainerPreviousWin5Winner(sel)
-                            && getSelectedTrainerPreviousWin5WinnerRaceCount(sel) >= 2) {
-                            items.push(`trainerPrevious:${tid}`);
-                        }
-                        return items;
-                    })
-            )].sort();
-            const targetKey = `${type}:${normalizedId}`;
-            let index = keys.indexOf(targetKey);
-            if (index < 0) index = keys.length + (hashString(targetKey) % 1000);
-            if (index < baseColors.length) return baseColors[index];
-            const usedColors = new Set([...fixedRuleColors, ...baseColors]);
-            let generated = "";
-            for (let i = baseColors.length; i <= index; i++) {
-                generated = generatedPersonRuleColor(i - baseColors.length, usedColors);
-                usedColors.add(generated);
-            }
-            return generated;
+            return withBackgroundRuleEvaluation(evaluation => {
+                if (!evaluation.personColors) {
+                    ensureUniqueBgRuleColors();
+                    const fixedRuleColors = new Set(
+                        BACKGROUND_RULES
+                            .filter(isFixedColorRule)
+                            .map(rule => bgRuleColors[rule.key])
+                            .filter(Boolean)
+                    );
+                    const availableColors = PERSON_RULE_COLOR_POOL.filter(color => !fixedRuleColors.has(color));
+                    const baseColors = availableColors.length ? availableColors : PERSON_RULE_COLOR_POOL;
+                    const keys = [...new Set(
+                        evaluation.rows
+                            .flatMap(sel => {
+                                if (!isBackgroundRuleTarget(sel)) return [];
+                                const items = [];
+                                const jid = rowPersonColorKey(sel, "jockey");
+                                const tid = rowPersonColorKey(sel, "trainer");
+                                if (jid && isJockeyWithoutDailyMultiWin5Years(sel) && getSelectedJockeyRaceCount(sel) >= 2) {
+                                    items.push(`jockeyNoDaily:${jid}`);
+                                }
+                                if (tid && isTrainerWithoutDailyMultiWin5Years(sel) && getSelectedTrainerRaceCount(sel) >= 2) {
+                                    items.push(`trainerNoDaily:${tid}`);
+                                }
+                                if (jid
+                                    && isPreviousWinBackgroundRuleTarget(sel)
+                                    && isJockeyPreviousWin5Winner(sel)
+                                    && getSelectedJockeyPreviousWin5WinnerRaceCount(sel) >= 2) {
+                                    items.push(`jockeyPrevious:${jid}`);
+                                }
+                                if (tid
+                                    && isPreviousWinBackgroundRuleTarget(sel)
+                                    && isTrainerPreviousWin5Winner(sel)
+                                    && getSelectedTrainerPreviousWin5WinnerRaceCount(sel) >= 2) {
+                                    items.push(`trainerPrevious:${tid}`);
+                                }
+                                return items;
+                            })
+                    )].sort();
+                    evaluation.personColors = {
+                        baseColors,
+                        indices: new Map(keys.map((key, index) => [key, index])),
+                        keyCount: keys.length,
+                        usedColors: new Set([...fixedRuleColors, ...baseColors]),
+                        generated: []
+                    };
+                }
+                const { baseColors, indices, keyCount, usedColors, generated } = evaluation.personColors;
+                if (!normalizedId) return baseColors[0];
+                const targetKey = `${type}:${normalizedId}`;
+                let index = indices.get(targetKey) ?? -1;
+                if (index < 0) index = keyCount + (hashString(targetKey) % 1000);
+                if (index < baseColors.length) return baseColors[index];
+                const generatedIndex = index - baseColors.length;
+                while (generated.length <= generatedIndex) {
+                    const color = generatedPersonRuleColor(generated.length, usedColors);
+                    usedColors.add(color);
+                    generated.push(color);
+                }
+                return generated[generatedIndex];
+            });
         }
 
         function getJockeyColor(row) {
@@ -6362,7 +6427,7 @@
             const statsModes = normalizeStatsModes(modes);
             const personAtFetch = personOverride;
             const targetDatasetKey = datasetKey || (personAtFetch === 'trainer' ? 'tstats' : 'jstats');
-            const apiMode = 'combo';
+            const isCurrentRequest = beginStatsApplication([targetDatasetKey]);
             const keysPerRace = getStatsKeysForModes(statsModes, raceInfo, raceCourses);
             const validKeys = [...new Set(keysPerRace.filter(k => k))];
             if (datasetKey) {
@@ -6373,23 +6438,8 @@
             if (validKeys.length === 0) return;
 
             try {
-                const cacheKey = JSON.stringify({
-                    mode: apiMode,
-                    years: String(years),
-                    person: personAtFetch,
-                    q: validKeys.join(",")
-                });
-                let json = statsFetchCache.get(cacheKey);
-                if (!json) {
-                    const u = new URL("stats", WIN5_API);
-                    u.searchParams.set("mode", apiMode);
-                    u.searchParams.set("years", years);
-                    u.searchParams.set("person", personAtFetch);
-                    u.searchParams.set("q", validKeys.join(","));
-                    const res = await fetch(u.toString(), { cache: "no-store" });
-                    json = await res.json();
-                    if (json.ok && json.stats) statsFetchCache.set(cacheKey, json);
-                }
+                const json = await fetchStatsJson(personAtFetch, years, validKeys);
+                if (!isCurrentRequest()) return;
                 if (!json.ok || !json.stats) return;
                 if (requestToken !== null && requestToken !== win5StatsApplyToken) return;
 
