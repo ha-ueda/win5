@@ -4842,15 +4842,45 @@
         async function fetchSelectedWin5Data({ mode = "all" } = {}) {
             if (win5DataFetchInFlight) return win5DataFetchInFlight;
 
-            const idx = document.getElementById("win5TabSelect").value;
-
-            win5DataFetchInFlight = (async () => {
-                const dataUrl = new URL("win5-data", WIN5_API);
-                dataUrl.searchParams.set("tab", idx);
-                dataUrl.searchParams.set("mode", mode === "data" ? "data" : (mode === "odds" ? "odds" : "all"));
-                dataUrl.searchParams.set("_", String(Date.now()));
-                return fetchWin5Json(dataUrl.toString());
-            })();
+            const select = document.getElementById("win5TabSelect");
+            const requestedDate = select.value !== "" ? getSelectedWin5TabDate() : "";
+            const initialIndex = select.value;
+            win5DataFetchInFlight = Promise.resolve().then(async () => {
+                const fetchData = (index, date) => {
+                    const dataUrl = new URL("win5-data", WIN5_API);
+                    dataUrl.searchParams.set("tab", index);
+                    if (date) dataUrl.searchParams.set("date", date);
+                    dataUrl.searchParams.set("mode", mode === "data" ? "data" : (mode === "odds" ? "odds" : "all"));
+                    dataUrl.searchParams.set("_", String(Date.now()));
+                    return fetchWin5Json(dataUrl.toString());
+                };
+                const json = await fetchData(initialIndex, requestedDate);
+                if (json.ok || !/JRA (?:top metadata|WIN5 context) cache unavailable|WIN5 requested date unavailable/.test(String(json.error || ""))) {
+                    return json;
+                }
+                if (requestedDate && getSelectedWin5TabDate() !== requestedDate) {
+                    return { ok: false, code: "WIN5_SELECTION_CHANGED" };
+                }
+                const prepared = await loadWin5Tabs({ preserveSelection: true, showError: false });
+                if (!prepared) return json;
+                const tabs = window.win5AvailableTabs || [];
+                const retryIndex = requestedDate
+                    ? tabs.findIndex(tab => tab.date === requestedDate)
+                    : Number(select.value);
+                if (retryIndex < 0 || !tabs[retryIndex]) {
+                    return { ok: false, code: "WIN5_DATE_UNAVAILABLE" };
+                }
+                if (requestedDate && getSelectedWin5TabDate() !== requestedDate) {
+                    return { ok: false, code: "WIN5_SELECTION_CHANGED" };
+                }
+                select.value = String(retryIndex);
+                // 開催情報の不足時だけ準備し直す。再試行も失敗した場合は繰り返さない。
+                const retried = await fetchData(String(retryIndex), requestedDate || tabs[retryIndex].date);
+                if (requestedDate && getSelectedWin5TabDate() !== requestedDate) {
+                    return { ok: false, code: "WIN5_SELECTION_CHANGED" };
+                }
+                return retried;
+            });
 
             try {
                 return await win5DataFetchInFlight;
@@ -4865,6 +4895,11 @@
                 try {
                     const json = await fetchSelectedWin5Data({ mode: "all" });
                     if (!json.ok) {
+                        if (json.code === "WIN5_SELECTION_CHANGED") return;
+                        if (json.code === "WIN5_DATE_UNAVAILABLE") {
+                            showToast("開催日を選び直してください", { type: "error" });
+                            return;
+                        }
                         showToast("取得に失敗しました", { type: "error" });
                         return;
                     }
@@ -4945,6 +4980,11 @@
                 const previousSourceDate = String(window.win5SourceDate || "").trim();
                 const json = await fetchSelectedWin5Data({ mode: "odds" });
                 if (!json.ok) {
+                    if (json.code === "WIN5_SELECTION_CHANGED") return;
+                    if (json.code === "WIN5_DATE_UNAVAILABLE") {
+                        showToast("開催日を選び直してください", { type: "error" });
+                        return;
+                    }
                     showToast("オッズ取得に失敗しました", { type: "error" });
                     return;
                 }
@@ -4974,12 +5014,6 @@
         async function loadWin5Tabs({ preserveSelection = false, showError = true } = {}) {
             try {
                 const select = document.getElementById("win5TabSelect");
-                const previousIndex = Number(select?.value);
-                const previousSelectedDate = preserveSelection
-                    && select?.value !== ""
-                    && Number.isInteger(previousIndex)
-                    ? String(window.win5AvailableTabs?.[previousIndex]?.date || "")
-                    : "";
                 const u = new URL("tabs", WIN5_API);
                 u.searchParams.set("_", String(Date.now()));
 
@@ -4987,6 +5021,12 @@
                 const json = await res.json();
 
                 if (!json.ok) return false;
+                const previousIndex = Number(select?.value);
+                const previousSelectedDate = preserveSelection
+                    && select?.value !== ""
+                    && Number.isInteger(previousIndex)
+                    ? String(window.win5AvailableTabs?.[previousIndex]?.date || "")
+                    : "";
 
                 if (!hasExistingData()) {
                     window.win5Source = json.source || "";
