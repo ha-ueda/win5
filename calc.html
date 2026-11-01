@@ -824,6 +824,9 @@
             font-weight: 600;
             color: rgb(17, 17, 17);
             text-align: center;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         .mark-box[data-mark-owner]:not([data-mark-owner=""])::after {
@@ -3401,23 +3404,93 @@
             selected.dataset.ruleBg = "";
             selected.dataset.bgRuleDetails = "";
 
-            const cycleMark = () => {
+            const setMark = (mark) => {
                 if (rowEl.classList.contains("is-scratched")) return;
-                const cur = MARKS.indexOf(getEffectiveMark(selected));
-                selected.textContent = MARKS[(cur + 1) % MARKS.length];
+                selected.textContent = mark;
                 clearMarkAttribution(selected);
                 applyMarkBackground(rowEl, selected.textContent !== "");
                 saveState();
             };
 
+            const cycleMark = () => {
+                const cur = MARKS.indexOf(getEffectiveMark(selected));
+                setMark(MARKS[(cur + 1) % MARKS.length]);
+            };
+
+            let longPressTimer = null;
+            let touchGesture = null;
+            let touchInteraction = false;
+            let suppressNextClick = false;
+
+            const finishTouchGesture = () => {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+                touchGesture = null;
+                document.removeEventListener("pointerdown", cancelAdditionalTouch, true);
+                window.removeEventListener("blur", cancelTouchGesture);
+            };
+            const cancelTouchGesture = () => {
+                suppressNextClick = true;
+                finishTouchGesture();
+            };
+            const cancelAdditionalTouch = (e) => {
+                if (e.pointerType === "touch" && e.pointerId !== touchGesture?.id) cancelTouchGesture();
+            };
+
+            selected.addEventListener("pointerdown", (e) => {
+                if (e.pointerType !== "touch") {
+                    cancelTouchGesture();
+                    touchInteraction = false;
+                    suppressNextClick = false;
+                    return;
+                }
+                touchInteraction = true;
+                if (!e.isPrimary) {
+                    cancelTouchGesture();
+                    return;
+                }
+                finishTouchGesture();
+                suppressNextClick = false;
+                touchGesture = { id: e.pointerId, x: e.clientX, y: e.clientY };
+                document.addEventListener("pointerdown", cancelAdditionalTouch, true);
+                window.addEventListener("blur", cancelTouchGesture);
+                longPressTimer = setTimeout(() => {
+                    longPressTimer = null;
+                    if (!selected.isConnected) {
+                        cancelTouchGesture();
+                        return;
+                    }
+                    suppressNextClick = true;
+                    setMark("");
+                }, 300);
+            });
+            selected.addEventListener("pointermove", (e) => {
+                if (!touchGesture || e.pointerId !== touchGesture.id) return;
+                if (Math.hypot(e.clientX - touchGesture.x, e.clientY - touchGesture.y) > 10) cancelTouchGesture();
+            });
+            selected.addEventListener("pointerup", (e) => {
+                if (e.pointerId === touchGesture?.id) finishTouchGesture();
+            });
+            selected.addEventListener("pointercancel", (e) => {
+                if (e.pointerId === touchGesture?.id) cancelTouchGesture();
+            });
+
             selected.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (suppressNextClick) return;
                 if (backgroundMode) {
                     openPalette(rowEl, e);
                     return;
                 }
                 cycleMark();
+            });
+
+            selected.addEventListener("contextmenu", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (touchInteraction || e.pointerType === "touch") return;
+                setMark("");
             });
 
             return selected;
