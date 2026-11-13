@@ -472,75 +472,62 @@
 
         .mark-profile-info-panel {
             margin-bottom: 12px;
+            padding: 12px;
+            border-color: #e1e6f0;
+            background: #f3f5fa;
         }
 
         .mark-performance-heading {
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
-            margin-bottom: 6px;
-            color: #333;
+            margin-bottom: 10px;
+            color: #273450;
             font-weight: 700;
         }
 
-.mark-performance-list {
-            display: grid;
-            color: #555;
+        .mark-performance-list {
+            color: #526078;
             font-variant-numeric: tabular-nums;
         }
 
-        .mark-performance-list-header {
+        .mark-performance-list:has(.mark-performance-profile) {
             display: grid;
-            grid-template-columns: 4em minmax(0, 1fr);
-            gap: 8px;
-            padding-bottom: 4px;
-            color: #333;
-            font-weight: 700;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
         }
 
         .mark-performance-profile {
             display: grid;
-            grid-template-columns: 4em minmax(0, 1fr);
-            gap: 8px;
-            align-items: start;
-            padding: 6px 0;
-            border-top: 1px solid #e5e5e5;
-        }
-
-        .mark-performance-list-header + .mark-performance-profile {
-            border-top-color: #b8b8b8;
+            justify-items: center;
+            align-content: start;
+            gap: 3px;
+            min-width: 0;
+            padding: 9px 3px;
+            border: 1px solid #e1e6f0;
+            border-radius: 8px;
+            background: #fff;
+            text-align: center;
         }
 
         .mark-performance-name {
-            color: #333;
+            font-size: 12px;
             font-weight: 700;
-        }
-
-.mark-performance-values {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 4px 10px;
         }
 
         .mark-performance-value {
             white-space: nowrap;
-            text-align: left;
-            width: max-content;
-            justify-self: start;
+            color: #243879;
+            font-size: clamp(16px, 5vw, 24px);
+            font-weight: 800;
+            line-height: 1.2;
         }
 
-        .mark-performance-list-header .mark-performance-value {
-            text-align: center;
-        }
-
-        .mark-performance-rate-number {
-            display: inline-block;
-            width: 5ch;
-            text-align: right;
+        .mark-performance-percent {
+            margin-left: 1px;
+            font-size: 0.65em;
         }
 
         .mark-performance-count {
-            margin-left: 0.35em;
+            font-size: 11px;
+            white-space: nowrap;
         }
 
         .stats-modal-row {
@@ -5420,32 +5407,6 @@
             };
         }
 
-        function formatMarkPerformanceDate(value) {
-            const text = String(value || "").trim();
-            if (!/^20\d{6}$/.test(text)) return "";
-            return `${text.slice(0, 4)}/${text.slice(4, 6)}/${text.slice(6, 8)}`;
-        }
-
-        function alignMarkPerformanceHeaders(list) {
-            const headers = list.querySelectorAll(".mark-performance-list-header .mark-performance-value");
-            const rows = list.querySelectorAll(".mark-performance-profile");
-            headers.forEach((header, index) => {
-                header.style.width = "";
-                header.style.transform = "";
-                const centers = Array.from(rows)
-                    .map(row => row.querySelectorAll(".mark-performance-value")[index])
-                    .filter(value => value && value.textContent.trim() !== "-")
-                    .map(value => {
-                        const rect = value.getBoundingClientRect();
-                        return rect.left + rect.width / 2;
-                    });
-                if (!centers.length) return;
-                const headerRect = header.getBoundingClientRect();
-                const targetCenter = centers.reduce((sum, center) => sum + center, 0) / centers.length;
-                header.style.transform = `translateX(${targetCenter - (headerRect.left + headerRect.width / 2)}px)`;
-            });
-        }
-
         function renderMarkPerformance(payload) {
             const list = document.getElementById("markPerformanceList");
             if (!list) return;
@@ -5459,23 +5420,8 @@
             const fallbackProfile = Object.values(profiles).find(value => String(value?.startDate || "").trim() === startDate) || {};
             const races = Number.isFinite(Number(summary.races)) ? Number(summary.races) : (Number(fallbackProfile.races) || 0);
             const heading = document.getElementById("markPerformanceHeadingText");
-            if (heading) heading.textContent = startDate
-                ? `${formatMarkPerformanceDate(startDate)}以降の的中率（計${races}レース）`
-                : "的中率";
+            if (heading) heading.textContent = `本命の的中率（計${races}レース）`;
             list.replaceChildren();
-            const header = document.createElement("div");
-            header.className = "mark-performance-list-header";
-            const headerName = document.createElement("div");
-            const headerValues = document.createElement("div");
-            headerValues.className = "mark-performance-values";
-            ["◎", "✓"].forEach(mark => {
-                const item = document.createElement("span");
-                item.className = "mark-performance-value";
-                item.textContent = mark;
-                headerValues.appendChild(item);
-            });
-            header.append(headerName, headerValues);
-            list.appendChild(header);
             [["上田", "上田"], ["千葉", "千葉"], ["確定", "確定"]].forEach(([profileKey, displayName]) => {
                 const value = profiles[profileKey] || {};
                 const row = document.createElement("div");
@@ -5483,32 +5429,20 @@
                 const title = document.createElement("div");
                 title.className = "mark-performance-name";
                 title.textContent = displayName;
-                const body = document.createElement("div");
-                const values = document.createElement("div");
-                values.className = "mark-performance-values";
-                ["◎", "✓"].forEach(mark => {
-                    const item = document.createElement("span");
-                    item.className = "mark-performance-value";
-                    const formatted = formatMarkPerformanceValue(value, mark);
-                    const rate = document.createElement("span");
-                    rate.className = "mark-performance-rate-number";
-                    rate.textContent = formatted.rate;
-                    const percent = document.createElement("span");
-                    percent.textContent = formatted.percent;
-                    item.append(rate, percent);
-                    if (formatted.count) {
-                        const count = document.createElement("span");
-                        count.className = "mark-performance-count";
-                        count.textContent = formatted.count;
-                        item.appendChild(count);
-                    }
-                    values.appendChild(item);
-                });
-                body.append(values);
-                row.append(title, body);
+                const item = document.createElement("span");
+                item.className = "mark-performance-value";
+                const formatted = formatMarkPerformanceValue(value, "◎");
+                item.textContent = formatted.rate === "-" ? "—" : formatted.rate;
+                const percent = document.createElement("span");
+                percent.className = "mark-performance-percent";
+                percent.textContent = formatted.percent;
+                item.appendChild(percent);
+                const count = document.createElement("span");
+                count.className = "mark-performance-count";
+                count.textContent = formatted.count || "集計なし";
+                row.append(title, item, count);
                 list.appendChild(row);
             });
-            alignMarkPerformanceHeaders(list);
         }
 
         async function fetchMarkPerformance({ force = false } = {}) {
