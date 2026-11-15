@@ -1138,6 +1138,10 @@
             cursor: pointer;
         }
 
+        .ticket-image-viewer-button[hidden] {
+            display: none;
+        }
+
         .ticket-image-viewer-icon {
             display: block;
             width: 22px;
@@ -1563,6 +1567,8 @@
         const editorImageStatus = document.getElementById("editorImageStatus");
         const editorImageList = document.getElementById("editorImageList");
         const ticketImageViewer = document.getElementById("ticketImageViewer");
+        const ticketImageViewerPrev = document.getElementById("ticketImageViewerPrev");
+        const ticketImageViewerNext = document.getElementById("ticketImageViewerNext");
         const ticketImageViewerImage = document.getElementById("ticketImageViewerImage");
         const ticketImageViewerImageViewport = document.getElementById("ticketImageViewerImageViewport");
         const imageTokenDialog = document.getElementById("imageTokenDialog");
@@ -1587,8 +1593,8 @@
         if (editorImageInput) editorImageInput.addEventListener("change", queueEditorImages);
         if (editorImageList) editorImageList.addEventListener("click", handleEditorImageListClick);
         document.getElementById("ticketImageViewerClose").addEventListener("click", closeTicketImageViewer);
-        document.getElementById("ticketImageViewerPrev").addEventListener("click", () => moveViewerImage(-1));
-        document.getElementById("ticketImageViewerNext").addEventListener("click", () => moveViewerImage(1));
+        ticketImageViewerPrev.addEventListener("click", () => moveViewerImage(-1));
+        ticketImageViewerNext.addEventListener("click", () => moveViewerImage(1));
         ticketImageViewer.addEventListener("click", e => {
             if (e.target === ticketImageViewer) closeTicketImageViewer();
         });
@@ -2604,6 +2610,8 @@
         async function renderViewerImage() {
             const token = ++viewerLoadToken;
             const image = viewerImages[viewerImageIndex];
+            ticketImageViewerPrev.hidden = viewerImageIndex <= 0;
+            ticketImageViewerNext.hidden = viewerImageIndex >= viewerImages.length - 1;
             if (!image) return;
             resetViewerImageTransform();
             if (viewerImageObjectUrl) URL.revokeObjectURL(viewerImageObjectUrl);
@@ -2630,8 +2638,9 @@
         }
 
         function moveViewerImage(delta) {
-            if (!viewerImages.length) return;
-            viewerImageIndex = (viewerImageIndex + delta + viewerImages.length) % viewerImages.length;
+            const nextIndex = viewerImageIndex + delta;
+            if (nextIndex < 0 || nextIndex >= viewerImages.length) return;
+            viewerImageIndex = nextIndex;
             void renderViewerImage();
         }
 
